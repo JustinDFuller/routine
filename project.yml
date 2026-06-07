@@ -39,6 +39,8 @@ targets:
           - UIInterfaceOrientationPortrait
     settings:
       base:
+        # Clear XcodeGen's default app icon setting until M14 adds a real AppIcon.appiconset.
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
         PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routine
         PRODUCT_NAME: Routine
         SWIFT_STRICT_CONCURRENCY: targeted
@@ -88,4 +90,3 @@ schemes:
       targets:
         - name: RoutineAppTests
         - name: RoutineAppUITests
-

@@ -401,6 +401,12 @@ Xcode project policy:
 - Swift language mode and deployment target should be explicit.
 - Bundle identifier and signing team should be configurable without committing secrets.
 
+Launcher icon staging:
+
+- App launcher icon work is intentionally deferred until M14 so earlier build-unblock milestones can proceed without final icon assets.
+- Until M14, local builds may omit or explicitly clear `ASSETCATALOG_COMPILER_APPICON_NAME` in `project.yml` if that is required to keep the app buildable without a real app icon asset catalog.
+- M14 must restore `ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon` and validate that the intended icon appears after install on the personal iPhone.
+
 Recommended initial build settings:
 
 - iOS deployment target: iOS 17.0 or newer.
@@ -932,4 +938,3 @@ These are intentionally not part of MVP implementation, but the architecture sho
 - Cloud sync after reviewing SwiftData/CloudKit constraints, conflict handling, uniqueness, and deletion semantics.
 - Multiple completions per day by replacing the routine-day uniqueness policy with a more flexible completion limit.
 - Richer analytics through derived query services, not persisted streaks or scores unless product scope changes.
-

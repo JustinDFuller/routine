@@ -229,6 +229,13 @@ Symbol rules:
 - Keep symbol weight aligned with adjacent text weight
 - Do not mix unrelated visual styles across icons
 
+Launcher icon guidance:
+
+- The app launcher icon is separate from interface iconography and should be designed as its own artifact.
+- It should be a polished MVP launcher icon for personal dogfooding readiness, not the start of a full brand system.
+- It should follow the product's visual mood: dark, grounded, warm, tactile, calm, and not gamified.
+- Avoid custom icon packs, mascots, gamified badges, streak or flame imagery, and dense UI screenshot-style compositions.
+
 ### Motion
 
 Motion should confirm state changes, not entertain.

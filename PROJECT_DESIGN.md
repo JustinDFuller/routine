@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**CURRENT: M02 - RoutineCore Domain Logic**
+**CURRENT: M03 - SwiftData Persistence Foundation**
 
 The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -90,8 +90,8 @@ Core invariants that require automated coverage when touched:
 | Status | Milestone | Working State |
 | --- | --- | --- |
 | DONE | M01 - Project Scaffold And Local Tooling | Repo has a generated iOS project, portable package target, scripts, and a minimal app shell. |
-| CURRENT | M02 - RoutineCore Domain Logic | Portable domain logic is implemented and tested locally and in Ubuntu CI. |
-| NOT STARTED | M03 - SwiftData Persistence Foundation | App has canonical SwiftData models, container setup, fetch helpers, and in-memory test support. |
+| DONE | M02 - RoutineCore Domain Logic | Portable domain logic is implemented and tested locally and in Ubuntu CI. |
+| CURRENT | M03 - SwiftData Persistence Foundation | App has canonical SwiftData models, container setup, fetch helpers, and in-memory test support. |
 | NOT STARTED | M04 - Starter Data Seeding | First launch seeds editable dogfooding routines exactly once. |
 | NOT STARTED | M05 - Tracking Service | Completing, duplicate prevention, undo, and historical removal work through tested services. |
 | NOT STARTED | M06 - Management Service | Routine and group CRUD, validation, moves, and sort normalization work through tested services. |
@@ -102,7 +102,7 @@ Core invariants that require automated coverage when touched:
 | NOT STARTED | M11 - Group And Reorder UI | The user can manage groups and reorder routines/groups through native controls. |
 | NOT STARTED | M12 - Routine History UI | The user can inspect and correct routine-specific completion history. |
 | NOT STARTED | M13 - Accessibility, Polish, And UI Coverage | Primary flows satisfy accessibility, motion, visual, and UI-test expectations. |
-| NOT STARTED | M14 - Dogfooding Readiness | Local validation, diagnostics, privacy, and device-readiness checks are complete. |
+| NOT STARTED | M14 - Dogfooding Readiness | Local validation, diagnostics, privacy, app icon, and device-readiness checks are complete. |
 
 ## Milestones
 
@@ -148,7 +148,7 @@ Completion note:
 
 ### M02 - RoutineCore Domain Logic
 
-Status: `CURRENT`
+Status: `DONE`
 
 Goal: implement portable domain values and pure business logic before SwiftData or SwiftUI depends on them.
 
@@ -192,9 +192,13 @@ Completion update:
 - Mark this milestone `DONE`.
 - Mark M03 `CURRENT`.
 
+Completion note:
+
+- `Scripts/validate.sh` completed with explicit skips for the generic iOS build and iOS tests because this machine does not have an eligible generic iOS destination or configured `IOS_TEST_DESTINATION`. The Ubuntu workflow runs `swift build` and `swift test`, but leaves `swift-format` as a local validation because adding a compatible formatter setup to Ubuntu was not practical for this milestone.
+
 ### M03 - SwiftData Persistence Foundation
 
-Status: `NOT STARTED`
+Status: `CURRENT`
 
 Goal: add the canonical local data model and testable persistence setup without implementing user workflows yet.
 
@@ -712,6 +716,9 @@ Deliverables:
 - Add or finalize OSLog diagnostics categories for app lifecycle, persistence, starter data, tracking, management, projection, routing, and UI.
 - Ensure debug launch arguments are DEBUG-only and unavailable in Release behavior.
 - Confirm `PrivacyInfo.xcprivacy` declares local-only behavior with no tracking and no data collection if the implementation still has no networking or SDKs.
+- Add a real `RoutineApp/Assets.xcassets/AppIcon.appiconset` for the MVP launcher icon.
+- Restore `ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon` in `project.yml`.
+- Make the launcher icon align with the visual direction: dark, grounded, warm, tactile, calm, and not gamified.
 - Update README with local setup, project generation, validation, and local device deployment instructions.
 - Add a manual dogfooding acceptance checklist, either in README or a small docs file.
 - Verify generated project files and local Xcode user data are ignored or intentionally committed according to the project policy.
@@ -724,8 +731,9 @@ Validation:
 - Run `RoutineCore` tests.
 - Run iOS unit tests when a destination is available.
 - Run UI tests when a simulator runtime or connected test device is available.
-- Build the app for a generic iOS destination.
+- Build the app for a generic iOS destination and verify asset catalog compilation with `--app-icon AppIcon`.
 - Install and run on the personal iPhone if available.
+- Confirm the intended launcher icon appears on the Home Screen and in the App Library.
 - Manually verify starter data, persistence across relaunch, completion, undo, history correction, management, dark/light mode, Dynamic Type, VoiceOver, Reduce Motion, and one-handed use.
 
 Completion update:
