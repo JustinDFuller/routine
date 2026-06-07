@@ -1,8 +1,8 @@
-# System Design Specification: Routine
+# Data Design Specification: Routine
 
 ## Purpose
 
-This document defines the system design for the Routine MVP. It is grounded in [PRODUCT_BRIEF.md](PRODUCT_BRIEF.md) for product scope and behavior, and [VISUAL_DESIGN.md](VISUAL_DESIGN.md) for interface, interaction, and native iPhone design direction.
+This document defines the data design for the Routine MVP. It is grounded in [PRODUCT_BRIEF.md](PRODUCT_BRIEF.md) for product scope and behavior, and [VISUAL_DESIGN.md](VISUAL_DESIGN.md) for interface, interaction, and native iPhone design direction.
 
 The app is a personal, local-first iPhone routine tracker. The system should be high quality, robust, and extensible, while remaining small enough for an MVP dogfooding build.
 
@@ -21,7 +21,7 @@ This document does not cover:
 - Automated testing strategy
 - Deployment, release, or App Store operations
 
-## System Goals
+## Data Design Goals
 
 The technical design should preserve the product principles:
 
@@ -1245,7 +1245,7 @@ Richer analytics:
 
 ## Acceptance Criteria
 
-The system design is satisfied when an implementation can meet these scenarios:
+The data design is satisfied when an implementation can meet these scenarios:
 
 - The app launches to Today Dashboard.
 - Starter groups and routines seed once and remain user-editable.
