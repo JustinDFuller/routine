@@ -102,7 +102,7 @@ Core invariants that require automated coverage when touched:
 | NOT STARTED | M11 - Group And Reorder UI | The user can manage groups and reorder routines/groups through native controls. |
 | NOT STARTED | M12 - Routine History UI | The user can inspect and correct routine-specific completion history. |
 | NOT STARTED | M13 - Accessibility, Polish, And UI Coverage | Primary flows satisfy accessibility, motion, visual, and UI-test expectations. |
-| NOT STARTED | M14 - Dogfooding Readiness | Local validation, diagnostics, privacy, and device-readiness checks are complete. |
+| NOT STARTED | M14 - Dogfooding Readiness | Local validation, diagnostics, privacy, app icon, and device-readiness checks are complete. |
 
 ## Milestones
 
@@ -716,6 +716,9 @@ Deliverables:
 - Add or finalize OSLog diagnostics categories for app lifecycle, persistence, starter data, tracking, management, projection, routing, and UI.
 - Ensure debug launch arguments are DEBUG-only and unavailable in Release behavior.
 - Confirm `PrivacyInfo.xcprivacy` declares local-only behavior with no tracking and no data collection if the implementation still has no networking or SDKs.
+- Add a real `RoutineApp/Assets.xcassets/AppIcon.appiconset` for the MVP launcher icon.
+- Restore `ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon` in `project.yml`.
+- Make the launcher icon align with the visual direction: dark, grounded, warm, tactile, calm, and not gamified.
 - Update README with local setup, project generation, validation, and local device deployment instructions.
 - Add a manual dogfooding acceptance checklist, either in README or a small docs file.
 - Verify generated project files and local Xcode user data are ignored or intentionally committed according to the project policy.
@@ -728,8 +731,9 @@ Validation:
 - Run `RoutineCore` tests.
 - Run iOS unit tests when a destination is available.
 - Run UI tests when a simulator runtime or connected test device is available.
-- Build the app for a generic iOS destination.
+- Build the app for a generic iOS destination and verify asset catalog compilation with `--app-icon AppIcon`.
 - Install and run on the personal iPhone if available.
+- Confirm the intended launcher icon appears on the Home Screen and in the App Library.
 - Manually verify starter data, persistence across relaunch, completion, undo, history correction, management, dark/light mode, Dynamic Type, VoiceOver, Reduce Motion, and one-handed use.
 
 Completion update:
