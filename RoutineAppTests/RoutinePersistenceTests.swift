@@ -179,6 +179,31 @@ final class RoutinePersistenceTests: XCTestCase {
         XCTAssertNoThrow(try context.ensureNoCompletion(routineID: otherRoutine.id, dayKey: day.key))
     }
 
+    func testSaveRoutineChangesMapsThrownSaveFailure() throws {
+        let context = try makeContext()
+        let originalSave = RoutinePersistenceSaveExecutor.save
+        defer { RoutinePersistenceSaveExecutor.save = originalSave }
+
+        RoutinePersistenceSaveExecutor.save = { _ in
+            throw SimulatedSaveFailure()
+        }
+
+        do {
+            try context.saveRoutineChanges()
+            XCTFail("Expected saveRoutineChanges() to throw.")
+        } catch let error as PersistenceError {
+            guard case .saveFailed(let diagnostic) = error else {
+                return XCTFail("Expected saveFailed, got \(error).")
+            }
+
+            XCTAssertEqual(error.errorDescription, "Unable to save changes.")
+            XCTAssertEqual(diagnostic, "simulated save failure")
+            XCTAssertFalse(diagnostic.isEmpty)
+        } catch {
+            XCTFail("Expected PersistenceError, got \(error).")
+        }
+    }
+
     func testDeletingRoutineCascadesCompletions() throws {
         let context = try makeContext()
         let firstDay = try makeDay(year: 2026, month: 6, day: 7)
@@ -251,4 +276,8 @@ final class RoutinePersistenceTests: XCTestCase {
     private func makeDay(year: Int, month: Int, day: Int) throws -> RoutineDay {
         try XCTUnwrap(RoutineDay(year: year, month: month, day: day))
     }
+}
+
+private struct SimulatedSaveFailure: Error, CustomStringConvertible {
+    let description = "simulated save failure"
 }

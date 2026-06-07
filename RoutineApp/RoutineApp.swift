@@ -4,20 +4,15 @@ import SwiftUI
 @MainActor
 @main
 struct RoutineApp: App {
-    private let modelContainer: ModelContainer
+    private let bootstrapState: AppBootstrapState
 
     init() {
-        do {
-            modelContainer = try RoutineModelContainer.persistent()
-        } catch {
-            fatalError("Failed to create persistent model container: \(error)")
-        }
+        bootstrapState = AppBootstrap.initialState()
     }
 
     var body: some Scene {
         WindowGroup {
-            RootView()
+            AppBootstrapRootView(state: bootstrapState)
         }
-        .modelContainer(modelContainer)
     }
 }

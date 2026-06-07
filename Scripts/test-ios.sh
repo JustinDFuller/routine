@@ -4,15 +4,22 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-if [[ -z "${IOS_TEST_DESTINATION:-}" ]]; then
-    echo "Skipping iOS tests: set IOS_TEST_DESTINATION to a valid xcodebuild destination."
-    exit 0
+source ./Scripts/xcode-destination-helpers.sh
+
+resolved_destination="${IOS_TEST_DESTINATION:-}"
+
+if [[ -z "$resolved_destination" ]]; then
+    destinations="$(routine_show_destinations)"
+    if ! resolved_destination="$(routine_resolve_ios_test_destination "$destinations")"; then
+        echo "Skipping iOS tests: no concrete iOS Simulator destination is available."
+        exit 0
+    fi
 fi
 
-./Scripts/generate-project.sh
+"${GENERATE_PROJECT_SCRIPT:-./Scripts/generate-project.sh}"
 
-xcodebuild \
+"${XCODEBUILD_BIN:-xcodebuild}" \
     -project Routine.xcodeproj \
     -scheme RoutineApp \
-    -destination "${IOS_TEST_DESTINATION}" \
+    -destination "${resolved_destination}" \
     test

@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**CURRENT: M04 - Starter Data Seeding**
+**CURRENT: M05 - Tracking Service**
 
 The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -92,8 +92,8 @@ Core invariants that require automated coverage when touched:
 | DONE | M01 - Project Scaffold And Local Tooling | Repo has a generated iOS project, portable package target, scripts, and a minimal app shell. |
 | DONE | M02 - RoutineCore Domain Logic | Portable domain logic is implemented and tested locally and in Ubuntu CI. |
 | DONE | M03 - SwiftData Persistence Foundation | App has canonical SwiftData models, container setup, fetch helpers, and in-memory test support. |
-| CURRENT | M04 - Starter Data Seeding | First launch seeds editable dogfooding routines exactly once. |
-| NOT STARTED | M05 - Tracking Service | Completing, duplicate prevention, undo, and historical removal work through tested services. |
+| DONE | M04 - Starter Data Seeding | First launch seeds editable dogfooding routines exactly once. |
+| CURRENT | M05 - Tracking Service | Completing, duplicate prevention, undo, and historical removal work through tested services. |
 | NOT STARTED | M06 - Management Service | Routine and group CRUD, validation, moves, and sort normalization work through tested services. |
 | NOT STARTED | M07 - Projection Layer | Dashboard, history, and manage screens have immutable view data builders. |
 | NOT STARTED | M08 - Visual Foundation Components | Color roles, progress ring, routine card, and undo banner components compile and render from view data. |
@@ -237,7 +237,7 @@ Completion update:
 
 ### M04 - Starter Data Seeding
 
-Status: `CURRENT`
+Status: `DONE`
 
 Goal: make the first dogfooding launch useful while ensuring seed data never reappears after user edits or deletion.
 
@@ -276,7 +276,7 @@ Completion update:
 
 ### M05 - Tracking Service
 
-Status: `NOT STARTED`
+Status: `CURRENT`
 
 Goal: implement the core daily-use mutation path behind the future dashboard.
 

@@ -1,6 +1,14 @@
 import Foundation
 import SwiftData
 
+@MainActor
+enum RoutinePersistenceSaveExecutor {
+    static var save: (ModelContext) throws -> Void = { context in
+        try context.save()
+    }
+}
+
+@MainActor
 extension ModelContext {
     func routine(id: UUID) throws -> Routine {
         let descriptor = FetchDescriptor<Routine>(
@@ -82,7 +90,7 @@ extension ModelContext {
 
     func saveRoutineChanges() throws {
         do {
-            try save()
+            try RoutinePersistenceSaveExecutor.save(self)
         } catch {
             throw PersistenceError.saveFailed(String(describing: error))
         }
