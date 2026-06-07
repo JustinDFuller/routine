@@ -6,6 +6,22 @@ import XCTest
 
 @MainActor
 final class RoutinePersistenceTests: XCTestCase {
+    override func tearDown() {
+        RoutinePersistenceFetchExecutor.fetchRoutines = { context, descriptor in
+            try context.fetch(descriptor)
+        }
+        RoutinePersistenceFetchExecutor.fetchGroups = { context, descriptor in
+            try context.fetch(descriptor)
+        }
+        RoutinePersistenceFetchExecutor.fetchCompletions = { context, descriptor in
+            try context.fetch(descriptor)
+        }
+        RoutinePersistenceFetchExecutor.fetchMetadata = { context, descriptor in
+            try context.fetch(descriptor)
+        }
+        super.tearDown()
+    }
+
     func testInMemoryContainerCreatesAllModels() throws {
         let context = try makeContext()
         let day = try makeDay(year: 2026, month: 6, day: 7)
@@ -204,6 +220,56 @@ final class RoutinePersistenceTests: XCTestCase {
         }
     }
 
+    func testRoutineFetchMapsThrownFetchFailure() throws {
+        let context = try makeContext()
+        let originalFetch = RoutinePersistenceFetchExecutor.fetchRoutines
+        defer { RoutinePersistenceFetchExecutor.fetchRoutines = originalFetch }
+
+        RoutinePersistenceFetchExecutor.fetchRoutines = { _, _ in
+            throw SimulatedFetchFailure()
+        }
+
+        do {
+            _ = try context.routine(id: UUID())
+            XCTFail("Expected routine(id:) to throw.")
+        } catch let error as PersistenceError {
+            guard case .fetchFailed(let diagnostic) = error else {
+                return XCTFail("Expected fetchFailed, got \(error).")
+            }
+
+            XCTAssertEqual(error.errorDescription, "Unable to load data.")
+            XCTAssertEqual(diagnostic, "simulated fetch failure")
+            XCTAssertFalse(diagnostic.isEmpty)
+        } catch {
+            XCTFail("Expected PersistenceError, got \(error).")
+        }
+    }
+
+    func testCompletionByRoutineDayMapsThrownFetchFailure() throws {
+        let context = try makeContext()
+        let originalFetch = RoutinePersistenceFetchExecutor.fetchCompletions
+        defer { RoutinePersistenceFetchExecutor.fetchCompletions = originalFetch }
+
+        RoutinePersistenceFetchExecutor.fetchCompletions = { _, _ in
+            throw SimulatedFetchFailure()
+        }
+
+        do {
+            _ = try context.completion(routineID: UUID(), dayKey: "2026-06-07")
+            XCTFail("Expected completion(routineID:dayKey:) to throw.")
+        } catch let error as PersistenceError {
+            guard case .fetchFailed(let diagnostic) = error else {
+                return XCTFail("Expected fetchFailed, got \(error).")
+            }
+
+            XCTAssertEqual(error.errorDescription, "Unable to load data.")
+            XCTAssertEqual(diagnostic, "simulated fetch failure")
+            XCTAssertFalse(diagnostic.isEmpty)
+        } catch {
+            XCTFail("Expected PersistenceError, got \(error).")
+        }
+    }
+
     func testDeletingRoutineCascadesCompletions() throws {
         let context = try makeContext()
         let firstDay = try makeDay(year: 2026, month: 6, day: 7)
@@ -266,6 +332,7 @@ final class RoutinePersistenceTests: XCTestCase {
             PersistenceError.duplicateRoutineCompletion(routineID: UUID(), dayKey: "2026-06-07").errorDescription,
             "Completion already exists for that day."
         )
+        XCTAssertEqual(PersistenceError.fetchFailed("sqlite busy").errorDescription, "Unable to load data.")
         XCTAssertEqual(PersistenceError.saveFailed("disk full").errorDescription, "Unable to save changes.")
     }
 
@@ -280,4 +347,8 @@ final class RoutinePersistenceTests: XCTestCase {
 
 private struct SimulatedSaveFailure: Error, CustomStringConvertible {
     let description = "simulated save failure"
+}
+
+private struct SimulatedFetchFailure: Error, CustomStringConvertible {
+    let description = "simulated fetch failure"
 }

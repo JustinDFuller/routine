@@ -6,6 +6,7 @@ enum PersistenceError: LocalizedError, Equatable {
     case completionNotFound(UUID)
     case metadataNotFound(String)
     case duplicateRoutineCompletion(routineID: UUID, dayKey: String)
+    case fetchFailed(String)
     case saveFailed(String)
 
     var errorDescription: String? {
@@ -20,6 +21,8 @@ enum PersistenceError: LocalizedError, Equatable {
             "Metadata not found."
         case .duplicateRoutineCompletion:
             "Completion already exists for that day."
+        case .fetchFailed:
+            "Unable to load data."
         case .saveFailed:
             "Unable to save changes."
         }
