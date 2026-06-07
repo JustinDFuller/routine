@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import RoutineCore
 import SwiftData
 
@@ -22,6 +23,11 @@ enum RoutineManagementError: LocalizedError, Equatable {
 
 @MainActor
 final class RoutineManagementService {
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "Routine",
+        category: "management"
+    )
+
     private let context: ModelContext
 
     init(context: ModelContext) {
@@ -47,11 +53,20 @@ final class RoutineManagementService {
         context.insert(routine)
         normalizeRoutineSortOrders(existingRoutines + [routine], now: now)
         group.updatedAt = now
+        let createdRoutineCount = existingRoutines.count + 1
+        let successDetails =
+            "routineID=\(routine.id.uuidString) groupID=\(group.id.uuidString) routineCount=\(createdRoutineCount)"
 
         do {
             try context.saveRoutineChanges()
+            logMutationSucceeded(operation: "createRoutine", details: successDetails)
         } catch {
             rollbackPendingChanges(insertedRoutineIDs: [routine.id])
+            logMutationFailed(
+                operation: "createRoutine",
+                details: "groupID=\(group.id.uuidString)",
+                error: error
+            )
             throw error
         }
 
@@ -65,6 +80,7 @@ final class RoutineManagementService {
         let routine = try context.routine(id: id)
         let destinationGroup = try context.group(id: draft.groupID)
         let sourceGroupID = routine.groupID
+        var successDetails = "routineID=\(routine.id.uuidString) groupID=\(destinationGroup.id.uuidString)"
 
         routine.name = name
         routine.targetCount = draft.targetCount
@@ -88,12 +104,24 @@ final class RoutineManagementService {
                 sourceGroup.updatedAt = now
             }
             destinationGroup.updatedAt = now
+            successDetails =
+                "routineID=\(routine.id.uuidString) sourceGroupID=\(sourceGroupID.uuidString) "
+                + "destinationGroupID=\(destinationGroup.id.uuidString) sourceCount=\(sourceRoutines.count) "
+                + "destinationCount=\(destinationRoutines.count + 1)"
         }
 
         do {
             try context.saveRoutineChanges()
+            logMutationSucceeded(operation: "updateRoutine", details: successDetails)
         } catch {
             rollbackPendingChanges()
+            logMutationFailed(
+                operation: "updateRoutine",
+                details:
+                    "routineID=\(routine.id.uuidString) sourceGroupID=\(sourceGroupID.uuidString) "
+                    + "destinationGroupID=\(destinationGroup.id.uuidString)",
+                error: error
+            )
             throw error
         }
     }
@@ -112,8 +140,19 @@ final class RoutineManagementService {
 
         do {
             try context.saveRoutineChanges()
+            logMutationSucceeded(
+                operation: "deleteRoutine",
+                details:
+                    "routineID=\(routine.id.uuidString) groupID=\(sourceGroupID.uuidString) "
+                    + "remainingCount=\(remainingRoutines.count)"
+            )
         } catch {
             rollbackPendingChanges()
+            logMutationFailed(
+                operation: "deleteRoutine",
+                details: "routineID=\(routine.id.uuidString) groupID=\(sourceGroupID.uuidString)",
+                error: error
+            )
             throw error
         }
     }
@@ -122,43 +161,38 @@ final class RoutineManagementService {
         let routine = try context.routine(id: id)
         let destinationGroup = try context.group(id: toGroupID)
         let sourceGroupID = routine.groupID
-
-        if sourceGroupID == destinationGroup.id {
-            var reorderedRoutines = try routines(inGroupID: sourceGroupID)
-            guard let currentIndex = reorderedRoutines.firstIndex(where: { $0.id == routine.id }) else {
-                throw PersistenceError.routineNotFound(id)
+        let successDetails =
+            if sourceGroupID == destinationGroup.id {
+                try moveRoutineWithinGroup(
+                    routine,
+                    destinationGroup: destinationGroup,
+                    requestedIndex: index,
+                    now: now
+                )
+            } else {
+                try moveRoutineAcrossGroups(
+                    routine,
+                    sourceGroupID: sourceGroupID,
+                    destinationGroup: destinationGroup,
+                    requestedIndex: index,
+                    now: now
+                )
             }
-
-            let movedRoutine = reorderedRoutines.remove(at: currentIndex)
-            reorderedRoutines.insert(movedRoutine, at: clampedInsertionIndex(index, count: reorderedRoutines.count))
-            movedRoutine.group = destinationGroup
-            movedRoutine.groupID = destinationGroup.id
-
-            normalizeRoutineSortOrders(reorderedRoutines, now: now)
-            destinationGroup.updatedAt = now
-        } else {
-            let sourceRoutines = try routines(inGroupID: sourceGroupID).filter { $0.id != routine.id }
-            var destinationRoutines = try routines(inGroupID: destinationGroup.id)
-
-            routine.group = destinationGroup
-            routine.groupID = destinationGroup.id
-            destinationRoutines.insert(routine, at: clampedInsertionIndex(index, count: destinationRoutines.count))
-
-            normalizeRoutineSortOrders(sourceRoutines, now: now)
-            normalizeRoutineSortOrders(destinationRoutines, now: now)
-
-            if let sourceGroup = try? context.group(id: sourceGroupID) {
-                sourceGroup.updatedAt = now
-            }
-            destinationGroup.updatedAt = now
-        }
 
         routine.updatedAt = now
 
         do {
             try context.saveRoutineChanges()
+            logMutationSucceeded(operation: "moveRoutine", details: successDetails)
         } catch {
             rollbackPendingChanges()
+            logMutationFailed(
+                operation: "moveRoutine",
+                details:
+                    "routineID=\(routine.id.uuidString) sourceGroupID=\(sourceGroupID.uuidString) "
+                    + "destinationGroupID=\(destinationGroup.id.uuidString) requestedIndex=\(index)",
+                error: error
+            )
             throw error
         }
     }
@@ -180,8 +214,17 @@ final class RoutineManagementService {
 
         do {
             try context.saveRoutineChanges()
+            logMutationSucceeded(
+                operation: "createGroup",
+                details: "groupID=\(group.id.uuidString) groupCount=\(groups.count + 1)"
+            )
         } catch {
             rollbackPendingChanges(insertedGroupIDs: [group.id])
+            logMutationFailed(
+                operation: "createGroup",
+                details: "groupID=\(group.id.uuidString)",
+                error: error
+            )
             throw error
         }
 
@@ -202,8 +245,17 @@ final class RoutineManagementService {
 
         do {
             try context.saveRoutineChanges()
+            logMutationSucceeded(
+                operation: "renameGroup",
+                details: "groupID=\(group.id.uuidString) sortOrder=\(group.sortOrder)"
+            )
         } catch {
             rollbackPendingChanges()
+            logMutationFailed(
+                operation: "renameGroup",
+                details: "groupID=\(group.id.uuidString)",
+                error: error
+            )
             throw error
         }
     }
@@ -223,8 +275,17 @@ final class RoutineManagementService {
 
         do {
             try context.saveRoutineChanges()
+            logMutationSucceeded(
+                operation: "deleteGroup",
+                details: "groupID=\(group.id.uuidString) remainingCount=\(remainingGroups.count)"
+            )
         } catch {
             rollbackPendingChanges()
+            logMutationFailed(
+                operation: "deleteGroup",
+                details: "groupID=\(group.id.uuidString)",
+                error: error
+            )
             throw error
         }
     }
@@ -236,18 +297,32 @@ final class RoutineManagementService {
         }
 
         let group = groups.remove(at: currentIndex)
-        groups.insert(group, at: clampedInsertionIndex(index, count: groups.count))
+        let destinationIndex = clampedInsertionIndex(index, count: groups.count)
+        groups.insert(group, at: destinationIndex)
         normalizeGroupSortOrders(groups, now: now)
 
         do {
             try context.saveRoutineChanges()
+            logMutationSucceeded(
+                operation: "moveGroup",
+                details:
+                    "groupID=\(group.id.uuidString) fromIndex=\(currentIndex) "
+                    + "toIndex=\(destinationIndex) groupCount=\(groups.count)"
+            )
         } catch {
             rollbackPendingChanges()
+            logMutationFailed(
+                operation: "moveGroup",
+                details: "groupID=\(group.id.uuidString) requestedIndex=\(index)",
+                error: error
+            )
             throw error
         }
     }
+}
 
-    private func orderedGroups() throws -> [RoutineGroup] {
+extension RoutineManagementService {
+    fileprivate func orderedGroups() throws -> [RoutineGroup] {
         let descriptor = FetchDescriptor<RoutineGroup>(
             sortBy: [SortDescriptor(\RoutineGroup.sortOrder), SortDescriptor(\RoutineGroup.name)]
         )
@@ -257,11 +332,12 @@ final class RoutineManagementService {
         } catch let error as PersistenceError {
             throw error
         } catch {
+            logFetchFailed(operation: "orderedGroups", details: "fetch=groups", error: error)
             throw PersistenceError.fetchFailed(String(describing: error))
         }
     }
 
-    private func routines(inGroupID groupID: UUID) throws -> [Routine] {
+    fileprivate func routines(inGroupID groupID: UUID) throws -> [Routine] {
         let descriptor = FetchDescriptor<Routine>(
             predicate: #Predicate<Routine> { routine in
                 routine.groupID == groupID
@@ -274,11 +350,16 @@ final class RoutineManagementService {
         } catch let error as PersistenceError {
             throw error
         } catch {
+            logFetchFailed(
+                operation: "routines",
+                details: "groupID=\(groupID.uuidString)",
+                error: error
+            )
             throw PersistenceError.fetchFailed(String(describing: error))
         }
     }
 
-    private func normalizeRoutineSortOrders(_ routines: [Routine], now: Date) {
+    fileprivate func normalizeRoutineSortOrders(_ routines: [Routine], now: Date) {
         let sortOrders = normalizedSortOrders(for: routines.map(\.id))
 
         for routine in routines {
@@ -293,7 +374,7 @@ final class RoutineManagementService {
         }
     }
 
-    private func normalizeGroupSortOrders(_ groups: [RoutineGroup], now: Date) {
+    fileprivate func normalizeGroupSortOrders(_ groups: [RoutineGroup], now: Date) {
         let sortOrders = normalizedSortOrders(for: groups.map(\.id))
 
         for group in groups {
@@ -308,11 +389,65 @@ final class RoutineManagementService {
         }
     }
 
-    private func clampedInsertionIndex(_ index: Int, count: Int) -> Int {
+    fileprivate func clampedInsertionIndex(_ index: Int, count: Int) -> Int {
         min(max(index, 0), count)
     }
 
-    private func rollbackPendingChanges(
+    fileprivate func moveRoutineWithinGroup(
+        _ routine: Routine,
+        destinationGroup: RoutineGroup,
+        requestedIndex: Int,
+        now: Date
+    ) throws -> String {
+        var reorderedRoutines = try routines(inGroupID: destinationGroup.id)
+        guard let currentIndex = reorderedRoutines.firstIndex(where: { $0.id == routine.id }) else {
+            throw PersistenceError.routineNotFound(routine.id)
+        }
+
+        let movedRoutine = reorderedRoutines.remove(at: currentIndex)
+        let destinationIndex = clampedInsertionIndex(requestedIndex, count: reorderedRoutines.count)
+        reorderedRoutines.insert(movedRoutine, at: destinationIndex)
+        movedRoutine.group = destinationGroup
+        movedRoutine.groupID = destinationGroup.id
+
+        normalizeRoutineSortOrders(reorderedRoutines, now: now)
+        destinationGroup.updatedAt = now
+
+        return
+            "routineID=\(routine.id.uuidString) groupID=\(destinationGroup.id.uuidString) "
+            + "fromIndex=\(currentIndex) toIndex=\(destinationIndex) routineCount=\(reorderedRoutines.count)"
+    }
+
+    fileprivate func moveRoutineAcrossGroups(
+        _ routine: Routine,
+        sourceGroupID: UUID,
+        destinationGroup: RoutineGroup,
+        requestedIndex: Int,
+        now: Date
+    ) throws -> String {
+        let sourceRoutines = try routines(inGroupID: sourceGroupID).filter { $0.id != routine.id }
+        var destinationRoutines = try routines(inGroupID: destinationGroup.id)
+        let destinationIndex = clampedInsertionIndex(requestedIndex, count: destinationRoutines.count)
+
+        routine.group = destinationGroup
+        routine.groupID = destinationGroup.id
+        destinationRoutines.insert(routine, at: destinationIndex)
+
+        normalizeRoutineSortOrders(sourceRoutines, now: now)
+        normalizeRoutineSortOrders(destinationRoutines, now: now)
+
+        if let sourceGroup = try? context.group(id: sourceGroupID) {
+            sourceGroup.updatedAt = now
+        }
+        destinationGroup.updatedAt = now
+
+        return
+            "routineID=\(routine.id.uuidString) sourceGroupID=\(sourceGroupID.uuidString) "
+            + "destinationGroupID=\(destinationGroup.id.uuidString) toIndex=\(destinationIndex) "
+            + "sourceCount=\(sourceRoutines.count) destinationCount=\(destinationRoutines.count)"
+    }
+
+    fileprivate func rollbackPendingChanges(
         insertedRoutineIDs: [UUID] = [],
         insertedGroupIDs: [UUID] = []
     ) {
@@ -333,5 +468,23 @@ final class RoutineManagementService {
         if insertedRoutineIDs.isEmpty == false || insertedGroupIDs.isEmpty == false {
             context.rollback()
         }
+    }
+
+    fileprivate func logMutationSucceeded(operation: String, details: String) {
+        Self.logger.debug("\(operation, privacy: .public) saved. \(details, privacy: .public)")
+    }
+
+    fileprivate func logMutationFailed(operation: String, details: String, error: Error) {
+        let errorText = String(describing: error)
+        Self.logger.error(
+            "\(operation, privacy: .public) saveFailed \(details, privacy: .public) e=\(errorText, privacy: .private)"
+        )
+    }
+
+    fileprivate func logFetchFailed(operation: String, details: String, error: Error) {
+        let errorText = String(describing: error)
+        Self.logger.error(
+            "\(operation, privacy: .public) fetchFailed \(details, privacy: .public) e=\(errorText, privacy: .private)"
+        )
     }
 }
