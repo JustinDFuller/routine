@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**CURRENT: M01 - Project Scaffold And Local Tooling**
+**CURRENT: M02 - RoutineCore Domain Logic**
 
 The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -89,8 +89,8 @@ Core invariants that require automated coverage when touched:
 
 | Status | Milestone | Working State |
 | --- | --- | --- |
-| CURRENT | M01 - Project Scaffold And Local Tooling | Repo has a generated iOS project, portable package target, scripts, and a minimal app shell. |
-| NOT STARTED | M02 - RoutineCore Domain Logic | Portable domain logic is implemented and tested locally and in Ubuntu CI. |
+| DONE | M01 - Project Scaffold And Local Tooling | Repo has a generated iOS project, portable package target, scripts, and a minimal app shell. |
+| CURRENT | M02 - RoutineCore Domain Logic | Portable domain logic is implemented and tested locally and in Ubuntu CI. |
 | NOT STARTED | M03 - SwiftData Persistence Foundation | App has canonical SwiftData models, container setup, fetch helpers, and in-memory test support. |
 | NOT STARTED | M04 - Starter Data Seeding | First launch seeds editable dogfooding routines exactly once. |
 | NOT STARTED | M05 - Tracking Service | Completing, duplicate prevention, undo, and historical removal work through tested services. |
@@ -108,7 +108,7 @@ Core invariants that require automated coverage when touched:
 
 ### M01 - Project Scaffold And Local Tooling
 
-Status: `CURRENT`
+Status: `DONE`
 
 Goal: create a buildable project foundation that later agents can extend without deciding project shape.
 
@@ -142,9 +142,13 @@ Completion update:
 - Mark this milestone `DONE`.
 - Mark M02 `CURRENT`.
 
+Completion note:
+
+- `Scripts/validate.sh` completed with explicit skips for the generic iOS build and iOS tests because this machine does not have an eligible generic iOS device destination or simulator runtime installed.
+
 ### M02 - RoutineCore Domain Logic
 
-Status: `NOT STARTED`
+Status: `CURRENT`
 
 Goal: implement portable domain values and pure business logic before SwiftData or SwiftUI depends on them.
 
