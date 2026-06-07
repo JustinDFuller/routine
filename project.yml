@@ -63,6 +63,7 @@ targets:
       - path: RoutineAppTests
     settings:
       base:
+        GENERATE_INFOPLIST_FILE: true
         PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routine.tests
         TEST_HOST: $(BUILT_PRODUCTS_DIR)/Routine.app/Routine
         BUNDLE_LOADER: $(TEST_HOST)
@@ -77,6 +78,7 @@ targets:
       - path: RoutineAppUITests
     settings:
       base:
+        GENERATE_INFOPLIST_FILE: true
         PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routine.uitests
     dependencies:
       - target: RoutineApp
