@@ -129,6 +129,38 @@ final class StarterDataServiceTests: XCTestCase {
         } catch {
             XCTFail("Expected PersistenceError, got \(error).")
         }
+
+        XCTAssertTrue(try fetchGroups(in: context).isEmpty)
+        XCTAssertTrue(try fetchRoutines(in: context).isEmpty)
+        XCTAssertTrue(try fetchMetadata(in: context).isEmpty)
+    }
+
+    func testSeedIfNeededCanRetryAfterSaveFailureLeavesContextClean() throws {
+        let context = try makeContext()
+        let service = StarterDataService(context: context)
+        let originalSave = RoutinePersistenceSaveExecutor.save
+        defer { RoutinePersistenceSaveExecutor.save = originalSave }
+
+        RoutinePersistenceSaveExecutor.save = { _ in
+            throw SimulatedStarterDataSaveFailure()
+        }
+
+        XCTAssertThrowsError(try service.seedIfNeeded(now: Date(timeIntervalSinceReferenceDate: 10)))
+        XCTAssertTrue(try fetchGroups(in: context).isEmpty)
+        XCTAssertTrue(try fetchRoutines(in: context).isEmpty)
+        XCTAssertTrue(try fetchMetadata(in: context).isEmpty)
+
+        RoutinePersistenceSaveExecutor.save = originalSave
+
+        try service.seedIfNeeded(now: Date(timeIntervalSinceReferenceDate: 20))
+
+        XCTAssertEqual(try fetchGroups(in: context).count, 6)
+        XCTAssertEqual(try fetchRoutines(in: context).count, 20)
+        XCTAssertEqual(try fetchMetadata(in: context).count, 1)
+
+        let metadata = try XCTUnwrap(try fetchMetadata(in: context).first)
+        XCTAssertEqual(metadata.key, StarterDataService.seedMetadataKey)
+        XCTAssertEqual(metadata.value, StarterDataService.seedMetadataValue)
     }
 
     private func makeContext() throws -> ModelContext {

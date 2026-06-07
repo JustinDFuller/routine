@@ -24,28 +24,48 @@ final class StarterDataService {
             return
         }
 
-        let groups = makeGroups(now: now)
+        var insertedGroups: [RoutineGroup] = []
+        var insertedRoutines: [Routine] = []
+        var insertedMetadata: [AppMetadata] = []
 
-        for group in groups {
-            context.insert(group)
-        }
+        do {
+            let groups = makeGroups(now: now)
 
-        try insertRoutines(using: groups, now: now)
+            for group in groups {
+                context.insert(group)
+                insertedGroups.append(group)
+            }
 
-        context.insert(
-            AppMetadata(
+            insertedRoutines = try insertRoutines(using: groups, now: now)
+
+            let metadata = AppMetadata(
                 key: Self.seedMetadataKey,
                 value: Self.seedMetadataValue,
                 updatedAt: now
             )
-        )
+            context.insert(metadata)
+            insertedMetadata.append(metadata)
+
+        } catch {
+            deleteInsertedSeedData(
+                metadata: insertedMetadata,
+                routines: insertedRoutines,
+                groups: insertedGroups
+            )
+            throw error
+        }
 
         do {
             try context.saveRoutineChanges()
             Self.logger.info(
-                "Starter data seeded with \(groups.count, privacy: .public) groups and \(StarterSeed.routineCount, privacy: .public) routines."
+                "Starter data seeded with \(insertedGroups.count, privacy: .public) groups and \(StarterSeed.routineCount, privacy: .public) routines."
             )
         } catch {
+            deleteInsertedSeedData(
+                metadata: insertedMetadata,
+                routines: insertedRoutines,
+                groups: insertedGroups
+            )
             Self.logger.error("Starter data save failed: \(String(describing: error), privacy: .private)")
             throw error
         }
@@ -76,8 +96,9 @@ final class StarterDataService {
         }
     }
 
-    private func insertRoutines(using groups: [RoutineGroup], now: Date) throws {
+    private func insertRoutines(using groups: [RoutineGroup], now: Date) throws -> [Routine] {
         let groupsByName = Dictionary(uniqueKeysWithValues: groups.map { ($0.name, $0) })
+        var insertedRoutines: [Routine] = []
 
         for groupSeed in StarterSeed.groupSeeds {
             guard let group = groupsByName[groupSeed.name] else {
@@ -85,18 +106,38 @@ final class StarterDataService {
             }
 
             for routineSeed in groupSeed.routines {
-                context.insert(
-                    Routine(
-                        name: routineSeed.name,
-                        targetCount: routineSeed.targetCount,
-                        period: routineSeed.period,
-                        sortOrder: routineSeed.sortOrder,
-                        group: group,
-                        createdAt: now,
-                        updatedAt: now
-                    )
+                let routine = Routine(
+                    name: routineSeed.name,
+                    targetCount: routineSeed.targetCount,
+                    period: routineSeed.period,
+                    sortOrder: routineSeed.sortOrder,
+                    group: group,
+                    createdAt: now,
+                    updatedAt: now
                 )
+                context.insert(routine)
+                insertedRoutines.append(routine)
             }
+        }
+
+        return insertedRoutines
+    }
+
+    private func deleteInsertedSeedData(
+        metadata: [AppMetadata],
+        routines: [Routine],
+        groups: [RoutineGroup]
+    ) {
+        for item in metadata {
+            context.delete(item)
+        }
+
+        for routine in routines {
+            context.delete(routine)
+        }
+
+        for group in groups {
+            context.delete(group)
         }
     }
 }

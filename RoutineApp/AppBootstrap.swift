@@ -27,9 +27,11 @@ enum AppBootstrap {
     }
 
     static func persistentContainer() throws -> ModelContainer {
-        if ProcessInfo.processInfo.arguments.contains("-routine-force-bootstrap-failure") {
-            throw ForcedBootstrapFailure()
-        }
+        #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("-routine-force-bootstrap-failure") {
+                throw ForcedBootstrapFailure()
+            }
+        #endif
 
         return try RoutineModelContainer.persistent()
     }
