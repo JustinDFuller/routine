@@ -2,6 +2,8 @@ included:
   - RoutineApp
   - RoutineAppTests
   - RoutineAppUITests
+  - RoutineCore/Sources
+  - RoutineCore/Tests
 
 excluded:
   - RoutineApp/Assets.xcassets
@@ -44,4 +46,3 @@ identifier_name:
     - id
     - x
     - y
-
