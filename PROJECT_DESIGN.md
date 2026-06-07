@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**CURRENT: M06 - Management Service**
+**CURRENT: M07 - Projection Layer**
 
 The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -94,8 +94,8 @@ Core invariants that require automated coverage when touched:
 | DONE | M03 - SwiftData Persistence Foundation | App has canonical SwiftData models, container setup, fetch helpers, and in-memory test support. |
 | DONE | M04 - Starter Data Seeding | First launch seeds editable dogfooding routines exactly once. |
 | DONE | M05 - Tracking Service | Completing, duplicate prevention, undo, and historical removal work through tested services. |
-| CURRENT | M06 - Management Service | Routine and group CRUD, validation, moves, and sort normalization work through tested services. |
-| NOT STARTED | M07 - Projection Layer | Dashboard, history, and manage screens have immutable view data builders. |
+| DONE | M06 - Management Service | Routine and group CRUD, validation, moves, and sort normalization work through tested services. |
+| CURRENT | M07 - Projection Layer | Dashboard, history, and manage screens have immutable view data builders. |
 | NOT STARTED | M08 - Visual Foundation Components | Color roles, progress ring, routine card, and undo banner components compile and render from view data. |
 | NOT STARTED | M09 - Today Dashboard Flow | The main dashboard shows seeded routines and supports one-tap completion with undo. |
 | NOT STARTED | M10 - Routine Management UI | The user can add, edit, delete, and assign routines from native management screens. |
@@ -321,7 +321,7 @@ Completion update:
 
 ### M06 - Management Service
 
-Status: `CURRENT`
+Status: `DONE`
 
 Goal: implement routine and group maintenance rules behind the future management UI.
 
@@ -369,7 +369,7 @@ Completion update:
 
 ### M07 - Projection Layer
 
-Status: `NOT STARTED`
+Status: `CURRENT`
 
 Goal: create immutable view data builders so SwiftUI screens render derived state without owning business rules.
 
