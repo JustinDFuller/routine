@@ -1,0 +1,91 @@
+name: Routine
+options:
+  createIntermediateGroups: true
+  defaultConfig: Debug
+settings:
+  base:
+    IPHONEOS_DEPLOYMENT_TARGET: 17.0
+    MARKETING_VERSION: 0.1.0
+    CURRENT_PROJECT_VERSION: 1
+    SWIFT_VERSION: 6.0
+    TARGETED_DEVICE_FAMILY: 1
+packages:
+  RoutineCore:
+    path: RoutineCore
+targets:
+  RoutineApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: RoutineApp
+    info:
+      path: RoutineApp/Info.plist
+      properties:
+        CFBundleDevelopmentRegion: en
+        CFBundleDisplayName: Routine
+        CFBundleExecutable: $(EXECUTABLE_NAME)
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleInfoDictionaryVersion: "6.0"
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundlePackageType: APPL
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSRequiresIPhoneOS: true
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routine
+        PRODUCT_NAME: Routine
+        SWIFT_STRICT_CONCURRENCY: targeted
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
+    dependencies:
+      - package: RoutineCore
+        product: RoutineCore
+    scheme:
+      gatherCoverageData: false
+      testTargets:
+        - RoutineAppTests
+        - RoutineAppUITests
+
+  RoutineAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: RoutineAppTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routine.tests
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Routine.app/Routine
+        BUNDLE_LOADER: $(TEST_HOST)
+    dependencies:
+      - target: RoutineApp
+
+  RoutineAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: RoutineAppUITests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routine.uitests
+    dependencies:
+      - target: RoutineApp
+schemes:
+  RoutineApp:
+    build:
+      targets:
+        RoutineApp: all
+    test:
+      gatherCoverageData: false
+      targets:
+        - name: RoutineAppTests
+        - name: RoutineAppUITests
+
