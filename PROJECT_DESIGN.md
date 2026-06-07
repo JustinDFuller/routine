@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**CURRENT: M02 - RoutineCore Domain Logic**
+**CURRENT: M03 - SwiftData Persistence Foundation**
 
 The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -90,8 +90,8 @@ Core invariants that require automated coverage when touched:
 | Status | Milestone | Working State |
 | --- | --- | --- |
 | DONE | M01 - Project Scaffold And Local Tooling | Repo has a generated iOS project, portable package target, scripts, and a minimal app shell. |
-| CURRENT | M02 - RoutineCore Domain Logic | Portable domain logic is implemented and tested locally and in Ubuntu CI. |
-| NOT STARTED | M03 - SwiftData Persistence Foundation | App has canonical SwiftData models, container setup, fetch helpers, and in-memory test support. |
+| DONE | M02 - RoutineCore Domain Logic | Portable domain logic is implemented and tested locally and in Ubuntu CI. |
+| CURRENT | M03 - SwiftData Persistence Foundation | App has canonical SwiftData models, container setup, fetch helpers, and in-memory test support. |
 | NOT STARTED | M04 - Starter Data Seeding | First launch seeds editable dogfooding routines exactly once. |
 | NOT STARTED | M05 - Tracking Service | Completing, duplicate prevention, undo, and historical removal work through tested services. |
 | NOT STARTED | M06 - Management Service | Routine and group CRUD, validation, moves, and sort normalization work through tested services. |
@@ -148,7 +148,7 @@ Completion note:
 
 ### M02 - RoutineCore Domain Logic
 
-Status: `CURRENT`
+Status: `DONE`
 
 Goal: implement portable domain values and pure business logic before SwiftData or SwiftUI depends on them.
 
@@ -192,9 +192,13 @@ Completion update:
 - Mark this milestone `DONE`.
 - Mark M03 `CURRENT`.
 
+Completion note:
+
+- `Scripts/validate.sh` completed with explicit skips for the generic iOS build and iOS tests because this machine does not have an eligible generic iOS destination or configured `IOS_TEST_DESTINATION`. The Ubuntu workflow runs `swift build` and `swift test`, but leaves `swift-format` as a local validation because adding a compatible formatter setup to Ubuntu was not practical for this milestone.
+
 ### M03 - SwiftData Persistence Foundation
 
-Status: `NOT STARTED`
+Status: `CURRENT`
 
 Goal: add the canonical local data model and testable persistence setup without implementing user workflows yet.
 

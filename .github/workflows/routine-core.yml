@@ -1,0 +1,32 @@
+name: RoutineCore
+
+on:
+  pull_request:
+    paths:
+      - "RoutineCore/**"
+      - ".swift-format"
+      - ".github/workflows/routine-core.yml"
+  push:
+    paths:
+      - "RoutineCore/**"
+      - ".swift-format"
+      - ".github/workflows/routine-core.yml"
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.0"
+
+      - name: Build RoutineCore
+        run: swift build --package-path RoutineCore
+
+      - name: Test RoutineCore
+        run: swift test --package-path RoutineCore
