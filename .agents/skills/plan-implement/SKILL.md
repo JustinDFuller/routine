@@ -21,3 +21,5 @@ Your task is to produce a plan that is aligned with the current milestone and fo
 You can and should, when necessary, identify problems with the spec that only come to light when you go to implement it. When this occurrs, please ask the user any questions needed to clarify the situation. You should not guess, particularly if it comes to the product or visual design.
 
 The PROJECT_DESIGN includes not only the info about your current milestone but also about the required workflow. You must not omit any steps from the required workflow and should even specify them as part of your plan.
+
+I expect the plan to be very detailed and long. I will take it and hand it to another agent. It should be able to pick up the plan and begin work without re-doing research or planning.
