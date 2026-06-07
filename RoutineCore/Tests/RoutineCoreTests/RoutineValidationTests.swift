@@ -62,4 +62,20 @@ final class RoutineValidationTests: XCTestCase {
             )
         )
     }
+
+    func testValidationErrorsExposeUserSafeDescriptions() {
+        XCTAssertEqual(RoutineValidationError.emptyName.errorDescription, "Name can't be empty.")
+        XCTAssertEqual(
+            RoutineValidationError.invalidTargetCount(period: .weekly, min: 1, max: 7).errorDescription,
+            "Weekly routines must be between 1 and 7."
+        )
+        XCTAssertEqual(
+            RoutineValidationError.invalidTargetCount(period: .monthly, min: 1, max: 31).errorDescription,
+            "Monthly routines must be between 1 and 31."
+        )
+        XCTAssertEqual(
+            RoutineValidationError.duplicateGroupName.errorDescription,
+            "A group with that name already exists."
+        )
+    }
 }

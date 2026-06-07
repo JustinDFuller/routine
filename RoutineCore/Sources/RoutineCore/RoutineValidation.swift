@@ -1,7 +1,25 @@
-public enum RoutineValidationError: Error, Equatable, Sendable {
+import Foundation
+
+public enum RoutineValidationError: LocalizedError, Equatable, Sendable {
     case emptyName
     case invalidTargetCount(period: RoutinePeriod, min: Int, max: Int)
     case duplicateGroupName
+
+    public var errorDescription: String? {
+        switch self {
+        case .emptyName:
+            "Name can't be empty."
+        case .invalidTargetCount(let period, let min, let max):
+            switch period {
+            case .weekly:
+                "Weekly routines must be between \(min) and \(max)."
+            case .monthly:
+                "Monthly routines must be between \(min) and \(max)."
+            }
+        case .duplicateGroupName:
+            "A group with that name already exists."
+        }
+    }
 }
 
 public func trimmedRoutineName(_ name: String) throws -> String {
