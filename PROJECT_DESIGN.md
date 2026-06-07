@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**CURRENT: M07 - Projection Layer**
+**CURRENT: M08 - Visual Foundation Components**
 
 The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -95,8 +95,8 @@ Core invariants that require automated coverage when touched:
 | DONE | M04 - Starter Data Seeding | First launch seeds editable dogfooding routines exactly once. |
 | DONE | M05 - Tracking Service | Completing, duplicate prevention, undo, and historical removal work through tested services. |
 | DONE | M06 - Management Service | Routine and group CRUD, validation, moves, and sort normalization work through tested services. |
-| CURRENT | M07 - Projection Layer | Dashboard, history, and manage screens have immutable view data builders. |
-| NOT STARTED | M08 - Visual Foundation Components | Color roles, progress ring, routine card, and undo banner components compile and render from view data. |
+| DONE | M07 - Projection Layer | Dashboard, history, and manage screens have immutable view data builders. |
+| CURRENT | M08 - Visual Foundation Components | Color roles, progress ring, routine card, and undo banner components compile and render from view data. |
 | NOT STARTED | M09 - Today Dashboard Flow | The main dashboard shows seeded routines and supports one-tap completion with undo. |
 | NOT STARTED | M10 - Routine Management UI | The user can add, edit, delete, and assign routines from native management screens. |
 | NOT STARTED | M11 - Group And Reorder UI | The user can manage groups and reorder routines/groups through native controls. |
@@ -369,7 +369,7 @@ Completion update:
 
 ### M07 - Projection Layer
 
-Status: `CURRENT`
+Status: `DONE`
 
 Goal: create immutable view data builders so SwiftUI screens render derived state without owning business rules.
 
@@ -417,7 +417,7 @@ Completion update:
 
 ### M08 - Visual Foundation Components
 
-Status: `NOT STARTED`
+Status: `CURRENT`
 
 Goal: establish the reusable visual language before wiring complete screens.
 
