@@ -9,6 +9,30 @@ enum RoutinePersistenceSaveExecutor {
 }
 
 @MainActor
+enum RoutinePersistenceFetchExecutor {
+    typealias RoutineFetcher = (ModelContext, FetchDescriptor<Routine>) throws -> [Routine]
+    typealias GroupFetcher = (ModelContext, FetchDescriptor<RoutineGroup>) throws -> [RoutineGroup]
+    typealias CompletionFetcher = (ModelContext, FetchDescriptor<RoutineCompletion>) throws -> [RoutineCompletion]
+    typealias MetadataFetcher = (ModelContext, FetchDescriptor<AppMetadata>) throws -> [AppMetadata]
+
+    static var fetchRoutines: RoutineFetcher = { context, descriptor in
+        try context.fetch(descriptor)
+    }
+
+    static var fetchGroups: GroupFetcher = { context, descriptor in
+        try context.fetch(descriptor)
+    }
+
+    static var fetchCompletions: CompletionFetcher = { context, descriptor in
+        try context.fetch(descriptor)
+    }
+
+    static var fetchMetadata: MetadataFetcher = { context, descriptor in
+        try context.fetch(descriptor)
+    }
+}
+
+@MainActor
 extension ModelContext {
     func routine(id: UUID) throws -> Routine {
         let descriptor = FetchDescriptor<Routine>(
@@ -17,11 +41,17 @@ extension ModelContext {
             }
         )
 
-        guard let routine = try fetch(descriptor).first else {
-            throw PersistenceError.routineNotFound(id)
-        }
+        do {
+            guard let routine = try RoutinePersistenceFetchExecutor.fetchRoutines(self, descriptor).first else {
+                throw PersistenceError.routineNotFound(id)
+            }
 
-        return routine
+            return routine
+        } catch let error as PersistenceError {
+            throw error
+        } catch {
+            throw PersistenceError.fetchFailed(String(describing: error))
+        }
     }
 
     func group(id: UUID) throws -> RoutineGroup {
@@ -31,11 +61,17 @@ extension ModelContext {
             }
         )
 
-        guard let group = try fetch(descriptor).first else {
-            throw PersistenceError.groupNotFound(id)
-        }
+        do {
+            guard let group = try RoutinePersistenceFetchExecutor.fetchGroups(self, descriptor).first else {
+                throw PersistenceError.groupNotFound(id)
+            }
 
-        return group
+            return group
+        } catch let error as PersistenceError {
+            throw error
+        } catch {
+            throw PersistenceError.fetchFailed(String(describing: error))
+        }
     }
 
     func completion(id: UUID) throws -> RoutineCompletion {
@@ -45,11 +81,17 @@ extension ModelContext {
             }
         )
 
-        guard let completion = try fetch(descriptor).first else {
-            throw PersistenceError.completionNotFound(id)
-        }
+        do {
+            guard let completion = try RoutinePersistenceFetchExecutor.fetchCompletions(self, descriptor).first else {
+                throw PersistenceError.completionNotFound(id)
+            }
 
-        return completion
+            return completion
+        } catch let error as PersistenceError {
+            throw error
+        } catch {
+            throw PersistenceError.fetchFailed(String(describing: error))
+        }
     }
 
     func metadata(key: String) throws -> AppMetadata {
@@ -59,11 +101,17 @@ extension ModelContext {
             }
         )
 
-        guard let metadata = try fetch(descriptor).first else {
-            throw PersistenceError.metadataNotFound(key)
-        }
+        do {
+            guard let metadata = try RoutinePersistenceFetchExecutor.fetchMetadata(self, descriptor).first else {
+                throw PersistenceError.metadataNotFound(key)
+            }
 
-        return metadata
+            return metadata
+        } catch let error as PersistenceError {
+            throw error
+        } catch {
+            throw PersistenceError.fetchFailed(String(describing: error))
+        }
     }
 
     func completion(routineID: UUID, dayKey: String) throws -> RoutineCompletion? {
@@ -78,7 +126,11 @@ extension ModelContext {
             }
         )
 
-        return try fetch(descriptor).first
+        do {
+            return try RoutinePersistenceFetchExecutor.fetchCompletions(self, descriptor).first
+        } catch {
+            throw PersistenceError.fetchFailed(String(describing: error))
+        }
     }
 
     func ensureNoCompletion(routineID: UUID, dayKey: String) throws {

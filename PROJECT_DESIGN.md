@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**CURRENT: M05 - Tracking Service**
+**CURRENT: M06 - Management Service**
 
 The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -93,8 +93,8 @@ Core invariants that require automated coverage when touched:
 | DONE | M02 - RoutineCore Domain Logic | Portable domain logic is implemented and tested locally and in Ubuntu CI. |
 | DONE | M03 - SwiftData Persistence Foundation | App has canonical SwiftData models, container setup, fetch helpers, and in-memory test support. |
 | DONE | M04 - Starter Data Seeding | First launch seeds editable dogfooding routines exactly once. |
-| CURRENT | M05 - Tracking Service | Completing, duplicate prevention, undo, and historical removal work through tested services. |
-| NOT STARTED | M06 - Management Service | Routine and group CRUD, validation, moves, and sort normalization work through tested services. |
+| DONE | M05 - Tracking Service | Completing, duplicate prevention, undo, and historical removal work through tested services. |
+| CURRENT | M06 - Management Service | Routine and group CRUD, validation, moves, and sort normalization work through tested services. |
 | NOT STARTED | M07 - Projection Layer | Dashboard, history, and manage screens have immutable view data builders. |
 | NOT STARTED | M08 - Visual Foundation Components | Color roles, progress ring, routine card, and undo banner components compile and render from view data. |
 | NOT STARTED | M09 - Today Dashboard Flow | The main dashboard shows seeded routines and supports one-tap completion with undo. |
@@ -276,7 +276,7 @@ Completion update:
 
 ### M05 - Tracking Service
 
-Status: `CURRENT`
+Status: `DONE`
 
 Goal: implement the core daily-use mutation path behind the future dashboard.
 
@@ -321,7 +321,7 @@ Completion update:
 
 ### M06 - Management Service
 
-Status: `NOT STARTED`
+Status: `CURRENT`
 
 Goal: implement routine and group maintenance rules behind the future management UI.
 
