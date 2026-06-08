@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**CURRENT: M08 - Visual Foundation Components**
+**CURRENT: M09 - Today Dashboard Flow**
 
 The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -96,8 +96,8 @@ Core invariants that require automated coverage when touched:
 | DONE | M05 - Tracking Service | Completing, duplicate prevention, undo, and historical removal work through tested services. |
 | DONE | M06 - Management Service | Routine and group CRUD, validation, moves, and sort normalization work through tested services. |
 | DONE | M07 - Projection Layer | Dashboard, history, and manage screens have immutable view data builders. |
-| CURRENT | M08 - Visual Foundation Components | Color roles, progress ring, routine card, and undo banner components compile and render from view data. |
-| NOT STARTED | M09 - Today Dashboard Flow | The main dashboard shows seeded routines and supports one-tap completion with undo. |
+| DONE | M08 - Visual Foundation Components | Color roles, progress ring, routine card, and undo banner components compile and render from view data. |
+| CURRENT | M09 - Today Dashboard Flow | The main dashboard shows seeded routines and supports one-tap completion with undo. |
 | NOT STARTED | M10 - Routine Management UI | The user can add, edit, delete, and assign routines from native management screens. |
 | NOT STARTED | M11 - Group And Reorder UI | The user can manage groups and reorder routines/groups through native controls. |
 | NOT STARTED | M12 - Routine History UI | The user can inspect and correct routine-specific completion history. |
@@ -417,7 +417,7 @@ Completion update:
 
 ### M08 - Visual Foundation Components
 
-Status: `CURRENT`
+Status: `DONE`
 
 Goal: establish the reusable visual language before wiring complete screens.
 
@@ -459,9 +459,13 @@ Completion update:
 - Mark this milestone `DONE`.
 - Mark M09 `CURRENT`.
 
+Completion note:
+
+- Validation scripts completed successfully. Manual SwiftUI preview inspection in dark mode, light mode, large Dynamic Type, and Reduce Motion was not performed from this CLI session because Xcode preview rendering is not available here.
+
 ### M09 - Today Dashboard Flow
 
-Status: `NOT STARTED`
+Status: `CURRENT`
 
 Goal: make the primary app surface usable for daily tracking.
 
