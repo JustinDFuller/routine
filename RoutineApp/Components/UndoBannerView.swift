@@ -12,15 +12,19 @@ struct UndoBannerView: View {
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            Button(viewData.actionTitle, action: onUndo)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color.routineAccentActive)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule(style: .continuous)
-                        .fill(Color.routineAccentActive.opacity(0.12))
-                )
+            Button(action: onUndo) {
+                Text(viewData.actionTitle)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.routineAccentActive)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(Color.routineAccentActive.opacity(0.12))
+                    )
+            }
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
