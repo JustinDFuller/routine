@@ -5,6 +5,7 @@ import SwiftUI
 struct RootView: View {
     @Environment(\.modelContext) private var modelContext
 
+    @State private var path: [AppRoute] = []
     @State private var seedErrorIsPresented = false
 
     private static let logger = Logger(
@@ -13,18 +14,11 @@ struct RootView: View {
     )
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 12) {
-                Text("Routine")
-                    .font(.largeTitle.weight(.semibold))
-
-                Text("Milestone 1 scaffold")
-                    .font(.headline)
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding()
-            .navigationTitle("Today")
+        NavigationStack(path: $path) {
+            TodayDashboardView(path: $path)
+                .navigationDestination(for: AppRoute.self) { route in
+                    destination(for: route)
+                }
         }
         .task {
             do {
@@ -39,6 +33,16 @@ struct RootView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("You can still use Routine.")
+        }
+    }
+
+    @ViewBuilder
+    private func destination(for route: AppRoute) -> some View {
+        switch route {
+        case .manageRoutines:
+            ManageRoutinesPlaceholderView()
+        case .routineHistory(let routineID):
+            RoutineHistoryPlaceholderView(routineID: routineID)
         }
     }
 }

@@ -18,6 +18,15 @@ final class DashboardProjectionBuilder {
         let groups = try fetchGroups()
         let routines = try fetchRoutines()
         let completions = try fetchCompletions()
+        return build(groups: groups, routines: routines, completions: completions, now: now)
+    }
+
+    func build(
+        groups: [RoutineGroup],
+        routines: [Routine],
+        completions: [RoutineCompletion],
+        now: Date = .now
+    ) -> TodayDashboardViewData {
         let today = routineCalendar.today(now: now)
         let completionDaysByRoutineID = completionDaysByRoutineID(from: completions)
         let routinesByGroupID = Dictionary(grouping: routines, by: \.groupID)

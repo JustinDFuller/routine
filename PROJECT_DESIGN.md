@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**CURRENT: M09 - Today Dashboard Flow**
+**CURRENT: M10 - Routine Management UI**
 
 The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -97,8 +97,8 @@ Core invariants that require automated coverage when touched:
 | DONE | M06 - Management Service | Routine and group CRUD, validation, moves, and sort normalization work through tested services. |
 | DONE | M07 - Projection Layer | Dashboard, history, and manage screens have immutable view data builders. |
 | DONE | M08 - Visual Foundation Components | Color roles, progress ring, routine card, and undo banner components compile and render from view data. |
-| CURRENT | M09 - Today Dashboard Flow | The main dashboard shows seeded routines and supports one-tap completion with undo. |
-| NOT STARTED | M10 - Routine Management UI | The user can add, edit, delete, and assign routines from native management screens. |
+| DONE | M09 - Today Dashboard Flow | The main dashboard shows seeded routines and supports one-tap completion with undo. |
+| CURRENT | M10 - Routine Management UI | The user can add, edit, delete, and assign routines from native management screens. |
 | NOT STARTED | M11 - Group And Reorder UI | The user can manage groups and reorder routines/groups through native controls. |
 | NOT STARTED | M12 - Routine History UI | The user can inspect and correct routine-specific completion history. |
 | NOT STARTED | M13 - Accessibility, Polish, And UI Coverage | Primary flows satisfy accessibility, motion, visual, and UI-test expectations. |
@@ -465,7 +465,7 @@ Completion note:
 
 ### M09 - Today Dashboard Flow
 
-Status: `CURRENT`
+Status: `DONE`
 
 Goal: make the primary app surface usable for daily tracking.
 
@@ -518,9 +518,13 @@ Completion update:
 - Mark this milestone `DONE`.
 - Mark M10 `CURRENT`.
 
+Completion note:
+
+- `./Scripts/test-ios.sh` and `./Scripts/validate.sh` reached the iOS UI-test phase but could not complete because `xcodebuild` repeatedly failed to launch the simulator app with `FBSOpenApplicationServiceErrorDomain` / `Application failed preflight checks` on available iPhone simulator destinations. A direct `simctl` launch of the built app succeeded, and a screenshot-based manual check confirmed the seeded grouped dashboard render, but interactive manual completion/undo verification was not possible from this CLI session.
+
 ### M10 - Routine Management UI
 
-Status: `NOT STARTED`
+Status: `CURRENT`
 
 Goal: let the user create and maintain routines without leaving the app.
 

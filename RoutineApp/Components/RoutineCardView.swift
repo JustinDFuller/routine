@@ -95,6 +95,7 @@ struct RoutineCardView: View {
                     .fill(Color.routineAccentComplete.opacity(0.08))
             }
         }
+        .accessibilityIdentifier("routine-card-\(viewData.id.uuidString)")
     }
 
     @ViewBuilder
