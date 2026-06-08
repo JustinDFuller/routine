@@ -21,7 +21,7 @@ struct TodayDashboardView: View {
         sort: [
             SortDescriptor(\RoutineCompletion.routineID),
             SortDescriptor(\RoutineCompletion.dayKey),
-            SortDescriptor(\RoutineCompletion.completedAt),
+            SortDescriptor(\RoutineCompletion.completedAt)
         ]
     )
     private var completions: [RoutineCompletion]
