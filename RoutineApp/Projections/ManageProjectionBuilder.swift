@@ -13,6 +13,13 @@ final class ManageProjectionBuilder {
     func build() throws -> ManageRoutinesViewData {
         let groups = try fetchGroups()
         let routines = try fetchRoutines()
+        return build(groups: groups, routines: routines)
+    }
+
+    func build(
+        groups: [RoutineGroup],
+        routines: [Routine]
+    ) -> ManageRoutinesViewData {
         let routinesByGroupID = Dictionary(grouping: routines, by: \.groupID)
 
         var sections = groups.map { group in
@@ -37,8 +44,9 @@ final class ManageProjectionBuilder {
         }
 
         return ManageRoutinesViewData(
+            groupChoices: groups.map { ManageGroupChoiceViewData(id: $0.id, name: $0.name) },
             sections: sections,
-            isEmpty: sections.isEmpty
+            isEmpty: routines.isEmpty
         )
     }
 }
@@ -73,6 +81,9 @@ extension ManageProjectionBuilder {
         ManageRoutineRowViewData(
             id: routine.id,
             name: routine.name,
+            targetCount: routine.targetCount,
+            period: routine.period,
+            groupID: routine.groupID,
             summaryText: summaryText(
                 targetCount: routine.targetCount,
                 period: routine.period

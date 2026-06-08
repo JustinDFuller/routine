@@ -39,8 +39,8 @@ struct RootView: View {
     @ViewBuilder
     private func destination(for route: AppRoute) -> some View {
         switch route {
-        case .manageRoutines:
-            ManageRoutinesPlaceholderView()
+        case .manageRoutines(let editingRoutineID):
+            ManageRoutinesView(initialEditRoutineID: editingRoutineID)
         case .routineHistory(let routineID):
             RoutineHistoryPlaceholderView(routineID: routineID)
         }

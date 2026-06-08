@@ -79,8 +79,14 @@ struct CompletionListItem: Identifiable, Equatable, Sendable {
 }
 
 struct ManageRoutinesViewData: Equatable, Sendable {
+    let groupChoices: [ManageGroupChoiceViewData]
     let sections: [ManageGroupSectionViewData]
     let isEmpty: Bool
+}
+
+struct ManageGroupChoiceViewData: Identifiable, Equatable, Sendable {
+    let id: UUID
+    let name: String
 }
 
 struct ManageGroupSectionViewData: Identifiable, Equatable, Sendable {
@@ -92,6 +98,9 @@ struct ManageGroupSectionViewData: Identifiable, Equatable, Sendable {
 struct ManageRoutineRowViewData: Identifiable, Equatable, Sendable {
     let id: UUID
     let name: String
+    let targetCount: Int
+    let period: RoutinePeriod
+    let groupID: UUID
     let summaryText: String
 }
 

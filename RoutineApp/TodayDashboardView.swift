@@ -78,7 +78,7 @@ struct TodayDashboardView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Manage") {
-                    path.append(.manageRoutines)
+                    path.append(.manageRoutines(editingRoutineID: nil))
                 }
             }
         }
@@ -106,7 +106,7 @@ struct TodayDashboardView: View {
 
             Button("Edit Routine") {
                 self.selectedCard = nil
-                path.append(.manageRoutines)
+                path.append(.manageRoutines(editingRoutineID: selectedCard.id))
             }
 
             if selectedCard.isCompletedToday {
@@ -175,7 +175,7 @@ struct TodayDashboardView: View {
                 .foregroundStyle(Color.routineLabelSecondary)
 
             Button("Manage") {
-                path.append(.manageRoutines)
+                path.append(.manageRoutines(editingRoutineID: nil))
             }
             .buttonStyle(.borderedProminent)
             .tint(Color.routineAccentActive)
@@ -313,20 +313,6 @@ private struct DashboardErrorAlert: Equatable {
     ) {
         self.title = title
         self.message = message
-    }
-}
-
-struct ManageRoutinesPlaceholderView: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Routine management is coming in the next milestone.")
-                .font(.body)
-                .foregroundStyle(Color.routineLabelSecondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(24)
-        .background(Color.routineCanvas.ignoresSafeArea())
-        .navigationTitle("Manage Routines")
     }
 }
 

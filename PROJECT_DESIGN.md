@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**CURRENT: M10 - Routine Management UI**
+**CURRENT: M11 - Group And Reorder UI**
 
 The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -98,8 +98,8 @@ Core invariants that require automated coverage when touched:
 | DONE | M07 - Projection Layer | Dashboard, history, and manage screens have immutable view data builders. |
 | DONE | M08 - Visual Foundation Components | Color roles, progress ring, routine card, and undo banner components compile and render from view data. |
 | DONE | M09 - Today Dashboard Flow | The main dashboard shows seeded routines and supports one-tap completion with undo. |
-| CURRENT | M10 - Routine Management UI | The user can add, edit, delete, and assign routines from native management screens. |
-| NOT STARTED | M11 - Group And Reorder UI | The user can manage groups and reorder routines/groups through native controls. |
+| DONE | M10 - Routine Management UI | The user can add, edit, delete, and assign routines from native management screens. |
+| CURRENT | M11 - Group And Reorder UI | The user can manage groups and reorder routines/groups through native controls. |
 | NOT STARTED | M12 - Routine History UI | The user can inspect and correct routine-specific completion history. |
 | NOT STARTED | M13 - Accessibility, Polish, And UI Coverage | Primary flows satisfy accessibility, motion, visual, and UI-test expectations. |
 | NOT STARTED | M14 - Dogfooding Readiness | Local validation, diagnostics, privacy, app icon, and device-readiness checks are complete. |
@@ -524,7 +524,7 @@ Completion note:
 
 ### M10 - Routine Management UI
 
-Status: `CURRENT`
+Status: `DONE`
 
 Goal: let the user create and maintain routines without leaving the app.
 
@@ -568,9 +568,13 @@ Completion update:
 - Mark this milestone `DONE`.
 - Mark M11 `CURRENT`.
 
+Completion note:
+
+- Passed `./Scripts/test-core.sh`, targeted iOS management/form/projection tests, `./Scripts/check-format.sh`, `./Scripts/lint.sh`, and `./Scripts/build-ios.sh`. A follow-up `./Scripts/test-ios.sh` run reached only the UI-test phase and failed because the simulator repeatedly returned `FBSOpenApplicationServiceErrorDomain` / `Application failed preflight checks` while launching the app, so full UI-test coverage and manual add/edit/delete simulator verification were skipped.
+
 ### M11 - Group And Reorder UI
 
-Status: `NOT STARTED`
+Status: `CURRENT`
 
 Goal: complete routine organization controls with native group and ordering behavior.
 
