@@ -29,6 +29,8 @@ struct AddEditRoutineView: View {
                     Section {
                         Text(validationMessage)
                             .foregroundStyle(Color.routineAccentDestructive)
+                            .accessibilityLabel("Validation message: \(validationMessage)")
+                            .accessibilityIdentifier("routine-form-validation-message")
                     }
                 }
 
@@ -46,12 +48,14 @@ struct AddEditRoutineView: View {
                                 .foregroundStyle(Color.routineLabelSecondary)
                         }
                     }
+                    .accessibilityIdentifier("routine-form-target-stepper")
 
                     Picker("Period", selection: $formState.period) {
                         Text("Weekly").tag(RoutinePeriod.weekly)
                         Text("Monthly").tag(RoutinePeriod.monthly)
                     }
                     .pickerStyle(.segmented)
+                    .accessibilityIdentifier("routine-form-period-picker")
 
                     if groupChoices.isEmpty {
                         LabeledContent("Group") {
@@ -66,6 +70,7 @@ struct AddEditRoutineView: View {
                                 Text(group.name).tag(Optional(group.id))
                             }
                         }
+                        .accessibilityIdentifier("routine-form-group-picker")
                     }
                 }
 
@@ -74,6 +79,7 @@ struct AddEditRoutineView: View {
                         Button("Delete Routine", role: .destructive) {
                             isDeleteConfirmationPresented = true
                         }
+                        .accessibilityHint("Deletes this routine and its completion history after confirmation.")
                         .accessibilityIdentifier("routine-form-delete-button")
                     }
                 }

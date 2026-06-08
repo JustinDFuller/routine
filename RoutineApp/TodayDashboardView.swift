@@ -6,6 +6,7 @@ struct TodayDashboardView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.routineRuntimeConfiguration) private var runtime
 
     @Query(
         sort: [SortDescriptor(\RoutineGroup.sortOrder), SortDescriptor(\RoutineGroup.name)]
@@ -36,12 +37,13 @@ struct TodayDashboardView: View {
         DashboardProjectionBuilder(context: modelContext).build(
             groups: groups,
             routines: routines,
-            completions: completions
+            completions: completions,
+            now: runtime.now
         )
     }
 
     private var bannerTransition: AnyTransition {
-        if reduceMotion {
+        if animationsAreDisabled {
             return .opacity
         }
 
@@ -49,7 +51,11 @@ struct TodayDashboardView: View {
     }
 
     private var bannerAnimation: Animation? {
-        reduceMotion ? nil : .easeInOut(duration: 0.2)
+        animationsAreDisabled ? nil : .easeInOut(duration: 0.2)
+    }
+
+    private var animationsAreDisabled: Bool {
+        reduceMotion || runtime.disablesAnimations
     }
 
     var body: some View {
@@ -81,6 +87,8 @@ struct TodayDashboardView: View {
                 Button("Manage") {
                     path.append(.manageRoutines(editingRoutineID: nil))
                 }
+                .accessibilityHint("Opens routine management.")
+                .accessibilityIdentifier("today-dashboard-manage-button")
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -88,7 +96,6 @@ struct TodayDashboardView: View {
                 UndoBannerView(viewData: undoBanner.viewData) {
                     undoCompletion(routineID: undoBanner.routineID)
                 }
-                .accessibilityIdentifier("today-dashboard-undo-banner")
                 .padding(.horizontal, 16)
                 .padding(.bottom, 8)
                 .transition(bannerTransition)
@@ -185,9 +192,10 @@ struct TodayDashboardView: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(Color.routineAccentActive)
+            .accessibilityHint("Opens routine management.")
+            .accessibilityIdentifier("today-dashboard-empty-manage-button")
         }
         .frame(maxWidth: .infinity, minHeight: 280, alignment: .center)
-        .accessibilityIdentifier("today-dashboard-empty-state")
     }
 
     private var selectedCardDialogIsPresented: Binding<Bool> {
@@ -222,11 +230,15 @@ struct TodayDashboardView: View {
         }
 
         do {
-            let result = try RoutineTrackingService(context: modelContext).completeToday(routineID: routine.id)
+            let result = try RoutineTrackingService(context: modelContext).completeToday(
+                routineID: routine.id,
+                now: runtime.now
+            )
             guard result.didInsert else {
                 return
             }
 
+            RoutineHaptics.signalCompletion()
             showUndoBanner(
                 routineID: result.routineID,
                 message: "Completed \(result.routineName)"
@@ -238,12 +250,17 @@ struct TodayDashboardView: View {
 
     private func undoCompletion(routineID: UUID) {
         do {
-            let result = try RoutineTrackingService(context: modelContext).undoToday(routineID: routineID)
+            let result = try RoutineTrackingService(context: modelContext).undoToday(
+                routineID: routineID,
+                now: runtime.now
+            )
             clearUndoBanner()
 
             guard result.didRemove else {
                 return
             }
+
+            RoutineHaptics.signalUndo()
         } catch {
             presentUpdateError(error)
         }

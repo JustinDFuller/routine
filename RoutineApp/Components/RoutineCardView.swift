@@ -59,6 +59,7 @@ struct RoutineCardView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(minHeight: 72, alignment: .leading)
                 .padding(.vertical, 14)
                 .padding(.leading, 14)
                 .padding(.trailing, 8)
@@ -68,7 +69,7 @@ struct RoutineCardView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(viewData.accessibilityLabel)
             .accessibilityHint(primaryAccessibilityHint)
-            .accessibilityIdentifier("routine-card-primary-\(viewData.id.uuidString)")
+            .accessibilityIdentifier("routine-card-primary-\(viewData.name.routineAccessibilityIdentifierComponent)")
 
             Button(action: onMore) {
                 Image(systemName: "ellipsis.circle")
@@ -79,7 +80,8 @@ struct RoutineCardView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("More actions for \(viewData.name)")
-            .accessibilityIdentifier("routine-card-more-\(viewData.id.uuidString)")
+            .accessibilityHint("Shows routine actions.")
+            .accessibilityIdentifier("routine-card-more-\(viewData.name.routineAccessibilityIdentifierComponent)")
             .padding(.trailing, 8)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -134,7 +136,7 @@ struct RoutineCardView: View {
         Text(viewData.lastDoneText)
             .font(.caption)
             .foregroundStyle(Color.routineLabelSecondary)
-            .lineLimit(1)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private func metadataPill(text: String) -> some View {

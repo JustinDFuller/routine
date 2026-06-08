@@ -71,7 +71,8 @@ struct ManageRoutinesView: View {
                 } label: {
                     Image(systemName: "plus")
                 }
-                .accessibilityLabel("Add")
+                .accessibilityLabel("Add routine or group")
+                .accessibilityHint("Opens options to add a routine or a group.")
                 .accessibilityIdentifier("manage-routines-add-button")
             }
         }
@@ -412,8 +413,11 @@ extension ManageRoutinesView {
                 } label: {
                     Image(systemName: "ellipsis.circle")
                         .foregroundStyle(Color.routineLabelSecondary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 .accessibilityLabel("\(section.name) Actions")
+                .accessibilityHint("Shows rename and delete actions for this group.")
             }
         }
     }
@@ -445,6 +449,8 @@ extension ManageRoutinesView {
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(routine.name), \(routine.summaryText)")
+        .accessibilityHint("Opens the routine editor.")
+        .accessibilityIdentifier("manage-routine-row-\(routine.name.routineAccessibilityIdentifierComponent)")
         .swipeActions {
             Button(role: .destructive) {
                 pendingRoutineDeletion = routine

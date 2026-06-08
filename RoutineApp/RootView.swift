@@ -4,18 +4,22 @@ import SwiftUI
 
 struct RootView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.routineRuntimeConfiguration) private var runtime
 
     @State private var path: [AppRoute] = []
     @State private var hasAppliedDebugLaunchRoute = false
     @State private var seedErrorIsPresented = false
+
+    private let debugLaunchConfiguration: RoutineDebugLaunchConfiguration
 
     private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "Routine",
         category: "starter-data"
     )
 
-    init(initialPath: [AppRoute] = Self.debugInitialPath()) {
-        _path = State(initialValue: initialPath)
+    init(debugLaunchConfiguration: RoutineDebugLaunchConfiguration = .current) {
+        self.debugLaunchConfiguration = debugLaunchConfiguration
+        _path = State(initialValue: debugLaunchConfiguration.initialPath)
     }
 
     var body: some View {
@@ -27,7 +31,13 @@ struct RootView: View {
         }
         .task {
             do {
-                try StarterDataService(context: modelContext).seedIfNeeded()
+                if runtime.skipsStarterSeeding == false {
+                    try StarterDataService(
+                        context: modelContext,
+                        seedMetadataValue: runtime.starterSeedVersion
+                    ).seedIfNeeded(now: runtime.now)
+                }
+
                 try applyDebugLaunchRouteIfNeeded()
             } catch {
                 Self.logger.error(
@@ -52,49 +62,33 @@ struct RootView: View {
         }
     }
 
-    private static func debugInitialPath() -> [AppRoute] {
-        #if DEBUG
-            if ProcessInfo.processInfo.arguments.contains("-routine-open-missing-history-route") {
-                return [.routineHistory(routineID: debugMissingHistoryRoutineID)]
-            }
-        #endif
-
-        return []
-    }
-
-    private static var debugMissingHistoryRoutineID: UUID {
-        guard let uuid = UUID(uuidString: "00000000-0000-0000-0000-000000000099") else {
-            preconditionFailure("Expected valid missing-history debug UUID.")
+    private func applyDebugLaunchRouteIfNeeded() throws {
+        guard hasAppliedDebugLaunchRoute == false else {
+            return
         }
 
-        return uuid
-    }
-
-    private func applyDebugLaunchRouteIfNeeded() throws {
-        #if DEBUG
-            guard hasAppliedDebugLaunchRoute == false else {
-                return
-            }
-
-            let arguments = ProcessInfo.processInfo.arguments
-            guard arguments.contains("-routine-open-morning-yoga-history-with-completion") else {
-                hasAppliedDebugLaunchRoute = true
-                return
-            }
-
-            let descriptor = FetchDescriptor<Routine>(
-                predicate: #Predicate<Routine> { routine in
-                    routine.name == "Morning yoga"
-                }
-            )
-            guard let routine = try modelContext.fetch(descriptor).first else {
-                throw PersistenceError.routineNotFound(Self.debugMissingHistoryRoutineID)
-            }
-
-            _ = try RoutineTrackingService(context: modelContext).completeToday(routineID: routine.id)
-            path = [.routineHistory(routineID: routine.id)]
+        guard debugLaunchConfiguration.opensMorningYogaHistoryWithCompletion else {
             hasAppliedDebugLaunchRoute = true
-        #endif
+            return
+        }
+
+        let descriptor = FetchDescriptor<Routine>(
+            predicate: #Predicate<Routine> { routine in
+                routine.name == "Morning yoga"
+            }
+        )
+        guard let routine = try modelContext.fetch(descriptor).first else {
+            throw PersistenceError.routineNotFound(
+                RoutineDebugLaunchConfiguration.missingHistoryRoutineID
+            )
+        }
+
+        _ = try RoutineTrackingService(context: modelContext).completeToday(
+            routineID: routine.id,
+            now: runtime.now
+        )
+        path = [.routineHistory(routineID: routine.id)]
+        hasAppliedDebugLaunchRoute = true
     }
 }
 

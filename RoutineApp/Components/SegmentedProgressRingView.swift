@@ -8,13 +8,14 @@ struct SegmentedProgressRingView: View {
     let accessibilityLabel: String
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @Environment(\.routineRuntimeConfiguration) private var runtime
 
     private var drawingModel: ProgressRingDrawingModel {
         ProgressRingDrawingModel(viewData: viewData)
     }
 
     private var animation: Animation? {
-        accessibilityReduceMotion ? nil : .easeInOut(duration: 0.16)
+        animationsAreDisabled ? nil : .easeInOut(duration: 0.16)
     }
 
     private var trackColor: Color {
@@ -22,7 +23,11 @@ struct SegmentedProgressRingView: View {
     }
 
     private var checkmarkTransition: AnyTransition {
-        accessibilityReduceMotion ? .identity : .opacity.combined(with: .scale(scale: 0.92))
+        animationsAreDisabled ? .identity : .opacity.combined(with: .scale(scale: 0.92))
+    }
+
+    private var animationsAreDisabled: Bool {
+        accessibilityReduceMotion || runtime.disablesAnimations
     }
 
     var body: some View {

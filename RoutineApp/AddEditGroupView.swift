@@ -27,6 +27,8 @@ struct AddEditGroupView: View {
                     Section {
                         Text(validationMessage)
                             .foregroundStyle(Color.routineAccentDestructive)
+                            .accessibilityLabel("Validation message: \(validationMessage)")
+                            .accessibilityIdentifier("group-form-validation-message")
                     }
                 }
 

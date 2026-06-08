@@ -6,8 +6,10 @@ import SwiftUI
 struct RoutineHistoryView: View {
     let routineID: UUID
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.routineRuntimeConfiguration) private var runtime
 
     @Query private var routines: [Routine]
     @Query private var completions: [RoutineCompletion]
@@ -39,7 +41,8 @@ struct RoutineHistoryView: View {
         HistoryProjectionBuilder(context: modelContext).build(
             routineID: routineID,
             routines: routines,
-            completions: completions
+            completions: completions,
+            now: runtime.now
         )
     }
 
@@ -124,43 +127,25 @@ struct RoutineHistoryView: View {
     }
 
     private func summaryHeader(_ viewData: RoutineHistoryViewData) -> some View {
-        HStack(alignment: .center, spacing: 16) {
-            SegmentedProgressRingView(
-                viewData: ProgressRingViewData(
-                    targetCount: viewData.progress.targetCount,
-                    completedCount: viewData.progress.completedCount,
-                    fillRatio: viewData.progress.fillRatio,
-                    showsSegments: (1...8).contains(viewData.progress.targetCount),
-                    showsTodayCheckmark: viewData.progress.isCompletedToday
-                ),
-                size: 72,
-                lineWidth: 7,
-                accentColor: viewData.progress.isCompletedToday || viewData.progress.isTargetMet
-                    ? .routineAccentComplete
-                    : .routineAccentActive,
-                accessibilityLabel: summaryAccessibilityLabel(for: viewData)
-            )
-            .accessibilityHidden(true)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 16) {
+                    summaryRing(for: viewData)
+                    summaryText(for: viewData)
+                }
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .center, spacing: 16) {
+                        summaryRing(for: viewData)
+                        summaryText(for: viewData)
+                    }
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text(viewData.routineName)
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(Color.routineLabelPrimary)
-
-                Text(viewData.frequencySummary)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.routineLabelSecondary)
-
-                Text(currentPeriodProgressText(for: viewData.progress))
-                    .font(.headline.weight(.semibold))
-                    .foregroundStyle(Color.routineLabelPrimary)
-
-                Text(lastDoneDisplayText(for: viewData.lastDoneText))
-                    .font(.body)
-                    .foregroundStyle(Color.routineLabelSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                    VStack(alignment: .leading, spacing: 16) {
+                        summaryRing(for: viewData)
+                        summaryText(for: viewData)
+                    }
+                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(16)
         .background(
@@ -264,6 +249,47 @@ struct RoutineHistoryView: View {
         } catch {
             removalAlert = HistoryRemovalAlert(message: error.localizedDescription)
         }
+    }
+
+    private func summaryRing(for viewData: RoutineHistoryViewData) -> some View {
+        SegmentedProgressRingView(
+            viewData: ProgressRingViewData(
+                targetCount: viewData.progress.targetCount,
+                completedCount: viewData.progress.completedCount,
+                fillRatio: viewData.progress.fillRatio,
+                showsSegments: (1...8).contains(viewData.progress.targetCount),
+                showsTodayCheckmark: viewData.progress.isCompletedToday
+            ),
+            size: 72,
+            lineWidth: 7,
+            accentColor: viewData.progress.isCompletedToday || viewData.progress.isTargetMet
+                ? .routineAccentComplete
+                : .routineAccentActive,
+            accessibilityLabel: summaryAccessibilityLabel(for: viewData)
+        )
+        .accessibilityHidden(true)
+    }
+
+    private func summaryText(for viewData: RoutineHistoryViewData) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(viewData.routineName)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(Color.routineLabelPrimary)
+
+            Text(viewData.frequencySummary)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.routineLabelSecondary)
+
+            Text(currentPeriodProgressText(for: viewData.progress))
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(Color.routineLabelPrimary)
+
+            Text(lastDoneDisplayText(for: viewData.lastDoneText))
+                .font(.body)
+                .foregroundStyle(Color.routineLabelSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -406,6 +432,9 @@ private struct CompletionListRow: View {
                         .foregroundStyle(Color.routineLabelSecondary)
                 }
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(accessibilityLabel)
+            .accessibilityHint("Shows when this completion was recorded.")
 
             Spacer(minLength: 12)
 
@@ -415,8 +444,10 @@ private struct CompletionListRow: View {
             }
             .buttonStyle(.bordered)
             .tint(Color.routineAccentDestructive)
+            .frame(minWidth: 44, minHeight: 44)
             .accessibilityIdentifier("history-remove-completion-\(item.id.uuidString)")
             .accessibilityLabel("Remove completion on \(item.dateText)")
+            .accessibilityHint("Removes this completion after confirmation.")
         }
         .padding(14)
         .background(
@@ -427,6 +458,14 @@ private struct CompletionListRow: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(Color.routineDivider.opacity(0.5), lineWidth: 1)
         )
+    }
+
+    private var accessibilityLabel: String {
+        if let relativeText = item.relativeText {
+            return "\(item.dateText), \(relativeText)"
+        }
+
+        return item.dateText
     }
 }
 

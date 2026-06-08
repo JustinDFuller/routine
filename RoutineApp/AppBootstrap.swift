@@ -4,7 +4,7 @@ import SwiftUI
 
 @MainActor
 enum AppBootstrapState {
-    case ready(ModelContainer)
+    case ready(ModelContainer, RoutineRuntimeConfiguration)
     case failed
 }
 
@@ -15,9 +15,14 @@ enum AppBootstrap {
         category: "app.bootstrap"
     )
 
+    static let launchConfiguration = RoutineDebugLaunchConfiguration.current
+
     static func initialState() -> AppBootstrapState {
         do {
-            return .ready(try persistentContainer())
+            return .ready(
+                try persistentContainer(launchConfiguration: launchConfiguration),
+                launchConfiguration.runtime
+            )
         } catch {
             logger.error(
                 "Persistent container initialization failed: \(String(describing: error), privacy: .private)"
@@ -26,18 +31,27 @@ enum AppBootstrap {
         }
     }
 
-    static func persistentContainer() throws -> ModelContainer {
-        #if DEBUG
-            if ProcessInfo.processInfo.arguments.contains("-routine-force-bootstrap-failure") {
-                throw ForcedBootstrapFailure()
+    static func persistentContainer(
+        launchConfiguration: RoutineDebugLaunchConfiguration = launchConfiguration
+    ) throws -> ModelContainer {
+        if launchConfiguration.forcesBootstrapFailure {
+            throw ForcedBootstrapFailure()
+        }
+
+        let modelContainer =
+            switch launchConfiguration.storeMode {
+            case .persistent:
+                try RoutineModelContainer.persistent()
+            case .inMemory:
+                try RoutineModelContainer.inMemory()
             }
 
-            if ProcessInfo.processInfo.arguments.contains("-routine-use-in-memory-store") {
-                return try RoutineModelContainer.inMemory()
-            }
-        #endif
+        if launchConfiguration.resetsStore {
+            let context = ModelContext(modelContainer)
+            try RoutineStoreResetService.resetAllData(in: context)
+        }
 
-        return try RoutineModelContainer.persistent()
+        return modelContainer
     }
 }
 
@@ -48,9 +62,18 @@ struct AppBootstrapRootView: View {
 
     var body: some View {
         switch state {
-        case .ready(let modelContainer):
-            RootView()
+        case .ready(let modelContainer, let runtime):
+            RootView(debugLaunchConfiguration: .current)
                 .modelContainer(modelContainer)
+                .environment(\.routineRuntimeConfiguration, runtime)
+                .transaction { transaction in
+                    guard runtime.disablesAnimations else {
+                        return
+                    }
+
+                    transaction.animation = nil
+                    transaction.disablesAnimations = true
+                }
         case .failed:
             AppBootstrapFailureView()
         }
@@ -82,7 +105,7 @@ struct AppBootstrapFailureView: View {
 
 #Preview("Ready") {
     if let modelContainer = try? RoutineModelContainer.inMemory() {
-        AppBootstrapRootView(state: .ready(modelContainer))
+        AppBootstrapRootView(state: .ready(modelContainer, RoutineRuntimeConfiguration()))
     } else {
         AppBootstrapRootView(state: .failed)
     }

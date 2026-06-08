@@ -107,6 +107,33 @@ final class StarterDataServiceTests: XCTestCase {
         }
     }
 
+    func testCustomSeedMetadataValueIsStored() throws {
+        let context = try makeContext()
+        let now = Date(timeIntervalSinceReferenceDate: 333)
+
+        try StarterDataService(context: context, seedMetadataValue: "ui-tests").seedIfNeeded(now: now)
+
+        let metadata = try XCTUnwrap(try fetchMetadata(in: context).first)
+        XCTAssertEqual(metadata.key, StarterDataService.seedMetadataKey)
+        XCTAssertEqual(metadata.value, "ui-tests")
+        XCTAssertEqual(metadata.updatedAt, now)
+    }
+
+    func testCustomSeedMetadataValueDoesNotChangeSeedOnceBehavior() throws {
+        let context = try makeContext()
+        let service = StarterDataService(context: context, seedMetadataValue: "v2")
+
+        try service.seedIfNeeded(now: Date(timeIntervalSinceReferenceDate: 10))
+        try StarterDataService(context: context, seedMetadataValue: "v3").seedIfNeeded(
+            now: Date(timeIntervalSinceReferenceDate: 20)
+        )
+
+        XCTAssertEqual(try fetchGroups(in: context).count, 6)
+        XCTAssertEqual(try fetchRoutines(in: context).count, 20)
+        XCTAssertEqual(try fetchMetadata(in: context).count, 1)
+        XCTAssertEqual(try fetchMetadata(in: context).first?.value, "v2")
+    }
+
     func testSeedIfNeededMapsSaveFailureToPersistenceError() throws {
         let context = try makeContext()
         let originalSave = RoutinePersistenceSaveExecutor.save
