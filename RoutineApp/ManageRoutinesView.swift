@@ -310,14 +310,25 @@ extension ManageRoutinesView {
     }
 
     private func moveGroups(from source: IndexSet, to destination: Int) {
-        guard let sourceIndex = source.first, realSections.indices.contains(sourceIndex) else {
+        guard
+            let sourceIndex = source.first,
+            let serviceIndex = ManageReorderIndex.serviceIndex(
+                from: source,
+                destination: destination,
+                itemCount: realSections.count
+            ),
+            realSections.indices.contains(sourceIndex)
+        else {
             return
         }
 
         let groupID = realSections[sourceIndex].id
 
         do {
-            try RoutineManagementService(context: modelContext).moveGroup(id: groupID, to: destination)
+            try RoutineManagementService(context: modelContext).moveGroup(
+                id: groupID,
+                to: serviceIndex
+            )
         } catch let error as PersistenceError {
             if case .groupNotFound = error {
                 alertPresentation = .groupNotFound
@@ -334,7 +345,15 @@ extension ManageRoutinesView {
         from source: IndexSet,
         to destination: Int
     ) {
-        guard let sourceIndex = source.first, section.routines.indices.contains(sourceIndex) else {
+        guard
+            let sourceIndex = source.first,
+            let serviceIndex = ManageReorderIndex.serviceIndex(
+                from: source,
+                destination: destination,
+                itemCount: section.routines.count
+            ),
+            section.routines.indices.contains(sourceIndex)
+        else {
             return
         }
 
@@ -344,7 +363,7 @@ extension ManageRoutinesView {
             try RoutineManagementService(context: modelContext).moveRoutine(
                 id: routineID,
                 toGroupID: section.id,
-                at: destination
+                at: serviceIndex
             )
         } catch let error as PersistenceError {
             switch error {

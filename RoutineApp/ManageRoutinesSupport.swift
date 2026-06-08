@@ -1,5 +1,24 @@
 import Foundation
 
+enum ManageReorderIndex {
+    static func serviceIndex(
+        from source: IndexSet,
+        destination: Int,
+        itemCount: Int
+    ) -> Int? {
+        guard source.count == 1, let sourceIndex = source.first else {
+            return nil
+        }
+
+        guard (0..<itemCount).contains(sourceIndex) else {
+            return nil
+        }
+
+        let clampedDestination = min(max(destination, 0), itemCount)
+        return clampedDestination > sourceIndex ? clampedDestination - 1 : clampedDestination
+    }
+}
+
 struct ManageAlertPresentation: Identifiable, Equatable {
     let id = UUID()
     let title: String
