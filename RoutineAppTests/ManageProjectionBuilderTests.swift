@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import XCTest
 
 @testable import Routine
@@ -7,8 +8,8 @@ import XCTest
 final class ManageProjectionBuilderTests: ProjectionBuilderTestCase {
     func testBuildIncludesOrderedGroupSectionsOrderedRoutineRowsAndEmptyGroups() throws {
         let context = try makeContext()
-        _ = insertGroup(name: "Bravo", sortOrder: 1, into: context)
-        _ = insertGroup(name: "Alpha", sortOrder: 1, into: context)
+        let bravo = insertGroup(name: "Bravo", sortOrder: 1, into: context)
+        let alpha = insertGroup(name: "Alpha", sortOrder: 1, into: context)
         let first = insertGroup(name: "First", sortOrder: 0, into: context)
 
         _ = insertRoutine(
@@ -29,6 +30,8 @@ final class ManageProjectionBuilderTests: ProjectionBuilderTestCase {
         let viewData = try ManageProjectionBuilder(context: context).build()
 
         XCTAssertEqual(viewData.sections.map(\.name), ["First", "Alpha", "Bravo"])
+        XCTAssertEqual(viewData.groupChoices.map(\.name), ["First", "Alpha", "Bravo"])
+        XCTAssertEqual(viewData.groupChoices.map(\.id), [first.id, alpha.id, bravo.id])
         XCTAssertEqual(viewData.sections[0].routines.map(\.name), ["Earlier", "Later"])
         XCTAssertTrue(viewData.sections[1].routines.isEmpty)
         XCTAssertTrue(viewData.sections[2].routines.isEmpty)
@@ -75,10 +78,16 @@ final class ManageProjectionBuilderTests: ProjectionBuilderTestCase {
         let rowsByName = Dictionary(uniqueKeysWithValues: viewData.sections[0].routines.map { ($0.name, $0) })
 
         XCTAssertEqual(rowsByName["Walk"]?.summaryText, "5 per week")
+        XCTAssertEqual(rowsByName["Walk"]?.targetCount, 5)
+        XCTAssertEqual(rowsByName["Walk"]?.period, .weekly)
+        XCTAssertEqual(rowsByName["Walk"]?.groupID, group.id)
         XCTAssertEqual(rowsByName["Budget"]?.summaryText, "2 per month")
+        XCTAssertEqual(rowsByName["Budget"]?.targetCount, 2)
+        XCTAssertEqual(rowsByName["Budget"]?.period, .monthly)
+        XCTAssertEqual(rowsByName["Budget"]?.groupID, group.id)
     }
 
-    func testBuildPlacesMissingGroupRoutinesInUngroupedSection() throws {
+    func testBuildPlacesMissingGroupRoutinesInUngroupedSectionWithoutFallbackGroupChoice() throws {
         let context = try makeContext()
         let sourceGroup = insertGroup(name: "Temporary", sortOrder: 0, into: context)
         let routine = insertRoutine(
@@ -100,6 +109,28 @@ final class ManageProjectionBuilderTests: ProjectionBuilderTestCase {
 
         XCTAssertEqual(viewData.sections.map(\.name), ["Temporary", "Ungrouped"])
         XCTAssertEqual(viewData.sections[1].routines.map(\.name), ["Loose Task"])
+        XCTAssertEqual(viewData.groupChoices.map(\.name), ["Temporary"])
+    }
+
+    func testBuildPureOverloadUsesProvidedArrays() throws {
+        let context = ModelContext(try RoutineModelContainer.inMemory())
+        let builder = ManageProjectionBuilder(context: context)
+        let first = RoutineGroup(name: "First", sortOrder: 0)
+        let second = RoutineGroup(name: "Second", sortOrder: 1)
+        let routine = Routine(
+            name: "Walk",
+            targetCount: 4,
+            period: .weekly,
+            sortOrder: 0,
+            group: second
+        )
+
+        let viewData = builder.build(groups: [first, second], routines: [routine])
+
+        XCTAssertEqual(viewData.groupChoices.map { $0.name }, ["First", "Second"])
+        XCTAssertEqual(viewData.sections.map { $0.name }, ["First", "Second"])
+        XCTAssertTrue(viewData.sections[0].routines.isEmpty)
+        XCTAssertEqual(viewData.sections[1].routines.map { $0.name }, ["Walk"])
     }
 
     func testBuildMapsFetchFailuresToPersistenceError() throws {
