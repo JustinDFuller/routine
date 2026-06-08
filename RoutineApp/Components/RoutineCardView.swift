@@ -68,6 +68,7 @@ struct RoutineCardView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(viewData.accessibilityLabel)
             .accessibilityHint(primaryAccessibilityHint)
+            .accessibilityIdentifier("routine-card-primary-\(viewData.id.uuidString)")
 
             Button(action: onMore) {
                 Image(systemName: "ellipsis.circle")
@@ -78,6 +79,7 @@ struct RoutineCardView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("More actions for \(viewData.name)")
+            .accessibilityIdentifier("routine-card-more-\(viewData.id.uuidString)")
             .padding(.trailing, 8)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -95,7 +97,6 @@ struct RoutineCardView: View {
                     .fill(Color.routineAccentComplete.opacity(0.08))
             }
         }
-        .accessibilityIdentifier("routine-card-\(viewData.id.uuidString)")
     }
 
     @ViewBuilder

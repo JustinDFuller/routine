@@ -20,28 +20,33 @@ final class HistoryProjectionBuilder {
         }
 
         let completions = try fetchCompletions(routineID: routineID)
-        let today = routineCalendar.today(now: now)
-        let completionDays = completions.compactMap { RoutineDay(key: $0.dayKey) }
-        let progress = progressCalculator.progress(
-            period: routine.period,
-            targetCount: routine.targetCount,
-            completionDays: completionDays,
-            today: today
+        return build(
+            routineID: routineID,
+            routines: [routine],
+            completions: completions,
+            now: now
         )
-        let completedDays = Set(completionDays)
+    }
+
+    func build(
+        routineID: UUID,
+        routines: [Routine],
+        completions: [RoutineCompletion],
+        now: Date = .now
+    ) -> RoutineHistoryProjection {
+        guard let routine = routines.first(where: { $0.id == routineID }) else {
+            return .notFound(routineID: routineID)
+        }
+
+        let filteredCompletions = sortedCompletions(
+            completions.filter { $0.routineID == routineID }
+        )
 
         return .found(
-            RoutineHistoryViewData(
-                routineID: routine.id,
-                routineName: routine.name,
-                frequencySummary: frequencySummary(
-                    targetCount: routine.targetCount,
-                    period: routine.period
-                ),
-                progress: progress,
-                lastDoneText: routineCalendar.relativeLabel(for: progress.lastCompletedDay, today: today),
-                monthDays: buildMonthDays(today: today, completedDays: completedDays),
-                recentCompletions: buildRecentCompletionItems(completions: completions, today: today)
+            makeViewData(
+                routine: routine,
+                completions: filteredCompletions,
+                now: now
             )
         )
     }
@@ -90,6 +95,35 @@ extension HistoryProjectionBuilder {
         }
     }
 
+    fileprivate func makeViewData(
+        routine: Routine,
+        completions: [RoutineCompletion],
+        now: Date
+    ) -> RoutineHistoryViewData {
+        let today = routineCalendar.today(now: now)
+        let completionDays = completions.compactMap { RoutineDay(key: $0.dayKey) }
+        let progress = progressCalculator.progress(
+            period: routine.period,
+            targetCount: routine.targetCount,
+            completionDays: completionDays,
+            today: today
+        )
+        let completedDays = Set(completionDays)
+
+        return RoutineHistoryViewData(
+            routineID: routine.id,
+            routineName: routine.name,
+            frequencySummary: frequencySummary(
+                targetCount: routine.targetCount,
+                period: routine.period
+            ),
+            progress: progress,
+            lastDoneText: routineCalendar.relativeLabel(for: progress.lastCompletedDay, today: today),
+            monthDays: buildMonthDays(today: today, completedDays: completedDays),
+            recentCompletions: buildRecentCompletionItems(completions: completions, today: today)
+        )
+    }
+
     fileprivate func buildMonthDays(
         today: RoutineDay,
         completedDays: Set<RoutineDay>
@@ -132,5 +166,15 @@ extension HistoryProjectionBuilder {
         }
 
         return nil
+    }
+
+    fileprivate func sortedCompletions(_ completions: [RoutineCompletion]) -> [RoutineCompletion] {
+        completions.sorted { lhs, rhs in
+            if lhs.dayKey != rhs.dayKey {
+                return lhs.dayKey > rhs.dayKey
+            }
+
+            return lhs.completedAt > rhs.completedAt
+        }
     }
 }
