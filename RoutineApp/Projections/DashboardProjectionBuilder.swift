@@ -96,7 +96,7 @@ extension DashboardProjectionBuilder {
             sortBy: [
                 SortDescriptor(\RoutineCompletion.routineID),
                 SortDescriptor(\RoutineCompletion.dayKey),
-                SortDescriptor(\RoutineCompletion.completedAt),
+                SortDescriptor(\RoutineCompletion.completedAt)
             ]
         )
 

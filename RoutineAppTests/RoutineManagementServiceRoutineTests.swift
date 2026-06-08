@@ -1,19 +1,17 @@
 import Foundation
 import RoutineCore
+import SwiftData
 import XCTest
 
 @testable import Routine
 
 @MainActor
-final class RoutineManagementServiceRoutineTests: RoutineManagementServiceTestCase {
+final class RoutineManagementRoutineCreateTests: RoutineManagementServiceTestCase {
     func testCreateRoutineTrimsPersistsAppendsAndAllowsDuplicateNames() throws {
         let context = try makeContext()
         let group = try insertGroup(name: "Health", sortOrder: 0, into: context)
         _ = try insertRoutine(
-            name: "Walk",
-            targetCount: 3,
-            period: .weekly,
-            sortOrder: 4,
+            seed: RoutineTestSeed(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 4),
             group: group,
             into: context
         )
@@ -78,69 +76,6 @@ final class RoutineManagementServiceRoutineTests: RoutineManagementServiceTestCa
         }
     }
 
-    func testUpdateRoutineTrimsAndCanChangeGroupNamePeriodAndTargetKeepingGroupSync() throws {
-        let context = try makeContext()
-        let sourceGroup = try insertGroup(name: "Source", sortOrder: 0, into: context)
-        let destinationGroup = try insertGroup(name: "Destination", sortOrder: 1, into: context)
-        let routine = try insertRoutine(
-            name: "Morning Walk",
-            targetCount: 3,
-            period: .weekly,
-            sortOrder: 0,
-            group: sourceGroup,
-            into: context
-        )
-        _ = try insertRoutine(
-            name: "Read",
-            targetCount: 2,
-            period: .weekly,
-            sortOrder: 1,
-            group: sourceGroup,
-            into: context
-        )
-        let destinationRoutine = try insertRoutine(
-            name: "Lift",
-            targetCount: 4,
-            period: .weekly,
-            sortOrder: 0,
-            group: destinationGroup,
-            into: context
-        )
-        let now = Date(timeIntervalSinceReferenceDate: 200)
-
-        try RoutineManagementService(context: context).updateRoutine(
-            id: routine.id,
-            with: RoutineDraft(
-                name: "  Evening Walk  ",
-                targetCount: 6,
-                period: .monthly,
-                groupID: destinationGroup.id
-            ),
-            now: now
-        )
-
-        let updatedRoutine = try context.routine(id: routine.id)
-        let sourceRoutines = try fetchRoutines(in: context, groupID: sourceGroup.id)
-        let destinationRoutines = try fetchRoutines(in: context, groupID: destinationGroup.id)
-
-        XCTAssertEqual(updatedRoutine.name, "Evening Walk")
-        XCTAssertEqual(updatedRoutine.targetCount, 6)
-        XCTAssertEqual(updatedRoutine.period, .monthly)
-        XCTAssertEqual(updatedRoutine.groupID, destinationGroup.id)
-        XCTAssertEqual(updatedRoutine.group?.id, destinationGroup.id)
-        XCTAssertEqual(updatedRoutine.updatedAt, now)
-
-        XCTAssertEqual(sourceRoutines.map(\.name), ["Read"])
-        XCTAssertEqual(sourceRoutines.map(\.sortOrder), [0])
-        XCTAssertEqual(destinationRoutines.map(\.id), [destinationRoutine.id, routine.id])
-        XCTAssertEqual(destinationRoutines.map(\.sortOrder), [0, 1])
-        XCTAssertTrue(
-            destinationRoutines.allSatisfy {
-                $0.groupID == destinationGroup.id && $0.group?.id == destinationGroup.id
-            }
-        )
-    }
-
     func testMissingRoutineAndGroupIDsThrowPersistenceErrorsWithUserSafeDescriptions() throws {
         let context = try makeContext()
         let service = RoutineManagementService(context: context)
@@ -160,174 +95,6 @@ final class RoutineManagementServiceRoutineTests: RoutineManagementServiceTestCa
             XCTAssertEqual(error as? PersistenceError, .groupNotFound(missingGroupID))
             XCTAssertEqual((error as? PersistenceError)?.errorDescription, "Group not found.")
         }
-    }
-
-    func testDeleteRoutineRemovesRoutineAndCascadesCompletionHistory() throws {
-        let context = try makeContext()
-        let group = try insertGroup(name: "Health", sortOrder: 0, into: context)
-        let routine = try insertRoutine(
-            name: "Walk",
-            targetCount: 3,
-            period: .weekly,
-            sortOrder: 0,
-            group: group,
-            into: context
-        )
-        let day = try makeDay(year: 2026, month: 6, day: 7)
-        context.insert(
-            RoutineCompletion(
-                routine: routine,
-                day: day,
-                completedAt: Date(timeIntervalSinceReferenceDate: 10)
-            )
-        )
-        try context.saveRoutineChanges()
-
-        try RoutineManagementService(context: context).deleteRoutine(id: routine.id)
-
-        XCTAssertThrowsError(try context.routine(id: routine.id)) { error in
-            XCTAssertEqual(error as? PersistenceError, .routineNotFound(routine.id))
-        }
-        XCTAssertTrue(try fetchCompletions(in: context).isEmpty)
-        XCTAssertTrue(try fetchRoutines(in: context, groupID: group.id).isEmpty)
-    }
-
-    func testDeleteRoutineNormalizesRemainingSiblingSortOrders() throws {
-        let context = try makeContext()
-        let group = try insertGroup(name: "Health", sortOrder: 0, into: context)
-        let first = try insertRoutine(
-            name: "Walk",
-            targetCount: 3,
-            period: .weekly,
-            sortOrder: 0,
-            group: group,
-            into: context
-        )
-        let second = try insertRoutine(
-            name: "Read",
-            targetCount: 4,
-            period: .weekly,
-            sortOrder: 3,
-            group: group,
-            into: context
-        )
-        let third = try insertRoutine(
-            name: "Lift",
-            targetCount: 5,
-            period: .weekly,
-            sortOrder: 7,
-            group: group,
-            into: context
-        )
-
-        try RoutineManagementService(context: context).deleteRoutine(id: second.id)
-
-        let routines = try fetchRoutines(in: context, groupID: group.id)
-        XCTAssertEqual(routines.map(\.id), [first.id, third.id])
-        XCTAssertEqual(routines.map(\.sortOrder), [0, 1])
-    }
-
-    func testMoveRoutineWithinGroupPersistsRequestedOrderAndContiguousSortOrders() throws {
-        let context = try makeContext()
-        let group = try insertGroup(name: "Health", sortOrder: 0, into: context)
-        let first = try insertRoutine(
-            name: "Walk",
-            targetCount: 3,
-            period: .weekly,
-            sortOrder: 0,
-            group: group,
-            into: context
-        )
-        let second = try insertRoutine(
-            name: "Read",
-            targetCount: 4,
-            period: .weekly,
-            sortOrder: 1,
-            group: group,
-            into: context
-        )
-        let third = try insertRoutine(
-            name: "Lift",
-            targetCount: 5,
-            period: .weekly,
-            sortOrder: 2,
-            group: group,
-            into: context
-        )
-
-        try RoutineManagementService(context: context).moveRoutine(id: third.id, toGroupID: group.id, at: 1)
-
-        let routines = try fetchRoutines(in: context, groupID: group.id)
-        XCTAssertEqual(routines.map(\.id), [first.id, third.id, second.id])
-        XCTAssertEqual(routines.map(\.sortOrder), [0, 1, 2])
-        XCTAssertTrue(
-            routines.allSatisfy {
-                $0.groupID == group.id && $0.group?.id == group.id
-            }
-        )
-    }
-
-    func testMoveRoutineAcrossGroupsUpdatesRelationshipDestinationPositionAndNormalizedSortOrders() throws {
-        let context = try makeContext()
-        let sourceGroup = try insertGroup(name: "Source", sortOrder: 0, into: context)
-        let destinationGroup = try insertGroup(name: "Destination", sortOrder: 1, into: context)
-        let movedRoutine = try insertRoutine(
-            name: "Walk",
-            targetCount: 3,
-            period: .weekly,
-            sortOrder: 0,
-            group: sourceGroup,
-            into: context
-        )
-        let sourceSibling = try insertRoutine(
-            name: "Read",
-            targetCount: 4,
-            period: .weekly,
-            sortOrder: 1,
-            group: sourceGroup,
-            into: context
-        )
-        let destinationFirst = try insertRoutine(
-            name: "Lift",
-            targetCount: 5,
-            period: .weekly,
-            sortOrder: 0,
-            group: destinationGroup,
-            into: context
-        )
-        let destinationSecond = try insertRoutine(
-            name: "Stretch",
-            targetCount: 2,
-            period: .weekly,
-            sortOrder: 1,
-            group: destinationGroup,
-            into: context
-        )
-
-        try RoutineManagementService(context: context).moveRoutine(
-            id: movedRoutine.id,
-            toGroupID: destinationGroup.id,
-            at: 1
-        )
-
-        let refreshedRoutine = try context.routine(id: movedRoutine.id)
-        let sourceRoutines = try fetchRoutines(in: context, groupID: sourceGroup.id)
-        let destinationRoutines = try fetchRoutines(in: context, groupID: destinationGroup.id)
-
-        XCTAssertEqual(refreshedRoutine.groupID, destinationGroup.id)
-        XCTAssertEqual(refreshedRoutine.group?.id, destinationGroup.id)
-        XCTAssertEqual(sourceRoutines.map(\.id), [sourceSibling.id])
-        XCTAssertEqual(sourceRoutines.map(\.sortOrder), [0])
-        XCTAssertEqual(
-            destinationRoutines.map(\.id),
-            [destinationFirst.id, movedRoutine.id, destinationSecond.id]
-        )
-        XCTAssertEqual(destinationRoutines.map(\.sortOrder), [0, 1, 2])
-        XCTAssertTrue(
-            destinationRoutines.allSatisfy {
-                $0.groupID == destinationGroup.id && $0.group?.id == destinationGroup.id
-            }
-        )
     }
 
     func testCreateRoutineMapsSaveFailureAndLeavesContextCleanForRetry() throws {
@@ -368,5 +135,261 @@ final class RoutineManagementServiceRoutineTests: RoutineManagementServiceTestCa
         )
 
         XCTAssertEqual(try fetchRoutines(in: context, groupID: group.id).map(\.id), [retryID])
+    }
+}
+
+@MainActor
+final class RoutineManagementRoutineMutationTests: RoutineManagementServiceTestCase {
+    func testUpdateRoutineTrimsAndCanChangeGroupNamePeriodAndTargetKeepingGroupSync() throws {
+        let context = try makeContext()
+        let setup = try makeUpdateRoutineSetup(in: context)
+        let now = Date(timeIntervalSinceReferenceDate: 200)
+
+        try RoutineManagementService(context: context).updateRoutine(
+            id: setup.routine.id,
+            with: RoutineDraft(
+                name: "  Evening Walk  ",
+                targetCount: 6,
+                period: .monthly,
+                groupID: setup.destinationGroup.id
+            ),
+            now: now
+        )
+
+        try assertUpdatedRoutineState(
+            in: context,
+            setup: setup,
+            updatedAt: now
+        )
+    }
+
+    func testDeleteRoutineRemovesRoutineAndCascadesCompletionHistory() throws {
+        let context = try makeContext()
+        let group = try insertGroup(name: "Health", sortOrder: 0, into: context)
+        let routine = try insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 0),
+            group: group,
+            into: context
+        )
+        let day = try makeDay(year: 2026, month: 6, day: 7)
+        context.insert(
+            RoutineCompletion(
+                routine: routine,
+                day: day,
+                completedAt: Date(timeIntervalSinceReferenceDate: 10)
+            )
+        )
+        try context.saveRoutineChanges()
+
+        try RoutineManagementService(context: context).deleteRoutine(id: routine.id)
+
+        XCTAssertThrowsError(try context.routine(id: routine.id)) { error in
+            XCTAssertEqual(error as? PersistenceError, .routineNotFound(routine.id))
+        }
+        XCTAssertTrue(try fetchCompletions(in: context).isEmpty)
+        XCTAssertTrue(try fetchRoutines(in: context, groupID: group.id).isEmpty)
+    }
+
+    func testDeleteRoutineNormalizesRemainingSiblingSortOrders() throws {
+        let context = try makeContext()
+        let group = try insertGroup(name: "Health", sortOrder: 0, into: context)
+        let first = try insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 0),
+            group: group,
+            into: context
+        )
+        let second = try insertRoutine(
+            seed: RoutineTestSeed(name: "Read", targetCount: 4, period: .weekly, sortOrder: 3),
+            group: group,
+            into: context
+        )
+        let third = try insertRoutine(
+            seed: RoutineTestSeed(name: "Lift", targetCount: 5, period: .weekly, sortOrder: 7),
+            group: group,
+            into: context
+        )
+
+        try RoutineManagementService(context: context).deleteRoutine(id: second.id)
+
+        let routines = try fetchRoutines(in: context, groupID: group.id)
+        XCTAssertEqual(routines.map(\.id), [first.id, third.id])
+        XCTAssertEqual(routines.map(\.sortOrder), [0, 1])
+    }
+
+    func testMoveRoutineWithinGroupPersistsRequestedOrderAndContiguousSortOrders() throws {
+        let context = try makeContext()
+        let group = try insertGroup(name: "Health", sortOrder: 0, into: context)
+        let first = try insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 0),
+            group: group,
+            into: context
+        )
+        let second = try insertRoutine(
+            seed: RoutineTestSeed(name: "Read", targetCount: 4, period: .weekly, sortOrder: 1),
+            group: group,
+            into: context
+        )
+        let third = try insertRoutine(
+            seed: RoutineTestSeed(name: "Lift", targetCount: 5, period: .weekly, sortOrder: 2),
+            group: group,
+            into: context
+        )
+
+        try RoutineManagementService(context: context).moveRoutine(id: third.id, toGroupID: group.id, at: 1)
+
+        let routines = try fetchRoutines(in: context, groupID: group.id)
+        XCTAssertEqual(routines.map(\.id), [first.id, third.id, second.id])
+        XCTAssertEqual(routines.map(\.sortOrder), [0, 1, 2])
+        XCTAssertTrue(
+            routines.allSatisfy {
+                $0.groupID == group.id && $0.group?.id == group.id
+            }
+        )
+    }
+
+    func testMoveRoutineAcrossGroupsUpdatesRelationshipDestinationPositionAndNormalizedSortOrders() throws {
+        let context = try makeContext()
+        let setup = try makeCrossGroupMoveSetup(in: context)
+
+        try RoutineManagementService(context: context).moveRoutine(
+            id: setup.movedRoutine.id,
+            toGroupID: setup.destinationGroup.id,
+            at: 1
+        )
+
+        try assertCrossGroupMoveState(
+            in: context,
+            setup: setup
+        )
+    }
+}
+
+extension RoutineManagementRoutineMutationTests {
+    fileprivate struct UpdateRoutineSetup {
+        let sourceGroup: RoutineGroup
+        let destinationGroup: RoutineGroup
+        let routine: Routine
+        let destinationRoutine: Routine
+    }
+
+    fileprivate struct CrossGroupMoveSetup {
+        let sourceGroup: RoutineGroup
+        let destinationGroup: RoutineGroup
+        let movedRoutine: Routine
+        let sourceSibling: Routine
+        let destinationFirst: Routine
+        let destinationSecond: Routine
+    }
+
+    fileprivate func makeUpdateRoutineSetup(in context: ModelContext) throws -> UpdateRoutineSetup {
+        let sourceGroup = try insertGroup(name: "Source", sortOrder: 0, into: context)
+        let destinationGroup = try insertGroup(name: "Destination", sortOrder: 1, into: context)
+        let routine = try insertRoutine(
+            seed: RoutineTestSeed(name: "Morning Walk", targetCount: 3, period: .weekly, sortOrder: 0),
+            group: sourceGroup,
+            into: context
+        )
+        _ = try insertRoutine(
+            seed: RoutineTestSeed(name: "Read", targetCount: 2, period: .weekly, sortOrder: 1),
+            group: sourceGroup,
+            into: context
+        )
+        let destinationRoutine = try insertRoutine(
+            seed: RoutineTestSeed(name: "Lift", targetCount: 4, period: .weekly, sortOrder: 0),
+            group: destinationGroup,
+            into: context
+        )
+
+        return UpdateRoutineSetup(
+            sourceGroup: sourceGroup,
+            destinationGroup: destinationGroup,
+            routine: routine,
+            destinationRoutine: destinationRoutine
+        )
+    }
+
+    fileprivate func assertUpdatedRoutineState(
+        in context: ModelContext,
+        setup: UpdateRoutineSetup,
+        updatedAt: Date
+    ) throws {
+        let updatedRoutine = try context.routine(id: setup.routine.id)
+        let sourceRoutines = try fetchRoutines(in: context, groupID: setup.sourceGroup.id)
+        let destinationRoutines = try fetchRoutines(in: context, groupID: setup.destinationGroup.id)
+
+        XCTAssertEqual(updatedRoutine.name, "Evening Walk")
+        XCTAssertEqual(updatedRoutine.targetCount, 6)
+        XCTAssertEqual(updatedRoutine.period, .monthly)
+        XCTAssertEqual(updatedRoutine.groupID, setup.destinationGroup.id)
+        XCTAssertEqual(updatedRoutine.group?.id, setup.destinationGroup.id)
+        XCTAssertEqual(updatedRoutine.updatedAt, updatedAt)
+
+        XCTAssertEqual(sourceRoutines.map(\.name), ["Read"])
+        XCTAssertEqual(sourceRoutines.map(\.sortOrder), [0])
+        XCTAssertEqual(destinationRoutines.map(\.id), [setup.destinationRoutine.id, setup.routine.id])
+        XCTAssertEqual(destinationRoutines.map(\.sortOrder), [0, 1])
+        XCTAssertTrue(
+            destinationRoutines.allSatisfy {
+                $0.groupID == setup.destinationGroup.id && $0.group?.id == setup.destinationGroup.id
+            }
+        )
+    }
+
+    fileprivate func makeCrossGroupMoveSetup(in context: ModelContext) throws -> CrossGroupMoveSetup {
+        let sourceGroup = try insertGroup(name: "Source", sortOrder: 0, into: context)
+        let destinationGroup = try insertGroup(name: "Destination", sortOrder: 1, into: context)
+        let movedRoutine = try insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 0),
+            group: sourceGroup,
+            into: context
+        )
+        let sourceSibling = try insertRoutine(
+            seed: RoutineTestSeed(name: "Read", targetCount: 4, period: .weekly, sortOrder: 1),
+            group: sourceGroup,
+            into: context
+        )
+        let destinationFirst = try insertRoutine(
+            seed: RoutineTestSeed(name: "Lift", targetCount: 5, period: .weekly, sortOrder: 0),
+            group: destinationGroup,
+            into: context
+        )
+        let destinationSecond = try insertRoutine(
+            seed: RoutineTestSeed(name: "Stretch", targetCount: 2, period: .weekly, sortOrder: 1),
+            group: destinationGroup,
+            into: context
+        )
+
+        return CrossGroupMoveSetup(
+            sourceGroup: sourceGroup,
+            destinationGroup: destinationGroup,
+            movedRoutine: movedRoutine,
+            sourceSibling: sourceSibling,
+            destinationFirst: destinationFirst,
+            destinationSecond: destinationSecond
+        )
+    }
+
+    fileprivate func assertCrossGroupMoveState(
+        in context: ModelContext,
+        setup: CrossGroupMoveSetup
+    ) throws {
+        let refreshedRoutine = try context.routine(id: setup.movedRoutine.id)
+        let sourceRoutines = try fetchRoutines(in: context, groupID: setup.sourceGroup.id)
+        let destinationRoutines = try fetchRoutines(in: context, groupID: setup.destinationGroup.id)
+
+        XCTAssertEqual(refreshedRoutine.groupID, setup.destinationGroup.id)
+        XCTAssertEqual(refreshedRoutine.group?.id, setup.destinationGroup.id)
+        XCTAssertEqual(sourceRoutines.map(\.id), [setup.sourceSibling.id])
+        XCTAssertEqual(sourceRoutines.map(\.sortOrder), [0])
+        XCTAssertEqual(
+            destinationRoutines.map(\.id),
+            [setup.destinationFirst.id, setup.movedRoutine.id, setup.destinationSecond.id]
+        )
+        XCTAssertEqual(destinationRoutines.map(\.sortOrder), [0, 1, 2])
+        XCTAssertTrue(
+            destinationRoutines.allSatisfy {
+                $0.groupID == setup.destinationGroup.id && $0.group?.id == setup.destinationGroup.id
+            }
+        )
     }
 }

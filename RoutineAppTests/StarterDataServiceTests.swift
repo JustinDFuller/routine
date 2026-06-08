@@ -179,7 +179,7 @@ final class StarterDataServiceTests: XCTestCase {
             sortBy: [
                 SortDescriptor(\Routine.groupID),
                 SortDescriptor(\Routine.sortOrder),
-                SortDescriptor(\Routine.name),
+                SortDescriptor(\Routine.name)
             ]
         )
         return try context.fetch(descriptor)
@@ -206,7 +206,7 @@ private enum ExpectedSeed {
             sortOrder: 0,
             routines: [
                 ExpectedRoutine(name: "Wake up early", targetCount: 4, period: .weekly, sortOrder: 0),
-                ExpectedRoutine(name: "Morning yoga", targetCount: 5, period: .weekly, sortOrder: 1),
+                ExpectedRoutine(name: "Morning yoga", targetCount: 5, period: .weekly, sortOrder: 1)
             ]
         ),
         ExpectedGroup(
@@ -215,7 +215,7 @@ private enum ExpectedSeed {
             routines: [
                 ExpectedRoutine(name: "Functional workout", targetCount: 5, period: .weekly, sortOrder: 0),
                 ExpectedRoutine(name: "Walk the dog", targetCount: 5, period: .weekly, sortOrder: 1),
-                ExpectedRoutine(name: "Basketball", targetCount: 3, period: .weekly, sortOrder: 2),
+                ExpectedRoutine(name: "Basketball", targetCount: 3, period: .weekly, sortOrder: 2)
             ]
         ),
         ExpectedGroup(
@@ -226,7 +226,7 @@ private enum ExpectedSeed {
                 ExpectedRoutine(name: "Play with kids", targetCount: 5, period: .weekly, sortOrder: 1),
                 ExpectedRoutine(name: "Do something nice for my wife", targetCount: 1, period: .weekly, sortOrder: 2),
                 ExpectedRoutine(name: "Water plants", targetCount: 1, period: .weekly, sortOrder: 3),
-                ExpectedRoutine(name: "Run razor cleaner", targetCount: 1, period: .weekly, sortOrder: 4),
+                ExpectedRoutine(name: "Run razor cleaner", targetCount: 1, period: .weekly, sortOrder: 4)
             ]
         ),
         ExpectedGroup(
@@ -238,7 +238,7 @@ private enum ExpectedSeed {
                 ExpectedRoutine(name: "Read a book", targetCount: 4, period: .weekly, sortOrder: 2),
                 ExpectedRoutine(name: "Write something", targetCount: 3, period: .weekly, sortOrder: 3),
                 ExpectedRoutine(name: "Practice piano", targetCount: 3, period: .weekly, sortOrder: 4),
-                ExpectedRoutine(name: "Practice leetcode", targetCount: 3, period: .weekly, sortOrder: 5),
+                ExpectedRoutine(name: "Practice leetcode", targetCount: 3, period: .weekly, sortOrder: 5)
             ]
         ),
         ExpectedGroup(
@@ -254,9 +254,9 @@ private enum ExpectedSeed {
             routines: [
                 ExpectedRoutine(name: "Clean air purifiers", targetCount: 1, period: .monthly, sortOrder: 0),
                 ExpectedRoutine(name: "Rotate plants", targetCount: 1, period: .monthly, sortOrder: 1),
-                ExpectedRoutine(name: "Whiten teeth", targetCount: 1, period: .monthly, sortOrder: 2),
+                ExpectedRoutine(name: "Whiten teeth", targetCount: 1, period: .monthly, sortOrder: 2)
             ]
-        ),
+        )
     ]
 }
 

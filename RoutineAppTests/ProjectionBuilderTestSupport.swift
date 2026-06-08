@@ -67,22 +67,18 @@ class ProjectionBuilderTestCase: XCTestCase {
 
     @discardableResult
     func insertRoutine(
-        id: UUID = UUID(),
-        name: String,
-        targetCount: Int,
-        period: RoutinePeriod,
-        sortOrder: Int,
+        seed: RoutineTestSeed,
         group: RoutineGroup,
         createdAt: Date = .now,
         updatedAt: Date = .now,
         into context: ModelContext
     ) -> Routine {
         let routine = Routine(
-            id: id,
-            name: name,
-            targetCount: targetCount,
-            period: period,
-            sortOrder: sortOrder,
+            id: seed.id,
+            name: seed.name,
+            targetCount: seed.targetCount,
+            period: seed.period,
+            sortOrder: seed.sortOrder,
             group: group,
             createdAt: createdAt,
             updatedAt: updatedAt

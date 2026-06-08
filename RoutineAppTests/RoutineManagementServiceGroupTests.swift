@@ -70,10 +70,7 @@ final class RoutineManagementServiceGroupTests: RoutineManagementServiceTestCase
         let context = try makeContext()
         let group = try insertGroup(name: "Home", sortOrder: 0, into: context)
         let routine = try insertRoutine(
-            name: "Walk",
-            targetCount: 3,
-            period: .weekly,
-            sortOrder: 0,
+            seed: RoutineTestSeed(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 0),
             group: group,
             into: context
         )
