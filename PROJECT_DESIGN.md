@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**CURRENT: M11 - Group And Reorder UI**
+**CURRENT: M12 - Routine History UI**
 
 The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -99,8 +99,8 @@ Core invariants that require automated coverage when touched:
 | DONE | M08 - Visual Foundation Components | Color roles, progress ring, routine card, and undo banner components compile and render from view data. |
 | DONE | M09 - Today Dashboard Flow | The main dashboard shows seeded routines and supports one-tap completion with undo. |
 | DONE | M10 - Routine Management UI | The user can add, edit, delete, and assign routines from native management screens. |
-| CURRENT | M11 - Group And Reorder UI | The user can manage groups and reorder routines/groups through native controls. |
-| NOT STARTED | M12 - Routine History UI | The user can inspect and correct routine-specific completion history. |
+| DONE | M11 - Group And Reorder UI | The user can manage groups and reorder routines/groups through native controls. |
+| CURRENT | M12 - Routine History UI | The user can inspect and correct routine-specific completion history. |
 | NOT STARTED | M13 - Accessibility, Polish, And UI Coverage | Primary flows satisfy accessibility, motion, visual, and UI-test expectations. |
 | NOT STARTED | M14 - Dogfooding Readiness | Local validation, diagnostics, privacy, app icon, and device-readiness checks are complete. |
 
@@ -574,7 +574,7 @@ Completion note:
 
 ### M11 - Group And Reorder UI
 
-Status: `CURRENT`
+Status: `DONE`
 
 Goal: complete routine organization controls with native group and ordering behavior.
 
@@ -617,9 +617,13 @@ Completion update:
 - Mark this milestone `DONE`.
 - Mark M12 `CURRENT`.
 
+Completion note:
+
+- Passed targeted `RoutineAppTests` coverage for group form state and management integration, `./Scripts/test-core.sh`, `./Scripts/check-format.sh`, `./Scripts/lint.sh`, `./Scripts/build-ios.sh`, `./Scripts/test-ios.sh`, and `./Scripts/validate.sh`. Manual add/rename/delete/reorder verification in Simulator was not performed in this non-interactive session.
+
 ### M12 - Routine History UI
 
-Status: `NOT STARTED`
+Status: `CURRENT`
 
 Goal: let the user answer "when did I last do this?" and correct mistaken completions.
 
