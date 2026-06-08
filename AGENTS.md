@@ -16,6 +16,13 @@ When a milestone is complete:
 2. Run the milestone's relevant validation and report any skipped checks.
 3. Commit, push, open a pull request, and stop.
 
+## Validation Policy
+
+- SwiftLint warnings and errors must be fixed before completion.
+- Do not treat lint violations as acceptable because they were already present.
+- Do not use baselines, suppression comments, config disables, or exclusions to avoid fixing real SwiftLint violations.
+- `Scripts/lint.sh` is the canonical lint command and must pass in strict mode.
+
 ## References
 
 - [PROJECT_DESIGN.md](PROJECT_DESIGN.md)

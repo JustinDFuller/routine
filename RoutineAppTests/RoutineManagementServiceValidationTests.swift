@@ -11,10 +11,7 @@ final class RoutineManagementServiceValidationTests: RoutineManagementServiceTes
         let sourceGroup = try insertGroup(name: "Source", sortOrder: 0, into: context)
         let destinationGroup = try insertGroup(name: "Destination", sortOrder: 1, into: context)
         let routine = try insertRoutine(
-            name: "Morning Walk",
-            targetCount: 3,
-            period: .weekly,
-            sortOrder: 2,
+            seed: RoutineTestSeed(name: "Morning Walk", targetCount: 3, period: .weekly, sortOrder: 2),
             group: sourceGroup,
             into: context
         )
@@ -47,10 +44,7 @@ final class RoutineManagementServiceValidationTests: RoutineManagementServiceTes
         let context = try makeContext()
         let sourceGroup = try insertGroup(name: "Source", sortOrder: 0, into: context)
         let routine = try insertRoutine(
-            name: "Morning Walk",
-            targetCount: 3,
-            period: .weekly,
-            sortOrder: 2,
+            seed: RoutineTestSeed(name: "Morning Walk", targetCount: 3, period: .weekly, sortOrder: 2),
             group: sourceGroup,
             into: context
         )

@@ -45,7 +45,6 @@ final class StarterDataService {
             )
             context.insert(metadata)
             insertedMetadata.append(metadata)
-
         } catch {
             deleteInsertedSeedData(
                 metadata: insertedMetadata,
@@ -57,8 +56,10 @@ final class StarterDataService {
 
         do {
             try context.saveRoutineChanges()
+            let groups = insertedGroups.count
+            let routines = StarterSeed.routineCount
             Self.logger.info(
-                "Starter data seeded with \(insertedGroups.count, privacy: .public) groups and \(StarterSeed.routineCount, privacy: .public) routines."
+                "Seeded data: \(groups, privacy: .public) groups, \(routines, privacy: .public) routines."
             )
         } catch {
             deleteInsertedSeedData(
@@ -66,7 +67,9 @@ final class StarterDataService {
                 routines: insertedRoutines,
                 groups: insertedGroups
             )
-            Self.logger.error("Starter data save failed: \(String(describing: error), privacy: .private)")
+            Self.logger.error(
+                "Starter data save failed: \(String(describing: error), privacy: .private)"
+            )
             throw error
         }
     }
@@ -153,7 +156,7 @@ private enum StarterSeed {
             sortOrder: 0,
             routines: [
                 RoutineSeed(name: "Wake up early", targetCount: 4, period: .weekly, sortOrder: 0),
-                RoutineSeed(name: "Morning yoga", targetCount: 5, period: .weekly, sortOrder: 1),
+                RoutineSeed(name: "Morning yoga", targetCount: 5, period: .weekly, sortOrder: 1)
             ]
         ),
         GroupSeed(
@@ -162,7 +165,7 @@ private enum StarterSeed {
             routines: [
                 RoutineSeed(name: "Functional workout", targetCount: 5, period: .weekly, sortOrder: 0),
                 RoutineSeed(name: "Walk the dog", targetCount: 5, period: .weekly, sortOrder: 1),
-                RoutineSeed(name: "Basketball", targetCount: 3, period: .weekly, sortOrder: 2),
+                RoutineSeed(name: "Basketball", targetCount: 3, period: .weekly, sortOrder: 2)
             ]
         ),
         GroupSeed(
@@ -173,7 +176,7 @@ private enum StarterSeed {
                 RoutineSeed(name: "Play with kids", targetCount: 5, period: .weekly, sortOrder: 1),
                 RoutineSeed(name: "Do something nice for my wife", targetCount: 1, period: .weekly, sortOrder: 2),
                 RoutineSeed(name: "Water plants", targetCount: 1, period: .weekly, sortOrder: 3),
-                RoutineSeed(name: "Run razor cleaner", targetCount: 1, period: .weekly, sortOrder: 4),
+                RoutineSeed(name: "Run razor cleaner", targetCount: 1, period: .weekly, sortOrder: 4)
             ]
         ),
         GroupSeed(
@@ -185,7 +188,7 @@ private enum StarterSeed {
                 RoutineSeed(name: "Read a book", targetCount: 4, period: .weekly, sortOrder: 2),
                 RoutineSeed(name: "Write something", targetCount: 3, period: .weekly, sortOrder: 3),
                 RoutineSeed(name: "Practice piano", targetCount: 3, period: .weekly, sortOrder: 4),
-                RoutineSeed(name: "Practice leetcode", targetCount: 3, period: .weekly, sortOrder: 5),
+                RoutineSeed(name: "Practice leetcode", targetCount: 3, period: .weekly, sortOrder: 5)
             ]
         ),
         GroupSeed(
@@ -201,9 +204,9 @@ private enum StarterSeed {
             routines: [
                 RoutineSeed(name: "Clean air purifiers", targetCount: 1, period: .monthly, sortOrder: 0),
                 RoutineSeed(name: "Rotate plants", targetCount: 1, period: .monthly, sortOrder: 1),
-                RoutineSeed(name: "Whiten teeth", targetCount: 1, period: .monthly, sortOrder: 2),
+                RoutineSeed(name: "Whiten teeth", targetCount: 1, period: .monthly, sortOrder: 2)
             ]
-        ),
+        )
     ]
 }
 

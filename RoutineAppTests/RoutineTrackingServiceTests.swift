@@ -6,13 +6,114 @@ import XCTest
 @testable import Routine
 
 @MainActor
-final class RoutineTrackingServiceTests: XCTestCase {
+class RoutineTrackingServiceTestCase: XCTestCase {
+    func makeContext() throws -> ModelContext {
+        ModelContext(try RoutineModelContainer.inMemory())
+    }
+
+    func makeCalendar() -> RoutineCalendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.locale = Locale(identifier: "en_US_POSIX")
+        guard let timeZone = TimeZone(identifier: "America/New_York") else {
+            preconditionFailure("Expected America/New_York timezone.")
+        }
+
+        calendar.timeZone = timeZone
+        calendar.firstWeekday = 2
+        return RoutineCalendar(calendar: calendar)
+    }
+
+    func insertRoutine(
+        seed: RoutineTestSeed,
+        into context: ModelContext
+    ) throws -> Routine {
+        let group = RoutineGroup(name: "Health", sortOrder: 0)
+        let routine = Routine(
+            id: seed.id,
+            name: seed.name,
+            targetCount: seed.targetCount,
+            period: seed.period,
+            sortOrder: seed.sortOrder,
+            group: group
+        )
+        context.insert(group)
+        context.insert(routine)
+        try context.saveRoutineChanges()
+        return routine
+    }
+
+    func fetchCompletions(in context: ModelContext) throws -> [RoutineCompletion] {
+        let descriptor = FetchDescriptor<RoutineCompletion>(
+            sortBy: [SortDescriptor(\RoutineCompletion.dayKey), SortDescriptor(\RoutineCompletion.completedAt)]
+        )
+        return try context.fetch(descriptor)
+    }
+
+    func completionDays(in context: ModelContext, routineID: UUID) throws -> [RoutineDay] {
+        let descriptor = FetchDescriptor<RoutineCompletion>(
+            predicate: #Predicate<RoutineCompletion> { completion in
+                completion.routineID == routineID
+            },
+            sortBy: [SortDescriptor(\RoutineCompletion.dayKey)]
+        )
+
+        return try context.fetch(descriptor).compactMap { RoutineDay(key: $0.dayKey) }
+    }
+
+    func makeProgress(
+        for routine: Routine,
+        in context: ModelContext,
+        today: RoutineDay,
+        calculator: ProgressCalculator
+    ) throws -> RoutineProgress {
+        calculator.progress(
+            period: routine.period,
+            targetCount: routine.targetCount,
+            completionDays: try completionDays(in: context, routineID: routine.id),
+            today: today
+        )
+    }
+
+    func makeDay(year: Int, month: Int, day: Int) throws -> RoutineDay {
+        try XCTUnwrap(RoutineDay(year: year, month: month, day: day))
+    }
+
+    func makeDate(
+        year: Int,
+        month: Int,
+        day: Int,
+        hour: Int = 12,
+        minute: Int = 0,
+        calendar: Calendar
+    ) -> Date {
+        var components = DateComponents()
+        components.calendar = calendar
+        components.timeZone = calendar.timeZone
+        components.year = year
+        components.month = month
+        components.day = day
+        components.hour = hour
+        components.minute = minute
+
+        guard let date = calendar.date(from: components) else {
+            preconditionFailure("Unable to build date for \(year)-\(month)-\(day) \(hour):\(minute).")
+        }
+
+        return date
+    }
+}
+
+@MainActor
+final class RoutineTrackingServiceCompletionTests: RoutineTrackingServiceTestCase {
     func testCompleteTodayInsertsExpectedCompletion() throws {
         let context = try makeContext()
         let calendar = makeCalendar()
         let day = try makeDay(year: 2026, month: 6, day: 7)
         let now = makeDate(year: 2026, month: 6, day: 7, hour: 9, minute: 15, calendar: calendar.calendar)
-        let routine = try insertRoutine(name: "Walk", targetCount: 3, period: .weekly, into: context)
+        let routine = try insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 0),
+            into: context
+        )
         let service = RoutineTrackingService(context: context, routineCalendar: calendar)
 
         let result = try service.completeToday(routineID: routine.id, now: now)
@@ -32,7 +133,10 @@ final class RoutineTrackingServiceTests: XCTestCase {
     func testCompleteTodayIsIdempotentForSameRoutineAndLocalDay() throws {
         let context = try makeContext()
         let calendar = makeCalendar()
-        let routine = try insertRoutine(name: "Walk", targetCount: 3, period: .weekly, into: context)
+        let routine = try insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 0),
+            into: context
+        )
         let service = RoutineTrackingService(context: context, routineCalendar: calendar)
         let firstNow = makeDate(year: 2026, month: 6, day: 7, hour: 8, minute: 0, calendar: calendar.calendar)
         let secondNow = makeDate(year: 2026, month: 6, day: 7, hour: 20, minute: 30, calendar: calendar.calendar)
@@ -49,8 +153,14 @@ final class RoutineTrackingServiceTests: XCTestCase {
     func testCompleteTodayCreatesIndependentCompletionsForDifferentRoutines() throws {
         let context = try makeContext()
         let calendar = makeCalendar()
-        let firstRoutine = try insertRoutine(name: "Walk", targetCount: 3, period: .weekly, into: context)
-        let secondRoutine = try insertRoutine(name: "Read", targetCount: 4, period: .weekly, into: context)
+        let firstRoutine = try insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 0),
+            into: context
+        )
+        let secondRoutine = try insertRoutine(
+            seed: RoutineTestSeed(name: "Read", targetCount: 4, period: .weekly, sortOrder: 0),
+            into: context
+        )
         let service = RoutineTrackingService(context: context, routineCalendar: calendar)
         let now = makeDate(year: 2026, month: 6, day: 7, hour: 10, minute: 0, calendar: calendar.calendar)
 
@@ -65,7 +175,10 @@ final class RoutineTrackingServiceTests: XCTestCase {
     func testCompleteTodayCreatesSeparateCompletionsAcrossDays() throws {
         let context = try makeContext()
         let calendar = makeCalendar()
-        let routine = try insertRoutine(name: "Walk", targetCount: 3, period: .weekly, into: context)
+        let routine = try insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 0),
+            into: context
+        )
         let service = RoutineTrackingService(context: context, routineCalendar: calendar)
 
         _ = try service.completeToday(
@@ -84,7 +197,10 @@ final class RoutineTrackingServiceTests: XCTestCase {
     func testUndoTodayRemovesOnlyTodaysCompletion() throws {
         let context = try makeContext()
         let calendar = makeCalendar()
-        let routine = try insertRoutine(name: "Walk", targetCount: 3, period: .weekly, into: context)
+        let routine = try insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 0),
+            into: context
+        )
         let previousDay = try makeDay(year: 2026, month: 6, day: 6)
         let today = try makeDay(year: 2026, month: 6, day: 7)
         let historicalCompletion = RoutineCompletion(
@@ -117,7 +233,10 @@ final class RoutineTrackingServiceTests: XCTestCase {
     func testUndoTodayWithoutExistingCompletionReturnsFalseWithoutThrowing() throws {
         let context = try makeContext()
         let calendar = makeCalendar()
-        let routine = try insertRoutine(name: "Walk", targetCount: 3, period: .weekly, into: context)
+        let routine = try insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 0),
+            into: context
+        )
         let service = RoutineTrackingService(context: context, routineCalendar: calendar)
         let today = try makeDay(year: 2026, month: 6, day: 7)
 
@@ -133,7 +252,10 @@ final class RoutineTrackingServiceTests: XCTestCase {
     func testRemoveCompletionDeletesOnlySelectedHistoricalCompletion() throws {
         let context = try makeContext()
         let calendar = makeCalendar()
-        let routine = try insertRoutine(name: "Walk", targetCount: 3, period: .weekly, into: context)
+        let routine = try insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 0),
+            into: context
+        )
         let firstCompletion = RoutineCompletion(
             routine: routine,
             day: try makeDay(year: 2026, month: 6, day: 5),
@@ -156,7 +278,10 @@ final class RoutineTrackingServiceTests: XCTestCase {
         XCTAssertEqual(completions.map(\.id), [secondCompletion.id])
         XCTAssertEqual(completions.map(\.dayKey), ["2026-06-06"])
     }
+}
 
+@MainActor
+final class RoutineTrackingServicePersistenceTests: RoutineTrackingServiceTestCase {
     func testCompleteTodayWithMissingRoutineThrowsTypedUserSafeError() throws {
         let context = try makeContext()
         let calendar = makeCalendar()
@@ -188,7 +313,10 @@ final class RoutineTrackingServiceTests: XCTestCase {
         let context = try makeContext()
         let calendar = makeCalendar()
         let now = makeDate(year: 2026, month: 6, day: 7, hour: 9, minute: 0, calendar: calendar.calendar)
-        let routine = try insertRoutine(name: "Walk", targetCount: 3, period: .weekly, into: context)
+        let routine = try insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 0),
+            into: context
+        )
         let service = RoutineTrackingService(context: context, routineCalendar: calendar)
         let originalSave = RoutinePersistenceSaveExecutor.save
         defer { RoutinePersistenceSaveExecutor.save = originalSave }
@@ -223,16 +351,13 @@ final class RoutineTrackingServiceTests: XCTestCase {
     func testProgressAfterCompletionAndRemovalMatchesExpectedState() throws {
         let context = try makeContext()
         let calendar = makeCalendar()
-        let routine = try insertRoutine(name: "Walk", targetCount: 3, period: .weekly, into: context)
+        let routine = try insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 0),
+            into: context
+        )
         let service = RoutineTrackingService(context: context, routineCalendar: calendar)
         let progressCalculator = ProgressCalculator(routineCalendar: calendar)
-        let june8 = makeDate(year: 2026, month: 6, day: 8, hour: 9, minute: 0, calendar: calendar.calendar)
-        let june9 = makeDate(year: 2026, month: 6, day: 9, hour: 9, minute: 0, calendar: calendar.calendar)
-        let june10 = makeDate(year: 2026, month: 6, day: 10, hour: 9, minute: 0, calendar: calendar.calendar)
-
-        _ = try service.completeToday(routineID: routine.id, now: june8)
-        _ = try service.completeToday(routineID: routine.id, now: june9)
-        _ = try service.completeToday(routineID: routine.id, now: june10)
+        try completeDays([8, 9, 10], routineID: routine.id, service: service, calendar: calendar)
 
         let june10Day = try makeDay(year: 2026, month: 6, day: 10)
         var routineProgress = try makeProgress(
@@ -241,16 +366,15 @@ final class RoutineTrackingServiceTests: XCTestCase {
             today: june10Day,
             calculator: progressCalculator
         )
-        XCTAssertEqual(routineProgress.completedCount, 3)
-        XCTAssertTrue(routineProgress.isCompletedToday)
-        XCTAssertEqual(routineProgress.lastCompletedDay, june10Day)
-        XCTAssertEqual(
-            try completionDays(in: context, routineID: routine.id),
-            [
-                try makeDay(year: 2026, month: 6, day: 8),
-                try makeDay(year: 2026, month: 6, day: 9),
-                june10Day,
-            ]
+        try assertProgressState(
+            routineProgress,
+            today: june10Day,
+            expectedCount: 3
+        )
+        try assertCompletionDays(
+            in: context,
+            routineID: routine.id,
+            expected: try routineDays([8, 9, 10])
         )
 
         let june9Completion = try XCTUnwrap(
@@ -264,103 +388,52 @@ final class RoutineTrackingServiceTests: XCTestCase {
             today: june10Day,
             calculator: progressCalculator
         )
-        XCTAssertEqual(routineProgress.completedCount, 2)
-        XCTAssertTrue(routineProgress.isCompletedToday)
-        XCTAssertEqual(routineProgress.lastCompletedDay, june10Day)
-        XCTAssertEqual(
-            try completionDays(in: context, routineID: routine.id),
-            [
-                try makeDay(year: 2026, month: 6, day: 8),
-                june10Day,
-            ]
+        try assertProgressState(
+            routineProgress,
+            today: june10Day,
+            expectedCount: 2
+        )
+        try assertCompletionDays(
+            in: context,
+            routineID: routine.id,
+            expected: try routineDays([8, 10])
         )
     }
 
-    private func makeContext() throws -> ModelContext {
-        ModelContext(try RoutineModelContainer.inMemory())
-    }
-
-    private func makeCalendar() -> RoutineCalendar {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.locale = Locale(identifier: "en_US_POSIX")
-        calendar.timeZone = TimeZone(identifier: "America/New_York")!
-        calendar.firstWeekday = 2
-        return RoutineCalendar(calendar: calendar)
-    }
-
-    private func insertRoutine(
-        name: String,
-        targetCount: Int,
-        period: RoutinePeriod,
-        into context: ModelContext
-    ) throws -> Routine {
-        let group = RoutineGroup(name: "Health", sortOrder: 0)
-        let routine = Routine(
-            name: name,
-            targetCount: targetCount,
-            period: period,
-            sortOrder: 0,
-            group: group
-        )
-        context.insert(group)
-        context.insert(routine)
-        try context.saveRoutineChanges()
-        return routine
-    }
-
-    private func fetchCompletions(in context: ModelContext) throws -> [RoutineCompletion] {
-        let descriptor = FetchDescriptor<RoutineCompletion>(
-            sortBy: [SortDescriptor(\RoutineCompletion.dayKey), SortDescriptor(\RoutineCompletion.completedAt)]
-        )
-        return try context.fetch(descriptor)
-    }
-
-    private func completionDays(in context: ModelContext, routineID: UUID) throws -> [RoutineDay] {
-        let descriptor = FetchDescriptor<RoutineCompletion>(
-            predicate: #Predicate<RoutineCompletion> { completion in
-                completion.routineID == routineID
-            },
-            sortBy: [SortDescriptor(\RoutineCompletion.dayKey)]
-        )
-
-        return try context.fetch(descriptor).compactMap { RoutineDay(key: $0.dayKey) }
-    }
-
-    private func makeProgress(
-        for routine: Routine,
-        in context: ModelContext,
+    private func assertProgressState(
+        _ progress: RoutineProgress,
         today: RoutineDay,
-        calculator: ProgressCalculator
-    ) throws -> RoutineProgress {
-        calculator.progress(
-            period: routine.period,
-            targetCount: routine.targetCount,
-            completionDays: try completionDays(in: context, routineID: routine.id),
-            today: today
-        )
+        expectedCount: Int
+    ) throws {
+        XCTAssertEqual(progress.completedCount, expectedCount)
+        XCTAssertTrue(progress.isCompletedToday)
+        XCTAssertEqual(progress.lastCompletedDay, today)
     }
 
-    private func makeDay(year: Int, month: Int, day: Int) throws -> RoutineDay {
-        try XCTUnwrap(RoutineDay(year: year, month: month, day: day))
+    private func assertCompletionDays(
+        in context: ModelContext,
+        routineID: UUID,
+        expected: [RoutineDay]
+    ) throws {
+        XCTAssertEqual(try completionDays(in: context, routineID: routineID), expected)
     }
 
-    private func makeDate(
-        year: Int,
-        month: Int,
-        day: Int,
-        hour: Int,
-        minute: Int,
-        calendar: Calendar
-    ) -> Date {
-        var components = DateComponents()
-        components.calendar = calendar
-        components.timeZone = calendar.timeZone
-        components.year = year
-        components.month = month
-        components.day = day
-        components.hour = hour
-        components.minute = minute
-        return calendar.date(from: components)!
+    private func completeDays(
+        _ days: [Int],
+        routineID: UUID,
+        service: RoutineTrackingService,
+        calendar: RoutineCalendar
+    ) throws {
+        for day in days {
+            _ = try service.completeToday(
+                routineID: routineID,
+                now: makeDate(year: 2026, month: 6, day: day, hour: 9, calendar: calendar.calendar)
+            )
+        }
+    }
+
+    private func routineDays(_ days: [Int]) throws -> [RoutineDay] {
+        try days.map { try makeDay(year: 2026, month: 6, day: $0) }
     }
 }
 

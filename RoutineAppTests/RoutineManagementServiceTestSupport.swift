@@ -36,18 +36,16 @@ class RoutineManagementServiceTestCase: XCTestCase {
     }
 
     func insertRoutine(
-        name: String,
-        targetCount: Int,
-        period: RoutinePeriod,
-        sortOrder: Int,
+        seed: RoutineTestSeed,
         group: RoutineGroup,
         into context: ModelContext
     ) throws -> Routine {
         let routine = Routine(
-            name: name,
-            targetCount: targetCount,
-            period: period,
-            sortOrder: sortOrder,
+            id: seed.id,
+            name: seed.name,
+            targetCount: seed.targetCount,
+            period: seed.period,
+            sortOrder: seed.sortOrder,
             group: group
         )
         context.insert(routine)

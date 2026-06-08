@@ -4,4 +4,4 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-swiftlint lint --config .swiftlint.yml
+swiftlint lint --strict --config .swiftlint.yml

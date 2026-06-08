@@ -12,19 +12,13 @@ final class ManageProjectionBuilderTests: ProjectionBuilderTestCase {
         let first = insertGroup(name: "First", sortOrder: 0, into: context)
 
         _ = insertRoutine(
-            name: "Earlier",
-            targetCount: 3,
-            period: .weekly,
-            sortOrder: 0,
+            seed: RoutineTestSeed(name: "Earlier", targetCount: 3, period: .weekly, sortOrder: 0),
             group: first,
             createdAt: makeDate(year: 2026, month: 6, day: 1, hour: 8),
             into: context
         )
         _ = insertRoutine(
-            name: "Later",
-            targetCount: 2,
-            period: .weekly,
-            sortOrder: 0,
+            seed: RoutineTestSeed(name: "Later", targetCount: 2, period: .weekly, sortOrder: 0),
             group: first,
             createdAt: makeDate(year: 2026, month: 6, day: 2, hour: 8),
             into: context
@@ -46,18 +40,12 @@ final class ManageProjectionBuilderTests: ProjectionBuilderTestCase {
         let calendar = makeCalendar()
         let group = insertGroup(name: "Manage", sortOrder: 0, into: context)
         let weekly = insertRoutine(
-            name: "Walk",
-            targetCount: 5,
-            period: .weekly,
-            sortOrder: 0,
+            seed: RoutineTestSeed(name: "Walk", targetCount: 5, period: .weekly, sortOrder: 0),
             group: group,
             into: context
         )
         let monthly = insertRoutine(
-            name: "Budget",
-            targetCount: 2,
-            period: .monthly,
-            sortOrder: 1,
+            seed: RoutineTestSeed(name: "Budget", targetCount: 2, period: .monthly, sortOrder: 1),
             group: group,
             into: context
         )
@@ -94,10 +82,7 @@ final class ManageProjectionBuilderTests: ProjectionBuilderTestCase {
         let context = try makeContext()
         let sourceGroup = insertGroup(name: "Temporary", sortOrder: 0, into: context)
         let routine = insertRoutine(
-            name: "Loose Task",
-            targetCount: 1,
-            period: .weekly,
-            sortOrder: 0,
+            seed: RoutineTestSeed(name: "Loose Task", targetCount: 1, period: .weekly, sortOrder: 0),
             group: sourceGroup,
             into: context
         )

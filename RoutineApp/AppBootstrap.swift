@@ -31,6 +31,10 @@ enum AppBootstrap {
             if ProcessInfo.processInfo.arguments.contains("-routine-force-bootstrap-failure") {
                 throw ForcedBootstrapFailure()
             }
+
+            if ProcessInfo.processInfo.arguments.contains("-routine-use-in-memory-store") {
+                return try RoutineModelContainer.inMemory()
+            }
         #endif
 
         return try RoutineModelContainer.persistent()

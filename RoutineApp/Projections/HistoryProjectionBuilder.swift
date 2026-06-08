@@ -70,7 +70,7 @@ extension HistoryProjectionBuilder {
             },
             sortBy: [
                 SortDescriptor(\RoutineCompletion.dayKey, order: .reverse),
-                SortDescriptor(\RoutineCompletion.completedAt, order: .reverse),
+                SortDescriptor(\RoutineCompletion.completedAt, order: .reverse)
             ]
         )
 
