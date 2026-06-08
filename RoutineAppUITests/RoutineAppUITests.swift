@@ -37,6 +37,27 @@ final class RoutineAppUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["5 per week"].waitForExistence(timeout: 5))
     }
 
+    func testCompletedRoutineMoreActionsShowsUndoOption() {
+        let app = makeApp(launchArguments: ["-routine-use-in-memory-store"])
+        app.launch()
+
+        let morningYogaText = app.staticTexts["Morning yoga"]
+        XCTAssertTrue(morningYogaText.waitForExistence(timeout: 5))
+        morningYogaText.tap()
+
+        let moreActionsButton = app.buttons["More actions for Morning yoga"]
+        XCTAssertTrue(moreActionsButton.waitForExistence(timeout: 5))
+        moreActionsButton.tap()
+
+        let viewHistoryButton = app.buttons["View History"]
+        let editRoutineButton = app.buttons["Edit Routine"]
+        let undoCompletionButton = app.buttons["Undo Today's Completion"]
+
+        XCTAssertTrue(viewHistoryButton.waitForExistence(timeout: 5))
+        XCTAssertTrue(editRoutineButton.exists)
+        XCTAssertTrue(undoCompletionButton.exists)
+    }
+
     func testHistoryDeletionRequiresConfirmationAndRefreshesState() {
         let app = makeApp(
             launchArguments: [

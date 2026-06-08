@@ -86,15 +86,18 @@ struct RoutineCardView: View {
         .background {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(backgroundColor)
+                .allowsHitTesting(false)
         }
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(borderColor, lineWidth: 1)
+                .allowsHitTesting(false)
         }
         .overlay {
             if viewData.isCompletedToday {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(Color.routineAccentComplete.opacity(0.08))
+                    .allowsHitTesting(false)
             }
         }
     }
