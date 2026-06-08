@@ -134,6 +134,7 @@ Core color roles:
 - `Surface Elevated`
   - Used for sheets, overlays, and active/emphasized surfaces
   - Should read as layered above the base interface
+  - In increased-contrast light mode, use a near-white elevated tone rather than pure white so the accessibility variant remains materially distinct from the default light surface
 - `Label Primary`
   - Routine names and high-importance text
 - `Label Secondary`

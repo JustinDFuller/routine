@@ -37,6 +37,16 @@ struct ProgressRingViewData: Equatable, Sendable {
     let showsTodayCheckmark: Bool
 }
 
+struct UndoBannerViewData: Equatable, Sendable {
+    let message: String
+    let actionTitle: String
+
+    init(message: String, actionTitle: String = "Undo") {
+        self.message = message
+        self.actionTitle = actionTitle
+    }
+}
+
 enum RoutineHistoryProjection: Equatable, Sendable {
     case found(RoutineHistoryViewData)
     case notFound(routineID: UUID)
