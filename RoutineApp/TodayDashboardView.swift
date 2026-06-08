@@ -27,6 +27,7 @@ struct TodayDashboardView: View {
     private var completions: [RoutineCompletion]
 
     @State private var selectedCard: SelectedRoutineCard?
+    @State private var isSelectedCardDialogPresented = false
     @State private var undoBanner: UndoBannerPresentation?
     @State private var undoDismissTask: Task<Void, Never>?
     @State private var errorAlert: DashboardErrorAlert?
@@ -95,29 +96,33 @@ struct TodayDashboardView: View {
         }
         .confirmationDialog(
             selectedCard?.name ?? "Routine Actions",
-            isPresented: selectedCardIsPresented,
+            isPresented: selectedCardDialogIsPresented,
             titleVisibility: .visible,
             presenting: selectedCard
         ) { selectedCard in
             Button("View History") {
                 self.selectedCard = nil
+                isSelectedCardDialogPresented = false
                 path.append(.routineHistory(routineID: selectedCard.id))
             }
 
             Button("Edit Routine") {
                 self.selectedCard = nil
+                isSelectedCardDialogPresented = false
                 path.append(.manageRoutines(editingRoutineID: selectedCard.id))
             }
 
             if selectedCard.isCompletedToday {
                 Button("Undo Today's Completion") {
                     self.selectedCard = nil
+                    isSelectedCardDialogPresented = false
                     undoCompletion(routineID: selectedCard.id)
                 }
             }
 
             Button("Cancel", role: .cancel) {
                 self.selectedCard = nil
+                isSelectedCardDialogPresented = false
             }
         }
         .alert(
@@ -155,6 +160,7 @@ struct TodayDashboardView: View {
                                 },
                                 onMore: {
                                     selectedCard = SelectedRoutineCard(from: routine)
+                                    isSelectedCardDialogPresented = true
                                 }
                             )
                         }
@@ -184,10 +190,12 @@ struct TodayDashboardView: View {
         .accessibilityIdentifier("today-dashboard-empty-state")
     }
 
-    private var selectedCardIsPresented: Binding<Bool> {
+    private var selectedCardDialogIsPresented: Binding<Bool> {
         Binding(
-            get: { selectedCard != nil },
+            get: { isSelectedCardDialogPresented },
             set: { isPresented in
+                isSelectedCardDialogPresented = isPresented
+
                 if isPresented == false {
                     selectedCard = nil
                 }
@@ -209,6 +217,7 @@ struct TodayDashboardView: View {
     private func handlePrimaryTap(for routine: RoutineCardViewData) {
         if routine.isCompletedToday {
             selectedCard = SelectedRoutineCard(from: routine)
+            isSelectedCardDialogPresented = true
             return
         }
 
@@ -313,26 +322,5 @@ private struct DashboardErrorAlert: Equatable {
     ) {
         self.title = title
         self.message = message
-    }
-}
-
-struct RoutineHistoryPlaceholderView: View {
-    let routineID: UUID
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Routine history is coming in a later milestone.")
-                .font(.body)
-                .foregroundStyle(Color.routineLabelSecondary)
-
-            Text(routineID.uuidString)
-                .font(.footnote.monospaced())
-                .foregroundStyle(Color.routineLabelSecondary)
-                .textSelection(.enabled)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(24)
-        .background(Color.routineCanvas.ignoresSafeArea())
-        .navigationTitle("History")
     }
 }

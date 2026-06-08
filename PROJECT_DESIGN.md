@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**CURRENT: M12 - Routine History UI**
+**CURRENT: M13 - Accessibility, Polish, And UI Coverage**
 
 The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -100,8 +100,8 @@ Core invariants that require automated coverage when touched:
 | DONE | M09 - Today Dashboard Flow | The main dashboard shows seeded routines and supports one-tap completion with undo. |
 | DONE | M10 - Routine Management UI | The user can add, edit, delete, and assign routines from native management screens. |
 | DONE | M11 - Group And Reorder UI | The user can manage groups and reorder routines/groups through native controls. |
-| CURRENT | M12 - Routine History UI | The user can inspect and correct routine-specific completion history. |
-| NOT STARTED | M13 - Accessibility, Polish, And UI Coverage | Primary flows satisfy accessibility, motion, visual, and UI-test expectations. |
+| DONE | M12 - Routine History UI | The user can inspect and correct routine-specific completion history. |
+| CURRENT | M13 - Accessibility, Polish, And UI Coverage | Primary flows satisfy accessibility, motion, visual, and UI-test expectations. |
 | NOT STARTED | M14 - Dogfooding Readiness | Local validation, diagnostics, privacy, app icon, and device-readiness checks are complete. |
 
 ## Milestones
@@ -623,7 +623,7 @@ Completion note:
 
 ### M12 - Routine History UI
 
-Status: `CURRENT`
+Status: `DONE`
 
 Goal: let the user answer "when did I last do this?" and correct mistaken completions.
 
@@ -666,9 +666,13 @@ Completion update:
 - Mark this milestone `DONE`.
 - Mark M13 `CURRENT`.
 
+Completion note:
+
+- Passed targeted `xcodebuild test` coverage for `RoutineAppTests/HistoryProjectionBuilderTests`, `RoutineAppTests/RoutineTrackingServicePersistenceTests`, and all `RoutineAppUITests`; also passed `./Scripts/test-core.sh`, `./Scripts/check-format.sh`, `./Scripts/lint.sh`, `./Scripts/build-ios.sh`, and `./Scripts/test-ios.sh` on the iPhone 17 simulator. Manual history open/remove verification in Simulator was not performed in this non-interactive session.
+
 ### M13 - Accessibility, Polish, And UI Coverage
 
-Status: `NOT STARTED`
+Status: `CURRENT`
 
 Goal: make the implemented MVP flows reliable, native-feeling, and accessible enough for daily use.
 

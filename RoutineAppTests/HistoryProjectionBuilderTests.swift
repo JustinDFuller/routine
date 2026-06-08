@@ -16,6 +16,146 @@ final class HistoryProjectionBuilderTests: ProjectionBuilderTestCase {
         }
     }
 
+    func testBuildUsingProvidedModelsSelectsRequestedRoutineAndItsCompletions() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let group = insertGroup(name: "History", sortOrder: 0, into: context)
+        let firstRoutine = insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 0),
+            group: group,
+            into: context
+        )
+        let secondRoutine = insertRoutine(
+            seed: RoutineTestSeed(name: "Morning yoga", targetCount: 5, period: .weekly, sortOrder: 1),
+            group: group,
+            into: context
+        )
+        let now = makeDate(year: 2026, month: 6, day: 10, hour: 9, minute: 0, calendar: calendar.calendar)
+
+        insertCompletion(
+            routine: firstRoutine,
+            day: try makeDay(year: 2026, month: 6, day: 10),
+            completedAt: now,
+            into: context
+        )
+        let selectedCompletion = insertCompletion(
+            routine: secondRoutine,
+            day: try makeDay(year: 2026, month: 6, day: 9),
+            completedAt: makeDate(year: 2026, month: 6, day: 9, hour: 7, minute: 0, calendar: calendar.calendar),
+            into: context
+        )
+
+        let projection = HistoryProjectionBuilder(context: context, routineCalendar: calendar).build(
+            routineID: secondRoutine.id,
+            routines: [firstRoutine, secondRoutine],
+            completions: secondRoutine.completions + firstRoutine.completions,
+            now: now
+        )
+        let viewData = try foundViewData(from: projection)
+
+        XCTAssertEqual(viewData.routineName, "Morning yoga")
+        XCTAssertEqual(viewData.frequencySummary, "5 per week")
+        XCTAssertEqual(viewData.recentCompletions.map(\.id), [selectedCompletion.id])
+    }
+
+    func testBuildUsingProvidedModelsReturnsNotFoundWhenRoutineIsMissing() throws {
+        let context = try makeContext()
+        let projection = HistoryProjectionBuilder(context: context).build(
+            routineID: UUID(),
+            routines: [],
+            completions: []
+        )
+
+        guard case .notFound = projection else {
+            return XCTFail("Expected notFound projection.")
+        }
+    }
+
+    func testBuildUsingProvidedModelsProducesCurrentPeriodSummaryFields() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let group = insertGroup(name: "History", sortOrder: 0, into: context)
+        let routine = insertRoutine(
+            seed: RoutineTestSeed(name: "Morning yoga", targetCount: 5, period: .weekly, sortOrder: 0),
+            group: group,
+            into: context
+        )
+        let now = makeDate(year: 2026, month: 6, day: 10, hour: 9, minute: 0, calendar: calendar.calendar)
+        let june8 = try makeDay(year: 2026, month: 6, day: 8)
+        let june10 = try makeDay(year: 2026, month: 6, day: 10)
+
+        let june8Completion = insertCompletion(
+            routine: routine,
+            day: june8,
+            completedAt: makeDate(year: 2026, month: 6, day: 8, hour: 9, minute: 0, calendar: calendar.calendar),
+            into: context
+        )
+        let june10Completion = insertCompletion(
+            routine: routine,
+            day: june10,
+            completedAt: now,
+            into: context
+        )
+
+        let viewData = try foundViewData(
+            from: HistoryProjectionBuilder(context: context, routineCalendar: calendar).build(
+                routineID: routine.id,
+                routines: [routine],
+                completions: [june8Completion, june10Completion],
+                now: now
+            )
+        )
+
+        XCTAssertEqual(viewData.frequencySummary, "5 per week")
+        XCTAssertEqual(viewData.progress.completedCount, 2)
+        XCTAssertTrue(viewData.progress.isCompletedToday)
+        XCTAssertEqual(viewData.lastDoneText, "Today")
+    }
+
+    func testBuildUsingProvidedModelsRefreshesAfterCompletionRemoval() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let group = insertGroup(name: "History", sortOrder: 0, into: context)
+        let routine = insertRoutine(
+            seed: RoutineTestSeed(name: "Morning yoga", targetCount: 5, period: .weekly, sortOrder: 0),
+            group: group,
+            into: context
+        )
+        let now = makeDate(year: 2026, month: 6, day: 10, hour: 9, minute: 0, calendar: calendar.calendar)
+        let june10 = try makeDay(year: 2026, month: 6, day: 10)
+        let completion = insertCompletion(
+            routine: routine,
+            day: june10,
+            completedAt: now,
+            into: context
+        )
+        let builder = HistoryProjectionBuilder(context: context, routineCalendar: calendar)
+
+        let beforeRemoval = try foundViewData(
+            from: builder.build(
+                routineID: routine.id,
+                routines: [routine],
+                completions: [completion],
+                now: now
+            )
+        )
+        let afterRemoval = try foundViewData(
+            from: builder.build(
+                routineID: routine.id,
+                routines: [routine],
+                completions: [],
+                now: now
+            )
+        )
+
+        XCTAssertEqual(beforeRemoval.progress.completedCount, 1)
+        XCTAssertTrue(beforeRemoval.monthDays.contains { $0.day == june10 && $0.isCompleted })
+        XCTAssertEqual(afterRemoval.progress.completedCount, 0)
+        XCTAssertEqual(afterRemoval.lastDoneText, "Never")
+        XCTAssertTrue(afterRemoval.recentCompletions.isEmpty)
+        XCTAssertTrue(afterRemoval.monthDays.contains { $0.day == june10 && $0.isCompleted == false })
+    }
+
     func testBuildProducesSummaryLabelsForRelativeCases() throws {
         let context = try makeContext()
         let calendar = makeCalendar()
