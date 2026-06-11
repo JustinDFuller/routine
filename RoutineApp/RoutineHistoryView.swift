@@ -46,11 +46,11 @@ struct RoutineHistoryView: View {
         )
     }
 
-    private var pendingRemovalIsPresented: Binding<Bool> {
+    private func pendingRemovalIsPresented(for completionID: UUID) -> Binding<Bool> {
         Binding(
-            get: { pendingRemoval != nil },
+            get: { pendingRemoval?.id == completionID },
             set: { isPresented in
-                if isPresented == false {
+                if isPresented == false, pendingRemoval?.id == completionID {
                     pendingRemoval = nil
                 }
             }
@@ -77,22 +77,6 @@ struct RoutineHistoryView: View {
         }
         .navigationTitle("History")
         .navigationBarTitleDisplayMode(.inline)
-        .confirmationDialog(
-            "Remove completion?",
-            isPresented: pendingRemovalIsPresented,
-            titleVisibility: .visible,
-            presenting: pendingRemoval
-        ) { item in
-            Button("Remove Completion", role: .destructive) {
-                confirmRemoval(item)
-            }
-
-            Button("Cancel", role: .cancel) {
-                pendingRemoval = nil
-            }
-        } message: { item in
-            Text(item.dateText)
-        }
         .alert(
             removalAlert?.title ?? "Could not remove completion.",
             isPresented: removalAlertIsPresented,
@@ -177,6 +161,21 @@ struct RoutineHistoryView: View {
                     ForEach(viewData.recentCompletions) { item in
                         CompletionListRow(item: item) {
                             pendingRemoval = item
+                        }
+                        .confirmationDialog(
+                            "Remove completion?",
+                            isPresented: pendingRemovalIsPresented(for: item.id),
+                            titleVisibility: .visible
+                        ) {
+                            Button("Remove Completion", role: .destructive) {
+                                confirmRemoval(item)
+                            }
+
+                            Button("Cancel", role: .cancel) {
+                                pendingRemoval = nil
+                            }
+                        } message: {
+                            Text(item.dateText)
                         }
                     }
                 }

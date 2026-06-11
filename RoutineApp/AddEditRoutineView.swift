@@ -81,6 +81,19 @@ struct AddEditRoutineView: View {
                         }
                         .accessibilityHint("Deletes this routine and its completion history after confirmation.")
                         .accessibilityIdentifier("routine-form-delete-button")
+                        .confirmationDialog(
+                            "Delete Routine",
+                            isPresented: $isDeleteConfirmationPresented,
+                            titleVisibility: .visible
+                        ) {
+                            Button("Delete Routine", role: .destructive) {
+                                delete()
+                            }
+
+                            Button("Cancel", role: .cancel) {}
+                        } message: {
+                            Text("This deletes the routine and its completion history.")
+                        }
                     }
                 }
             }
@@ -101,19 +114,6 @@ struct AddEditRoutineView: View {
                     }
                     .accessibilityIdentifier("routine-form-save-button")
                 }
-            }
-            .confirmationDialog(
-                "Delete Routine",
-                isPresented: $isDeleteConfirmationPresented,
-                titleVisibility: .visible
-            ) {
-                Button("Delete Routine", role: .destructive) {
-                    delete()
-                }
-
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("This deletes the routine and its completion history.")
             }
             .alert(
                 alertPresentation?.title ?? "",

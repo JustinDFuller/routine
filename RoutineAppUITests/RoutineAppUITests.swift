@@ -180,6 +180,44 @@ final class RoutineAppUITests: XCTestCase {
         )
     }
 
+    func testManageFlowCanDeleteGroupThroughGroupActions() {
+        let app = makeApp(
+            seeded: false,
+            additionalLaunchArguments: ["-routine-empty-in-memory-store"]
+        )
+        app.launch()
+
+        let manageButton = app.buttons["today-dashboard-empty-manage-button"]
+        XCTAssertTrue(manageButton.waitForExistence(timeout: 5))
+        manageButton.tap()
+
+        XCTAssertTrue(app.navigationBars["Manage Routines"].waitForExistence(timeout: 5))
+
+        let addGroupButton = app.buttons["Add Group"]
+        XCTAssertTrue(addGroupButton.waitForExistence(timeout: 5))
+        addGroupButton.tap()
+
+        let nameField = app.textFields["group-form-name-field"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 5))
+        nameField.tap()
+        nameField.typeText("UI Test Group")
+        app.buttons["group-form-save-button"].tap()
+
+        let groupActionsButton = app.buttons["UI Test Group Actions"]
+        XCTAssertTrue(groupActionsButton.waitForExistence(timeout: 5))
+        groupActionsButton.tap()
+        app.buttons["Delete Group"].tap()
+
+        let deleteConfirmationSheet = app.sheets["UI Test Group"]
+        XCTAssertTrue(deleteConfirmationSheet.waitForExistence(timeout: 5))
+
+        let confirmDeleteButton = deleteConfirmationSheet.buttons["Delete Group"]
+        XCTAssertTrue(confirmDeleteButton.waitForExistence(timeout: 5))
+        confirmDeleteButton.tap()
+
+        XCTAssertFalse(groupActionsButton.waitForExistence(timeout: 2))
+    }
+
     func testLaunchShowsFallbackScreenWhenBootstrapFails() {
         let app = makeApp(
             seeded: false,
