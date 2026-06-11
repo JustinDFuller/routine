@@ -28,7 +28,6 @@ struct TodayDashboardView: View {
     var completions: [RoutineCompletion]
 
     @State var mode: DashboardMode = .tracking
-    @State var selectedRoutineID: UUID?
     @State var sheetPresentation: ManageSheetPresentation?
     @State var undoBanner: UndoBannerPresentation?
     @State var undoDismissTask: Task<Void, Never>?
@@ -84,21 +83,21 @@ struct TodayDashboardView: View {
             Color.routineCanvas
                 .ignoresSafeArea()
 
-            if mode == .organize {
-                organizeContent
+            if mode.isRearranging {
+                rearrangeContent
             } else {
                 trackingContent
             }
         }
-        .navigationTitle(viewData.title)
-        .toolbar(mode == .organize ? .visible : .hidden, for: .navigationBar)
+        .navigationTitle(navigationTitle)
+        .toolbar(mode.isRearranging ? .visible : .hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                if mode == .organize {
+                if mode.isRearranging {
                     Button("Done") {
-                        exitOrganizeMode()
+                        exitRearrangeMode()
                     }
-                    .accessibilityIdentifier("today-dashboard-organize-done-button")
+                    .accessibilityIdentifier("today-dashboard-rearrange-done-button")
                 }
             }
         }
@@ -117,7 +116,7 @@ struct TodayDashboardView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            if mode != .organize, let undoBanner {
+            if mode.isRearranging == false, let undoBanner {
                 UndoBannerView(viewData: undoBanner.viewData) {
                     undoCompletion(routineID: undoBanner.routineID)
                 }
@@ -144,5 +143,9 @@ struct TodayDashboardView: View {
         .onDisappear {
             undoDismissTask?.cancel()
         }
+    }
+
+    var navigationTitle: String {
+        mode.navigationTitle ?? viewData.title
     }
 }

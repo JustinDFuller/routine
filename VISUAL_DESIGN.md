@@ -217,7 +217,6 @@ Recommended symbol directions:
 
 - Completion check state: `checkmark`
 - View history: `calendar`, `clock.arrow.circlepath`, or similar native symbol
-- More actions: `ellipsis.circle`
 - Add routine: `plus`
 - Edit: `pencil`
 - Delete: `trash`
@@ -321,8 +320,9 @@ The gear menu is the only top-level management entry. It should expose:
 
 - `Add Routine`
 - `Add Group`
-- `Show Management Controls` or `Hide Management Controls`
-- `Organize Order`
+- `Edit` or `Done Editing`
+- `Rearrange Groups`
+- `Rearrange Routines`
 
 Normal dashboard mode should stay focused on tracking. Management controls are available on demand rather than always competing with completion affordances.
 
@@ -335,11 +335,12 @@ Recommended behavior:
 - The gear menu opens native menu actions for creation and mode changes
 - `Add Routine` opens a routine sheet over the dashboard
 - `Add Group` opens a group sheet over the dashboard
-- `Show Management Controls` reveals inline edit affordances on group headers and routine rows
-- `Hide Management Controls` returns the dashboard to its normal tracking-focused state
-- `Organize Order` enters a visible drag-and-drop mode with a clear `Done` exit in the top bar
+- `Edit` reveals inline edit affordances on group headers and routine rows
+- `Done Editing` returns the dashboard to its normal tracking-focused state
+- `Rearrange Groups` enters a visible drag-and-drop mode for groups with a clear `Done` exit in the top bar
+- `Rearrange Routines` enters a visible drag-and-drop mode for routines grouped by their current group, also with a clear `Done` exit
 
-Routine history and undo remain available from routine secondary actions so daily use stays fast even when management controls are hidden.
+Routine history remains directly available from each routine card, and same-day undo remains available from the transient undo banner and from history correction.
 
 #### Content structure
 
@@ -487,21 +488,14 @@ Do not rely on:
 
 ### Secondary Actions on a Routine
 
-Every routine needs a visible path to history and secondary actions without interfering with one-tap completion.
+Every routine needs a visible path to history without interfering with one-tap completion.
 
 Recommended pattern:
 
-- Provide a trailing `ellipsis.circle` button on every routine card
-- Tapping that button opens a lightweight action sheet or confirmation dialog
+- Provide a trailing calendar/history button on every routine card
+- Tapping that button opens the routine history screen directly
 
-Recommended actions:
-
-- `View History`
-- `Edit Routine`
-- `Undo Today's Completion` when applicable
-- `Cancel`
-
-Do not place delete on the dashboard action sheet. Deletion belongs in the edit sheet, not daily use.
+Editing belongs to dashboard Edit mode, and deletion belongs in the edit sheet, not daily use.
 
 ### Completion Interaction
 
@@ -565,7 +559,7 @@ Routine History is the main answer to the question: "When did I last do this?"
 
 #### Navigation
 
-Access history from a routine's secondary actions.
+Access history from the routine card's direct history affordance or from tapping a card already completed today.
 
 History should open as a dedicated routine-specific screen in the navigation hierarchy, not as a tiny popover or a cramped inline expansion.
 
@@ -661,19 +655,19 @@ When management controls are visible, the dashboard may show quiet inline afford
 
 These controls should remain secondary to the routine card's completion target and should disappear when management controls are hidden.
 
-#### Organize mode
+#### Rearrange modes
 
-Organize mode is a temporary visible state for drag-and-drop ordering.
+Rearrange modes are temporary visible states for drag-and-drop ordering.
 
 Requirements:
 
 - The state change must be explicit and obvious
-- Group rows show drag handles
-- Routine rows show drag handles
-- Reordering both groups and routines happens from this mode
-- The top bar replaces the gear action with a clear `Done` exit while organize mode is active
+- `Rearrange Groups` shows group rows only, with drag handles
+- `Rearrange Routines` shows routine rows grouped by their current group, with drag handles
+- Moving routines across groups stays in the routine edit form, not drag-and-drop
+- The top bar replaces the gear action with a clear `Done` exit while a rearrange mode is active
 
-Organize mode should not hide the dashboard context. The user should still feel like they are reordering the home surface, not navigating to a different tool.
+Rearrange modes should not hide the dashboard context. The user should still feel like they are reordering the home surface, not navigating to a different tool.
 
 ### Add/Edit Routine
 
@@ -763,8 +757,8 @@ Success criteria:
 
 ### 2. Check last-done flow
 
-1. User opens a routine's secondary actions.
-2. User chooses `View History`.
+1. User taps the history button on a routine card, or taps a routine already completed today.
+2. History opens directly for that routine.
 3. History opens with last-done information visible near the top.
 4. User inspects calendar markings or recent completions.
 5. User returns to the dashboard.
@@ -790,8 +784,8 @@ Success criteria:
 ### 4. Already completed routine flow
 
 1. User taps a routine already completed today.
-2. The app opens secondary actions instead of creating another completion.
-3. User may undo today's completion or view history.
+2. The app opens history instead of creating another completion.
+3. User may inspect history or correct the completion there if needed.
 
 Success criteria:
 
@@ -801,8 +795,8 @@ Success criteria:
 ### 5. Routine setup and maintenance flow
 
 1. User opens the gear menu from the Today Dashboard.
-2. User chooses to add, edit, reveal controls, or organize order.
-3. The app opens the relevant sheet or organize state without leaving home.
+2. User chooses to add, edit, or enter a rearrange state.
+3. The app opens the relevant sheet or rearrange state without leaving home.
 4. User saves or cancels and returns to the dashboard.
 5. The updated routine structure is visible immediately.
 
@@ -811,12 +805,12 @@ Success criteria:
 - Setup is straightforward
 - Editing does not feel like leaving the app's main model
 
-### 6. Organize order flow
+### 6. Rearrange order flow
 
 1. User opens the gear menu.
-2. User chooses `Organize Order`.
-3. The dashboard enters an obvious organize state with drag handles and a `Done` exit.
-4. User reorders groups and routines.
+2. User chooses `Rearrange Groups` or `Rearrange Routines`.
+3. The dashboard enters an obvious rearrange state with drag handles and a `Done` exit.
+4. User reorders groups or routines within the current group.
 5. User taps `Done` and stays on the dashboard.
 
 Success criteria:
@@ -848,10 +842,10 @@ Avoid:
 ### Primary interactions
 
 - Tap incomplete routine card to complete
-- Tap completed routine card to open secondary actions
-- Tap trailing more button for history/edit/undo actions
+- Tap completed routine card to open history
+- Tap trailing history button to open history directly
 - Tap the trailing gear menu for management actions
-- Tap `Done` to exit organize mode
+- Tap `Done` to exit a rearrange mode
 
 ### Secondary interactions
 

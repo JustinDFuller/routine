@@ -71,7 +71,7 @@ final class RoutineAppUITests: XCTestCase {
         XCTAssertTrue(restoredCard.waitForExistence(timeout: 5))
     }
 
-    func testCompletedCardTapOpensActionsWithoutCreatingDuplicateCompletion() {
+    func testCompletedCardTapOpensHistoryWithoutCreatingDuplicateCompletion() {
         let app = makeApp()
         app.launch()
 
@@ -89,24 +89,23 @@ final class RoutineAppUITests: XCTestCase {
         XCTAssertTrue(completedCard.waitForExistence(timeout: 5))
         completedCard.tap()
 
-        XCTAssertTrue(app.buttons["View History"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["Edit Routine"].exists)
-        XCTAssertTrue(app.buttons["Undo Today's Completion"].exists)
+        XCTAssertTrue(app.navigationBars["History"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["1/5 this week"].waitForExistence(timeout: 5))
+
+        let removalButtons = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH %@", "Remove completion on Jun 10, 2026")
+        )
+        XCTAssertTrue(removalButtons.firstMatch.waitForExistence(timeout: 5))
+        XCTAssertEqual(removalButtons.count, 1)
     }
 
     func testViewHistoryOpensForSelectedRoutine() {
         let app = makeApp()
         app.launch()
 
-        let moreActionsButton = app.descendants(matching: .any)
-            .matching(identifier: "routine-card-more-morning-yoga")
-            .firstMatch
-        XCTAssertTrue(moreActionsButton.waitForExistence(timeout: 5))
-        moreActionsButton.tap()
-
-        let viewHistoryButton = app.buttons["View History"]
-        XCTAssertTrue(viewHistoryButton.waitForExistence(timeout: 5))
-        viewHistoryButton.tap()
+        let historyButton = app.buttons["routine-card-history-morning-yoga"]
+        XCTAssertTrue(historyButton.waitForExistence(timeout: 5))
+        historyButton.tap()
 
         XCTAssertTrue(app.navigationBars["History"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Morning yoga"].waitForExistence(timeout: 5))
@@ -164,17 +163,13 @@ final class RoutineAppUITests: XCTestCase {
         )
     }
 
-    func testDashboardCanEditRoutineFromSecondaryActionAndReturnsToToday() {
+    func testDashboardCanEditRoutineFromEditModeAndReturnsToToday() {
         let app = makeApp()
         app.launch()
 
-        let moreActionsButton = app.descendants(matching: .any)
-            .matching(identifier: "routine-card-more-morning-yoga")
-            .firstMatch
-        XCTAssertTrue(moreActionsButton.waitForExistence(timeout: 5))
-        moreActionsButton.tap()
+        enterEditMode(in: app)
 
-        let editButton = app.buttons["Edit Routine"]
+        let editButton = app.buttons["routine-card-edit-morning-yoga"]
         XCTAssertTrue(editButton.waitForExistence(timeout: 5))
         editButton.tap()
 
@@ -197,13 +192,9 @@ final class RoutineAppUITests: XCTestCase {
         let app = makeApp()
         app.launch()
 
-        let moreActionsButton = app.descendants(matching: .any)
-            .matching(identifier: "routine-card-more-morning-yoga")
-            .firstMatch
-        XCTAssertTrue(moreActionsButton.waitForExistence(timeout: 5))
-        moreActionsButton.tap()
+        enterEditMode(in: app)
 
-        let editButton = app.buttons["Edit Routine"]
+        let editButton = app.buttons["routine-card-edit-morning-yoga"]
         XCTAssertTrue(editButton.waitForExistence(timeout: 5))
         editButton.tap()
 
@@ -228,8 +219,7 @@ final class RoutineAppUITests: XCTestCase {
         let app = makeApp()
         app.launch()
 
-        openManagementMenu(in: app)
-        app.buttons["Show Management Controls"].tap()
+        enterEditMode(in: app)
 
         let editButton = app.buttons["dashboard-group-edit-morning"]
         XCTAssertTrue(editButton.waitForExistence(timeout: 5))
@@ -262,10 +252,9 @@ final class RoutineAppUITests: XCTestCase {
 
         XCTAssertTrue(app.buttons["today-dashboard-empty-add-routine-button"].waitForExistence(timeout: 5))
 
-        openManagementMenu(in: app)
-        app.buttons["Organize Order"].tap()
+        enterEditMode(in: app)
 
-        let editButton = app.buttons["today-dashboard-organize-group-edit-archive"]
+        let editButton = app.buttons["dashboard-group-edit-archive"]
         XCTAssertTrue(editButton.waitForExistence(timeout: 5))
         editButton.tap()
 
@@ -277,26 +266,59 @@ final class RoutineAppUITests: XCTestCase {
         XCTAssertTrue(deleteConfirmationSheet.waitForExistence(timeout: 5))
         deleteConfirmationSheet.buttons["Delete Group"].tap()
 
-        XCTAssertTrue(app.navigationBars["Today"].waitForExistence(timeout: 5))
+        XCTAssertTrue(dashboardTitle(in: app).waitForExistence(timeout: 5))
         XCTAssertFalse(editButton.waitForExistence(timeout: 2))
         XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
     }
 
-    func testDashboardManagementFlowsDoNotReachManageScreen() {
+    func testDashboardManagementEditModeCanBeEnteredAndExitedWithoutManageScreen() {
         let app = makeApp()
         app.launch()
 
         XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
 
-        openManagementMenu(in: app)
-        app.buttons["Show Management Controls"].tap()
+        enterEditMode(in: app)
         XCTAssertTrue(dashboardTitle(in: app).exists)
+        XCTAssertTrue(app.buttons["routine-card-edit-morning-yoga"].exists)
         XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
 
         openManagementMenu(in: app)
-        app.buttons["Organize Order"].tap()
-        XCTAssertTrue(app.buttons["today-dashboard-organize-done-button"].waitForExistence(timeout: 5))
+        app.buttons["Done Editing"].tap()
+        XCTAssertTrue(dashboardTitle(in: app).exists)
+        XCTAssertFalse(app.buttons["routine-card-edit-morning-yoga"].exists)
         XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
+    }
+
+    func testDashboardRearrangeGroupsModeShowsGroupRowsAndDoneExit() {
+        let app = makeApp()
+        app.launch()
+
+        openManagementMenu(in: app)
+        app.buttons["Rearrange Groups"].tap()
+
+        let groupRow = identifiedElement("today-dashboard-rearrange-group-morning", in: app)
+        XCTAssertTrue(groupRow.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["today-dashboard-rearrange-done-button"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
+
+        app.buttons["today-dashboard-rearrange-done-button"].tap()
+        XCTAssertTrue(dashboardTitle(in: app).waitForExistence(timeout: 5))
+    }
+
+    func testDashboardRearrangeRoutinesModeShowsRoutineRowsAndDoneExit() {
+        let app = makeApp()
+        app.launch()
+
+        openManagementMenu(in: app)
+        app.buttons["Rearrange Routines"].tap()
+
+        let routineRow = identifiedElement("today-dashboard-rearrange-routine-morning-yoga", in: app)
+        XCTAssertTrue(routineRow.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["today-dashboard-rearrange-done-button"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
+
+        app.buttons["today-dashboard-rearrange-done-button"].tap()
+        XCTAssertTrue(dashboardTitle(in: app).waitForExistence(timeout: 5))
     }
 
     func testLaunchShowsFallbackScreenWhenBootstrapFails() {
@@ -360,15 +382,27 @@ extension RoutineAppUITests {
         menu.tap()
     }
 
+    fileprivate func enterEditMode(in app: XCUIApplication) {
+        openManagementMenu(in: app)
+        app.buttons["Edit"].tap()
+    }
+
     fileprivate func routineCardButton(
         identifier: String,
         statePrefix: String,
         in app: XCUIApplication
     ) -> XCUIElement {
-        let element = app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+        let element = identifiedElement(identifier, in: app)
         XCTAssertTrue(element.waitForExistence(timeout: 5))
         XCTAssertTrue(element.label.hasPrefix(statePrefix), element.label)
         return element
+    }
+
+    fileprivate func identifiedElement(
+        _ identifier: String,
+        in app: XCUIApplication
+    ) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: identifier).firstMatch
     }
 
     fileprivate func clearAndTypeText(

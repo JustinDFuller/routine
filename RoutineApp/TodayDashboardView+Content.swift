@@ -16,8 +16,12 @@ extension TodayDashboardView {
                 toggleManagementControls()
             }
 
-            Button("Organize Order") {
-                enterOrganizeMode()
+            Button("Rearrange Groups") {
+                enterRearrangeGroupsMode()
+            }
+
+            Button("Rearrange Routines") {
+                enterRearrangeRoutinesMode()
             }
         } label: {
             Image(systemName: "gearshape")
@@ -32,7 +36,7 @@ extension TodayDashboardView {
     }
 
     var managementControlsMenuTitle: String {
-        mode == .managementControls ? "Hide Management Controls" : "Show Management Controls"
+        mode == .managementControls ? "Done Editing" : "Edit"
     }
 
     var dashboardHeader: some View {
@@ -58,10 +62,10 @@ extension TodayDashboardView {
                     .font(.subheadline)
                     .foregroundStyle(Color.routineLabelSecondary)
 
-                if viewData.isEmpty {
-                    emptyState
-                } else {
+                if showsSectionContent {
                     sectionsContent
+                } else {
+                    emptyState
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -78,47 +82,34 @@ extension TodayDashboardView {
                     sectionHeader(section)
 
                     VStack(spacing: 12) {
-                        ForEach(section.routines) { routine in
-                            RoutineCardView(
-                                viewData: routine,
-                                onTap: {
-                                    handlePrimaryTap(for: routine)
-                                },
-                                onEdit: routineEditAction(for: routine.id),
-                                onMore: {
-                                    selectedRoutineID = routine.id
-                                }
-                            )
-                            .confirmationDialog(
-                                routine.name,
-                                isPresented: actionDialogIsPresented(for: routine.id),
-                                titleVisibility: .visible
-                            ) {
-                                Button("View History") {
-                                    selectedRoutineID = nil
-                                    path.append(.routineHistory(routineID: routine.id))
-                                }
-
-                                Button("Edit Routine") {
-                                    openEditRoutine(routineID: routine.id)
-                                }
-
-                                if routine.isCompletedToday {
-                                    Button("Undo Today's Completion") {
-                                        selectedRoutineID = nil
-                                        undoCompletion(routineID: routine.id)
+                        if section.routines.isEmpty {
+                            Text("No routines")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.routineLabelSecondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 8)
+                        } else {
+                            ForEach(section.routines) { routine in
+                                RoutineCardView(
+                                    viewData: routine,
+                                    onTap: {
+                                        handlePrimaryTap(for: routine)
+                                    },
+                                    onEdit: routineEditAction(for: routine.id),
+                                    onHistory: {
+                                        openHistory(for: routine.id)
                                     }
-                                }
-
-                                Button("Cancel", role: .cancel) {
-                                    selectedRoutineID = nil
-                                }
+                                )
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    var showsSectionContent: Bool {
+        viewData.isEmpty == false || (mode == .managementControls && viewData.sections.isEmpty == false)
     }
 
     @ViewBuilder
@@ -200,15 +191,36 @@ extension TodayDashboardView {
             : "today-dashboard-empty-add-group-button"
     }
 
-    var organizeContent: some View {
+    @ViewBuilder
+    var rearrangeContent: some View {
+        switch mode {
+        case .rearrangeGroups:
+            rearrangeGroupsContent
+        case .rearrangeRoutines:
+            rearrangeRoutinesContent
+        case .tracking, .managementControls:
+            EmptyView()
+        }
+    }
+
+    var rearrangeGroupsContent: some View {
         List {
             ForEach(editableSections) { section in
-                organizeSection(section)
+                rearrangeGroupRow(section)
             }
             .onMove(perform: moveGroups)
+        }
+        .environment(\.editMode, .constant(.active))
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(Color.routineCanvas)
+        .tint(Color.routineAccentActive)
+    }
 
-            ForEach(fallbackSections) { section in
-                fallbackOrganizeSection(section)
+    var rearrangeRoutinesContent: some View {
+        List {
+            ForEach(editableSections) { section in
+                rearrangeRoutineSection(section)
             }
         }
         .environment(\.editMode, .constant(.active))
@@ -218,99 +230,52 @@ extension TodayDashboardView {
         .tint(Color.routineAccentActive)
     }
 
+    func rearrangeGroupRow(_ section: ManageGroupSectionViewData) -> some View {
+        Text(section.name)
+            .foregroundStyle(Color.routineLabelPrimary)
+            .accessibilityIdentifier(
+                "today-dashboard-rearrange-group-\(section.name.routineAccessibilityIdentifierComponent)"
+            )
+    }
+
     @ViewBuilder
-    func organizeSection(_ section: ManageGroupSectionViewData) -> some View {
+    func rearrangeRoutineSection(_ section: ManageGroupSectionViewData) -> some View {
         Section {
             if section.routines.isEmpty {
                 Text("No routines")
                     .font(.subheadline)
                     .foregroundStyle(Color.routineLabelSecondary)
                     .accessibilityIdentifier(
-                        "today-dashboard-organize-empty-group-\(section.name.routineAccessibilityIdentifierComponent)"
+                        "today-dashboard-rearrange-empty-group-\(section.name.routineAccessibilityIdentifierComponent)"
                     )
             } else {
                 ForEach(section.routines) { routine in
-                    organizeRoutineRow(routine)
+                    rearrangeRoutineRow(routine)
                 }
                 .onMove { source, destination in
                     moveRoutines(in: section, from: source, to: destination)
                 }
             }
         } header: {
-            HStack {
-                Text(section.name)
-
-                Spacer()
-
-                Button {
-                    openEditGroup(groupID: section.id)
-                } label: {
-                    Image(systemName: "pencil.circle")
-                        .foregroundStyle(Color.routineLabelSecondary)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Edit \(section.name)")
-                .accessibilityHint("Opens the group editor.")
-                .accessibilityIdentifier(
-                    "today-dashboard-organize-group-edit-\(section.name.routineAccessibilityIdentifierComponent)"
-                )
-            }
+            Text(section.name)
         }
     }
 
-    @ViewBuilder
-    func fallbackOrganizeSection(_ section: ManageGroupSectionViewData) -> some View {
-        Section(section.name) {
-            if section.routines.isEmpty {
-                Text("No routines")
-                    .font(.subheadline)
-                    .foregroundStyle(Color.routineLabelSecondary)
-            } else {
-                ForEach(section.routines) { routine in
-                    organizeRoutineRow(routine)
-                }
-            }
-        }
-    }
+    func rearrangeRoutineRow(_ routine: ManageRoutineRowViewData) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(routine.name)
+                .foregroundStyle(Color.routineLabelPrimary)
 
-    func organizeRoutineRow(_ routine: ManageRoutineRowViewData) -> some View {
-        Button {
-            openEditRoutine(routineID: routine.id)
-        } label: {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(routine.name)
-                    .foregroundStyle(Color.routineLabelPrimary)
-
-                Text(routine.summaryText)
-                    .font(.subheadline)
-                    .foregroundStyle(Color.routineLabelSecondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 4)
+            Text(routine.summaryText)
+                .font(.subheadline)
+                .foregroundStyle(Color.routineLabelSecondary)
         }
-        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 4)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(routine.name), \(routine.summaryText)")
-        .accessibilityHint("Opens the routine editor.")
         .accessibilityIdentifier(
-            "today-dashboard-organize-routine-\(routine.name.routineAccessibilityIdentifierComponent)"
-        )
-    }
-
-    func actionDialogIsPresented(for routineID: UUID) -> Binding<Bool> {
-        Binding(
-            get: { selectedRoutineID == routineID },
-            set: { isPresented in
-                if isPresented == false {
-                    if selectedRoutineID == routineID {
-                        selectedRoutineID = nil
-                    }
-                } else {
-                    selectedRoutineID = routineID
-                }
-            }
+            "today-dashboard-rearrange-routine-\(routine.name.routineAccessibilityIdentifierComponent)"
         )
     }
 

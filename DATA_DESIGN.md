@@ -919,9 +919,8 @@ Responsibilities:
 - Render grouped sections.
 - Render empty state when no routines exist.
 - Handle routine card taps.
-- Show secondary action sheet.
 - Show transient undo banner.
-- Navigate to Manage and History.
+- Navigate to History.
 
 Behavior:
 
@@ -929,19 +928,16 @@ Behavior:
 - Optional date label in content: formatted current date.
 - Toolbar trailing action: `Manage`.
 - Incomplete card tap calls `completeToday`.
-- Completed card tap opens routine action sheet.
-- Trailing ellipsis opens routine action sheet without completing.
+- Completed card tap opens routine history without creating a duplicate completion.
+- Trailing history button opens routine history without completing.
 - Completion updates UI immediately via SwiftData observation and local undo-banner state.
 - Undo banner remains usable but does not block scrolling or additional completions.
 
-Secondary actions:
+Dashboard controls:
 
-- `View History`
-- `Edit Routine`
-- `Undo Today's Completion`, only when completed today
-- `Cancel`
-
-Delete must not appear in the dashboard action sheet.
+- Trailing history button opens routine history.
+- Inline routine edit control appears only in dashboard Edit mode.
+- Same-day undo comes from the transient undo banner.
 
 ### RoutineCardView
 
@@ -1038,21 +1034,21 @@ Purpose:
 Structure:
 
 - A trailing `gearshape` menu in the dashboard top bar.
-- Dashboard secondary actions that still expose routine history, edit, and undo.
+- A direct history affordance on each routine card.
 - Optional inline management controls on group headers and routine cards.
-- A dashboard-owned organize mode with a native reorder list and visible drag handles.
+- Separate dashboard-owned rearrange modes with native reorder lists and visible drag handles.
 
 Actions:
 
 - Add routine from the gear menu.
 - Add group from the gear menu.
-- Show or hide inline management controls from the gear menu.
-- Edit routine from the dashboard secondary actions or inline routine control.
+- Enter or exit inline dashboard Edit mode from the gear menu.
+- Edit routine from the inline routine control in Edit mode.
 - Edit group from inline dashboard group controls.
 - Delete routine from the routine edit sheet only.
 - Delete empty group from the group edit sheet only.
-- Reorder routines within a group in dashboard organize mode.
-- Reorder groups in dashboard organize mode.
+- Reorder routines within a group in dashboard Rearrange Routines mode.
+- Reorder groups in dashboard Rearrange Groups mode.
 
 Use native menu, sheet, and list-reorder behavior where it supports the design cleanly. Avoid a separate management route for MVP.
 
@@ -1092,7 +1088,7 @@ Group management can be simple:
 - Add group sheet with name field.
 - Edit group sheet with name field.
 - Delete empty group from the edit group sheet after confirmation.
-- Reorder groups through dashboard organize mode.
+- Reorder groups through dashboard Rearrange Groups mode.
 
 No onboarding wizard or category template system is needed.
 
@@ -1130,11 +1126,11 @@ This keeps navigation shallow, native, and stable across model refreshes.
 7. Dashboard shows undo banner with `Completed <Routine Name>` and `Undo`.
 8. Light haptic feedback fires after successful insertion.
 
-If the completion already exists, no duplicate is inserted. The UI should treat this as a no-op or open secondary actions if the card was already completed.
+If the completion already exists, no duplicate is inserted. The UI should open history if the card was already completed.
 
 ### Undo Today's Completion
 
-1. User taps `Undo` in the transient banner or chooses `Undo Today's Completion` from secondary actions.
+1. User taps `Undo` in the transient banner.
 2. Dashboard calls `RoutineTrackingService.undoToday`.
 3. Service removes today's completion for that routine if present.
 4. Service saves.
@@ -1143,8 +1139,7 @@ If the completion already exists, no duplicate is inserted. The UI should treat 
 
 ### Open History
 
-1. User opens routine secondary actions.
-2. User selects `View History`.
+1. User taps the routine history button, or taps a card that is already completed today.
 3. Dashboard appends `.routineHistory(routineID)` to the navigation path.
 4. History fetches routine and completion projections by ID.
 5. User sees last-done summary, current-month marks, and recent completions.
@@ -1159,8 +1154,8 @@ If the completion already exists, no duplicate is inserted. The UI should treat 
 
 ### Add Or Edit Routine
 
-1. User opens the dashboard gear menu or routine secondary actions.
-2. User chooses Add Routine or Edit Routine.
+1. User opens the dashboard gear menu or enters dashboard Edit mode.
+2. User chooses Add Routine or taps an inline routine edit control.
 3. Add/Edit sheet opens with draft state.
 4. User edits fields.
 5. Save validates and calls management service.
@@ -1177,7 +1172,7 @@ If the completion already exists, no duplicate is inserted. The UI should treat 
 
 ### Manage Groups
 
-1. User opens the dashboard gear menu, inline group controls, or organize mode.
+1. User opens the dashboard gear menu, inline group controls, or a rearrange mode.
 2. User adds, renames, reorders, or deletes an empty group.
 3. Service validates group state and saves.
 4. Dashboard section order and names update.
@@ -1257,7 +1252,7 @@ The data design is satisfied when an implementation can meet these scenarios:
 - Last-done labels derive from completion history.
 - History shows routine summary, current-month completion marks, and recent completions.
 - Historical completion removal requires confirmation and updates progress.
-- The Today Dashboard owns add, edit, delete, and reorder routine flows through menus, sheets, and organize mode.
+- The Today Dashboard owns add, edit, delete, and reorder routine flows through menus, sheets, and rearrange modes.
 - Group management supports add, rename, reorder, and delete empty groups from dashboard-owned flows.
 - Deleting a routine removes its completion history by cascade.
 - Navigation uses `NavigationStack` with value-based routes.

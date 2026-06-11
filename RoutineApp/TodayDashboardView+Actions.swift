@@ -4,17 +4,20 @@ import SwiftUI
 
 extension TodayDashboardView {
     func toggleManagementControls() {
-        selectedRoutineID = nil
         mode = mode == .managementControls ? .tracking : .managementControls
     }
 
-    func enterOrganizeMode() {
-        selectedRoutineID = nil
+    func enterRearrangeGroupsMode() {
         clearUndoBanner()
-        mode = .organize
+        mode = .rearrangeGroups
     }
 
-    func exitOrganizeMode() {
+    func enterRearrangeRoutinesMode() {
+        clearUndoBanner()
+        mode = .rearrangeRoutines
+    }
+
+    func exitRearrangeMode() {
         mode = .tracking
     }
 
@@ -32,8 +35,6 @@ extension TodayDashboardView {
     }
 
     func openEditRoutine(routineID: UUID) {
-        selectedRoutineID = nil
-
         guard let row = managementRow(for: routineID) else {
             presentAlert(.routineNotFound)
             return
@@ -143,7 +144,7 @@ extension TodayDashboardView {
 
     func handlePrimaryTap(for routine: RoutineCardViewData) {
         if routine.isCompletedToday {
-            selectedRoutineID = routine.id
+            openHistory(for: routine.id)
             return
         }
 
@@ -228,6 +229,10 @@ extension TodayDashboardView {
         alertPresentation = DashboardAlertPresentation(message: error.localizedDescription)
     }
 
+    func openHistory(for routineID: UUID) {
+        path.append(.routineHistory(routineID: routineID))
+    }
+
     func presentAlert(_ alert: ManageAlertPresentation) {
         alertPresentation = DashboardAlertPresentation(alert)
     }
@@ -240,7 +245,28 @@ extension TodayDashboardView {
 enum DashboardMode: Equatable {
     case tracking
     case managementControls
-    case organize
+    case rearrangeGroups
+    case rearrangeRoutines
+
+    var isRearranging: Bool {
+        switch self {
+        case .rearrangeGroups, .rearrangeRoutines:
+            true
+        case .tracking, .managementControls:
+            false
+        }
+    }
+
+    var navigationTitle: String? {
+        switch self {
+        case .rearrangeGroups:
+            "Rearrange Groups"
+        case .rearrangeRoutines:
+            "Rearrange Routines"
+        case .tracking, .managementControls:
+            nil
+        }
+    }
 }
 
 struct UndoBannerPresentation: Identifiable, Equatable {

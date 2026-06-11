@@ -303,7 +303,7 @@ Primary screens:
   Owns `NavigationStack`, route destinations, starter data seeding trigger, and app-level service construction.
 
 - `TodayDashboardView`
-  Default launch screen. Shows all grouped routines, handles one-tap completion, opens secondary actions, shows undo banner, owns routine/group management sheets and organize mode, and navigates to history.
+  Default launch screen. Shows all grouped routines, handles one-tap completion, opens history directly from routine cards, shows undo banner, owns routine/group management sheets and rearrange modes, and navigates to history.
 
 - `RoutineHistoryView`
   Routine-specific history screen with summary header, current-month calendar-like grid, recent completions, and destructive correction flow.
@@ -328,7 +328,6 @@ UI state rules:
 - Keep persisted model objects out of navigation paths.
 - Keep form edits in draft state until save.
 - Keep transient undo banner state local to the dashboard.
-- Keep action sheet state value-based, usually routine ID plus current view data.
 - Let SwiftData observation refresh screens after saves, but keep projections explicit and testable.
 
 Visual rules:
@@ -348,11 +347,11 @@ Use `NavigationStack` with value-based routes.
 Routes:
 
 - Today Dashboard is the root and default launch screen.
-- Routine History is pushed from a routine's secondary action path.
+- Routine History is pushed from a routine's direct history path.
 - Add/Edit Routine is presented as a sheet from Today Dashboard.
 - Group add/edit is presented as a sheet from Today Dashboard.
-- The dashboard top bar uses a trailing `gearshape` menu for `Add Routine`, `Add Group`, `Show/Hide Management Controls`, and `Organize Order`.
-- Organize mode stays on Today Dashboard and exits with a top-bar `Done` action.
+- The dashboard top bar uses a trailing `gearshape` menu for `Add Routine`, `Add Group`, `Edit`/`Done Editing`, `Rearrange Groups`, and `Rearrange Routines`.
+- Rearrange modes stay on Today Dashboard and exit with a top-bar `Done` action.
 
 Navigation rules:
 
@@ -360,8 +359,8 @@ Navigation rules:
 - Do not store SwiftData models in navigation path values.
 - Route to routine history by stable routine ID.
 - If a routed routine no longer exists, show a small not-found state with a clear way back or pop the route.
-- Dashboard secondary actions include `View History`, `Edit Routine`, `Undo Today's Completion` when applicable, and `Cancel`.
-- Delete actions do not appear on the dashboard action sheet.
+- Routine editing stays in dashboard Edit mode.
+- Same-day undo stays in the transient dashboard banner and through history correction.
 
 The navigation hierarchy must stay shallow. The dashboard is the product; management and history are supporting surfaces.
 
@@ -558,8 +557,8 @@ Required coverage:
 - Seeded dashboard shows grouped routines in expected order.
 - Tapping an incomplete card completes it, updates visible count/state, and shows undo.
 - Tapping undo restores incomplete state.
-- Tapping a completed routine opens secondary actions instead of duplicating completion.
-- `View History` opens the correct routine history screen.
+- Tapping a completed routine opens history instead of duplicating completion.
+- The direct history affordance opens the correct routine history screen.
 - History shows last-done summary, month grid, and recent completions.
 - Removing a historical completion requires confirmation.
 - The dashboard gear menu is the only top-level management entry.
@@ -913,7 +912,7 @@ The system design is satisfied when an implementation can demonstrate:
 - Undo removes today's completion.
 - History shows last-done context, current-month marks, and recent completions.
 - Historical completions can be removed after confirmation.
-- The Today Dashboard owns routine management through home-based menus, sheets, and organize mode.
+- The Today Dashboard owns routine management through home-based menus, sheets, and rearrange modes.
 - Groups support add, rename, reorder, and empty-group deletion from dashboard-owned flows.
 - Current week progress uses Monday-start weeks.
 - Current month progress uses calendar months.
