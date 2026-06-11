@@ -2,15 +2,10 @@ name: RoutineCore
 
 on:
   pull_request:
-    paths:
-      - "RoutineCore/**"
-      - ".swift-format"
-      - ".github/workflows/routine-core.yml"
   push:
-    paths:
-      - "RoutineCore/**"
-      - ".swift-format"
-      - ".github/workflows/routine-core.yml"
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   build-and-test:

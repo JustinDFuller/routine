@@ -56,6 +56,22 @@ assert_equals() {
     fi
 }
 
+run_build_ios_and_capture() {
+    local output_file="$workdir/output.txt"
+    set +e
+    env \
+        FAKE_XCODEBUILD_LOG="$log_file" \
+        FAKE_GENERATE_LOG="$generate_log" \
+        XCODEBUILD_BIN="$fake_xcodebuild" \
+        GENERATE_PROJECT_SCRIPT="$fake_generate" \
+        "$@" \
+        ./Scripts/build-ios.sh >"$output_file" 2>&1
+    local exit_code=$?
+    set -e
+    REPLY="$(<"$output_file")"
+    return "$exit_code"
+}
+
 run_test_ios_and_capture() {
     local output_file="$workdir/output.txt"
     set +e
@@ -71,6 +87,42 @@ run_test_ios_and_capture() {
     REPLY="$(<"$output_file")"
     return "$exit_code"
 }
+
+: >"$log_file"
+: >"$generate_log"
+generic_destinations=$'Available destinations for the "RoutineApp" scheme:\n    { platform:iOS Simulator, arch:arm64, id:dvtdevice-DVTiOSDeviceSimulatorPlaceholder-iphonesimulator:placeholder, name:Any iOS Simulator Device }\n'
+run_build_ios_and_capture FAKE_SHOWDESTINATIONS_OUTPUT="$generic_destinations"
+assert_equals "$?" "0"
+assert_equals "$(<"$generate_log")" "generate"
+default_build_log="$(<"$log_file")"
+assert_contains "$default_build_log" "-showdestinations"
+assert_contains "$default_build_log" "-configuration Debug -destination generic/platform=iOS Simulator build"
+
+: >"$log_file"
+: >"$generate_log"
+device_destinations=$'Available destinations for the "RoutineApp" scheme:\n    { platform:iOS, arch:arm64, id:AAAA, name:Justin\'s iPhone }\n'
+run_build_ios_and_capture \
+    FAKE_SHOWDESTINATIONS_OUTPUT="$device_destinations" \
+    ROUTINE_BUILD_CONFIGURATION=Release \
+    DEVELOPMENT_TEAM=TEAM123ABC
+assert_equals "$?" "0"
+assert_equals "$(<"$generate_log")" "generate"
+release_build_log="$(<"$log_file")"
+assert_contains "$release_build_log" "-configuration Release DEVELOPMENT_TEAM=TEAM123ABC -destination generic/platform=iOS build"
+
+: >"$log_file"
+: >"$generate_log"
+missing_destinations_output='xcodebuild: error: Unable to find a destination matching the provided destination specifier.'
+run_build_ios_and_capture FAKE_SHOWDESTINATIONS_OUTPUT="$missing_destinations_output"
+assert_equals "$?" "0"
+assert_equals "$(<"$generate_log")" "generate"
+assert_contains "$REPLY" "Skipping iOS build: no eligible generic simulator or device destination is installed."
+missing_build_log="$(<"$log_file")"
+assert_contains "$missing_build_log" "-showdestinations"
+if [[ "$missing_build_log" == *" build"* ]]; then
+    echo "Expected build skip path to avoid invoking xcodebuild build."
+    exit 1
+fi
 
 : >"$log_file"
 : >"$generate_log"
@@ -117,4 +169,4 @@ if [[ "$skip_log" == *" test"* ]]; then
     exit 1
 fi
 
-echo "Scripts/test-ios.sh destination resolution tests passed."
+echo "Scripts/build-ios.sh and Scripts/test-ios.sh script tests passed."

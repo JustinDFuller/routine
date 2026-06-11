@@ -1,4 +1,4 @@
-.PHONY: generate format check-format lint test-core build-ios test-ios validate
+.PHONY: generate format check-format lint test-core test-scripts build-ios test-ios validate
 
 generate:
 	./Scripts/generate-project.sh
@@ -14,6 +14,9 @@ lint:
 
 test-core:
 	./Scripts/test-core.sh
+
+test-scripts:
+	./Scripts/test-ios-script-tests.sh
 
 build-ios:
 	./Scripts/build-ios.sh
