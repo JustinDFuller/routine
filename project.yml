@@ -8,7 +8,6 @@ settings:
     MARKETING_VERSION: 0.1.0
     CURRENT_PROJECT_VERSION: 1
     SWIFT_VERSION: 6.0
-    TARGETED_DEVICE_FAMILY: 1
 packages:
   RoutineCore:
     path: RoutineCore
@@ -32,6 +31,7 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSRequiresIPhoneOS: true
+        UIRequiresFullScreen: true
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         UILaunchScreen: {}
@@ -42,6 +42,7 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routine
         PRODUCT_NAME: Routine
+        TARGETED_DEVICE_FAMILY: 1
         SWIFT_STRICT_CONCURRENCY: targeted
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: ""
