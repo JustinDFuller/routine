@@ -103,7 +103,7 @@ A routine is not a scheduled task. It does not define required weekdays, due dat
 
 ### Routine Group
 
-A routine group is a display-only section. It controls organization and visual grouping on the dashboard and management screens.
+A routine group is a display-only section. It controls organization and visual grouping on the dashboard and dashboard-owned management modes.
 
 Groups do not have completion logic. They do not aggregate progress for MVP.
 
@@ -766,15 +766,15 @@ struct RoutineHistoryViewData: Equatable, Sendable {
 
 The recent completions list should sort by `dayKey` descending, then `completedAt` descending.
 
-### Manage Query
+### Dashboard Management Query
 
-Manage Routines needs:
+Dashboard-owned management flows need:
 
 - Ordered groups
 - Ordered routines per group
 - Routine summary strings
 
-No progress history is required on the manage screen. Keep this surface configuration-focused.
+No progress history is required in the management projection. Keep this surface configuration-focused.
 
 ## View Data Structures
 
@@ -1027,34 +1027,34 @@ Behavior:
 - Removing a completion updates the history view immediately after save.
 - Dashboard reflects changed progress when returning because both screens read from the same SwiftData store.
 
-### ManageRoutinesView
+### Dashboard Management Modes
 
 Purpose:
 
-- Configure routines and groups.
-- Keep setup simple and native.
+- Keep routine tracking and management attached to Today.
+- Configure routines and groups without pushing a separate screen.
+- Preserve a shallow navigation model where history is the only pushed route.
 
 Structure:
 
-- Sectioned list by group.
-- Each section header shows group name.
-- Routine rows show routine name and summary such as `5 per week`.
-- Toolbar supports Add and Edit mode.
-- Group management controls are available from the manage screen, not the dashboard.
+- A trailing `gearshape` menu in the dashboard top bar.
+- Dashboard secondary actions that still expose routine history, edit, and undo.
+- Optional inline management controls on group headers and routine cards.
+- A dashboard-owned organize mode with a native reorder list and visible drag handles.
 
 Actions:
 
-- Add routine.
-- Edit routine.
-- Delete routine after confirmation.
-- Reorder routines within a group.
-- Move routines between groups if using a detail edit form or a move affordance.
-- Add group.
-- Rename group.
-- Reorder groups.
-- Delete empty group after confirmation.
+- Add routine from the gear menu.
+- Add group from the gear menu.
+- Show or hide inline management controls from the gear menu.
+- Edit routine from the dashboard secondary actions or inline routine control.
+- Edit group from inline dashboard group controls.
+- Delete routine from the routine edit sheet only.
+- Delete empty group from the group edit sheet only.
+- Reorder routines within a group in dashboard organize mode.
+- Reorder groups in dashboard organize mode.
 
-Use native list behavior where it supports the design cleanly. Avoid custom drag systems for MVP.
+Use native menu, sheet, and list-reorder behavior where it supports the design cleanly. Avoid a separate management route for MVP.
 
 ### AddEditRoutineView
 
@@ -1064,7 +1064,7 @@ Purpose:
 
 Presentation:
 
-- Modal sheet over Manage Routines.
+- Modal sheet over Today Dashboard.
 
 Fields:
 
@@ -1090,9 +1090,9 @@ Behavior:
 Group management can be simple:
 
 - Add group sheet with name field.
-- Rename group sheet with name field.
-- Reorder groups through native edit mode in Manage.
-- Delete empty group from group row or group edit action.
+- Edit group sheet with name field.
+- Delete empty group from the edit group sheet after confirmation.
+- Reorder groups through dashboard organize mode.
 
 No onboarding wizard or category template system is needed.
 
@@ -1102,7 +1102,6 @@ Use value-based app routes:
 
 ```swift
 enum AppRoute: Hashable, Sendable {
-    case manageRoutines
     case routineHistory(routineID: UUID)
 }
 ```
@@ -1110,10 +1109,9 @@ enum AppRoute: Hashable, Sendable {
 Rules:
 
 - `TodayDashboardView` is the root and default launch screen.
-- Manage Routines is pushed from the dashboard toolbar.
 - Routine History is pushed from a routine's secondary action path.
-- Add/Edit Routine is a sheet from Manage Routines.
-- Group add/edit is a sheet from Manage Routines.
+- Add/Edit Routine is a sheet from Today Dashboard.
+- Group add/edit is a sheet from Today Dashboard.
 - Do not use a tab bar for MVP.
 - Do not store SwiftData model objects in navigation path values.
 
@@ -1161,25 +1159,25 @@ If the completion already exists, no duplicate is inserted. The UI should treat 
 
 ### Add Or Edit Routine
 
-1. User opens Manage Routines.
-2. User taps Add or selects an existing routine.
+1. User opens the dashboard gear menu or routine secondary actions.
+2. User chooses Add Routine or Edit Routine.
 3. Add/Edit sheet opens with draft state.
 4. User edits fields.
 5. Save validates and calls management service.
 6. Service saves.
-7. Sheet dismisses and Manage list updates.
+7. Sheet dismisses and Today Dashboard updates.
 
 ### Delete Routine
 
-1. User initiates delete from Manage or Edit Routine.
+1. User opens Edit Routine from the dashboard.
 2. View asks for destructive confirmation.
 3. On confirmation, management service deletes the routine.
 4. SwiftData cascades completion deletion.
-5. Manage and Dashboard no longer show the routine.
+5. Dashboard no longer shows the routine.
 
 ### Manage Groups
 
-1. User opens Manage Routines.
+1. User opens the dashboard gear menu, inline group controls, or organize mode.
 2. User adds, renames, reorders, or deletes an empty group.
 3. Service validates group state and saves.
 4. Dashboard section order and names update.
@@ -1259,11 +1257,11 @@ The data design is satisfied when an implementation can meet these scenarios:
 - Last-done labels derive from completion history.
 - History shows routine summary, current-month completion marks, and recent completions.
 - Historical completion removal requires confirmation and updates progress.
-- Manage Routines supports add, edit, delete, and reorder routines.
-- Group management supports add, rename, reorder, and delete empty groups.
+- The Today Dashboard owns add, edit, delete, and reorder routine flows through menus, sheets, and organize mode.
+- Group management supports add, rename, reorder, and delete empty groups from dashboard-owned flows.
 - Deleting a routine removes its completion history by cascade.
 - Navigation uses `NavigationStack` with value-based routes.
-- Add/Edit Routine appears as a sheet from Manage Routines.
+- Add/Edit Routine appears as a sheet from Today Dashboard.
 - The interface supports Dynamic Type, VoiceOver labels, sufficient contrast, and non-color state indicators.
 
 ## Apple References

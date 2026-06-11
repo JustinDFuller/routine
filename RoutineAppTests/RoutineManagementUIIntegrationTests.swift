@@ -176,7 +176,19 @@ final class RoutineManagementUIIntegrationTests: XCTestCase {
         )
         try saveChanges(in: context)
 
-        try RoutineManagementService(context: context).moveRoutine(id: lift.id, toGroupID: group.id, at: 1)
+        let serviceIndex = try XCTUnwrap(
+            ManageReorderIndex.serviceIndex(
+                from: IndexSet(integer: 2),
+                destination: 1,
+                itemCount: 3
+            )
+        )
+
+        try RoutineManagementService(context: context).moveRoutine(
+            id: lift.id,
+            toGroupID: group.id,
+            at: serviceIndex
+        )
 
         let manageViewData = try ManageProjectionBuilder(context: context).build()
         let dashboardViewData = try DashboardProjectionBuilder(context: context, routineCalendar: calendar).build(
@@ -211,7 +223,15 @@ final class RoutineManagementUIIntegrationTests: XCTestCase {
         )
         try saveChanges(in: context)
 
-        try RoutineManagementService(context: context).moveGroup(id: work.id, to: 1)
+        let serviceIndex = try XCTUnwrap(
+            ManageReorderIndex.serviceIndex(
+                from: IndexSet(integer: 2),
+                destination: 1,
+                itemCount: 3
+            )
+        )
+
+        try RoutineManagementService(context: context).moveGroup(id: work.id, to: serviceIndex)
 
         let manageViewData = try ManageProjectionBuilder(context: context).build()
         let dashboardViewData = try DashboardProjectionBuilder(context: context, routineCalendar: calendar).build(

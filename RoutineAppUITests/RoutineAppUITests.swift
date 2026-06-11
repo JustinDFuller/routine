@@ -10,9 +10,10 @@ final class RoutineAppUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Morning"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Morning yoga"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Movement"].waitForExistence(timeout: 5))
+        XCTAssertTrue(managementMenu(in: app).waitForExistence(timeout: 5))
     }
 
-    func testEmptyLaunchStateShowsEmptyState() {
+    func testEmptyLaunchStateShowsAddGroupCTAAndReturnsToToday() {
         let app = makeApp(
             seeded: false,
             additionalLaunchArguments: ["-routine-empty-in-memory-store"]
@@ -20,14 +21,23 @@ final class RoutineAppUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.navigationBars["Today"].exists)
+        XCTAssertTrue(app.staticTexts["No groups yet"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Add a group to start organizing your routines."].exists)
+
+        let addGroupButton = app.buttons["today-dashboard-empty-add-group-button"]
+        XCTAssertTrue(addGroupButton.waitForExistence(timeout: 5))
+        addGroupButton.tap()
+
+        let nameField = app.textFields["group-form-name-field"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 5))
+        nameField.tap()
+        nameField.typeText("UI Test Group")
+        app.buttons["group-form-save-button"].tap()
+
+        XCTAssertTrue(app.navigationBars["Today"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["No routines yet"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Add your first routine to start tracking"].exists)
-
-        let manageButton = app.buttons["today-dashboard-empty-manage-button"]
-        XCTAssertTrue(manageButton.waitForExistence(timeout: 5))
-        manageButton.tap()
-
-        XCTAssertTrue(app.navigationBars["Manage Routines"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["today-dashboard-empty-add-routine-button"].exists)
+        XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
     }
 
     func testCompletionAndUndoFlowUpdatesVisibleState() {
@@ -131,17 +141,11 @@ final class RoutineAppUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["0/5 this week"].waitForExistence(timeout: 5))
     }
 
-    func testManageFlowCanAddEditAndDeleteRoutine() {
+    func testDashboardManagementMenuCanAddRoutineAndReturnsToToday() {
         let app = makeApp()
         app.launch()
 
-        let manageButton = app.buttons["today-dashboard-manage-button"]
-        XCTAssertTrue(manageButton.waitForExistence(timeout: 5))
-        manageButton.tap()
-
-        XCTAssertTrue(app.navigationBars["Manage Routines"].waitForExistence(timeout: 5))
-
-        app.buttons["manage-routines-add-button"].tap()
+        openManagementMenu(in: app)
         app.buttons["Add Routine"].tap()
 
         let nameField = app.textFields["routine-form-name-field"]
@@ -150,18 +154,58 @@ final class RoutineAppUITests: XCTestCase {
         nameField.typeText("UI Test Routine")
         app.buttons["routine-form-save-button"].tap()
 
-        let createdRow = manageRoutineButton(labelPrefix: "UI Test Routine,", in: app)
-        XCTAssertTrue(createdRow.waitForExistence(timeout: 5))
-        createdRow.tap()
+        XCTAssertTrue(app.navigationBars["Today"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
+        XCTAssertTrue(
+            app.descendants(matching: .any)
+                .matching(identifier: "routine-card-primary-ui-test-routine")
+                .firstMatch
+                .waitForExistence(timeout: 5)
+        )
+    }
 
-        let editNameField = app.textFields["routine-form-name-field"]
-        XCTAssertTrue(editNameField.waitForExistence(timeout: 5))
-        clearAndTypeText("UI Test Routine Updated", into: editNameField)
+    func testDashboardCanEditRoutineFromSecondaryActionAndReturnsToToday() {
+        let app = makeApp()
+        app.launch()
+
+        let moreActionsButton = app.descendants(matching: .any)
+            .matching(identifier: "routine-card-more-morning-yoga")
+            .firstMatch
+        XCTAssertTrue(moreActionsButton.waitForExistence(timeout: 5))
+        moreActionsButton.tap()
+
+        let editButton = app.buttons["Edit Routine"]
+        XCTAssertTrue(editButton.waitForExistence(timeout: 5))
+        editButton.tap()
+
+        let nameField = app.textFields["routine-form-name-field"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 5))
+        clearAndTypeText("Morning yoga updated", into: nameField)
         app.buttons["routine-form-save-button"].tap()
 
-        let updatedRow = manageRoutineButton(labelPrefix: "UI Test Routine Updated,", in: app)
-        XCTAssertTrue(updatedRow.waitForExistence(timeout: 5))
-        updatedRow.tap()
+        XCTAssertTrue(app.navigationBars["Today"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
+        XCTAssertTrue(
+            app.descendants(matching: .any)
+                .matching(identifier: "routine-card-primary-morning-yoga-updated")
+                .firstMatch
+                .waitForExistence(timeout: 5)
+        )
+    }
+
+    func testDashboardRoutineDeleteFromEditSheetRemovesCard() {
+        let app = makeApp()
+        app.launch()
+
+        let moreActionsButton = app.descendants(matching: .any)
+            .matching(identifier: "routine-card-more-morning-yoga")
+            .firstMatch
+        XCTAssertTrue(moreActionsButton.waitForExistence(timeout: 5))
+        moreActionsButton.tap()
+
+        let editButton = app.buttons["Edit Routine"]
+        XCTAssertTrue(editButton.waitForExistence(timeout: 5))
+        editButton.tap()
 
         let deleteButton = app.buttons["routine-form-delete-button"]
         XCTAssertTrue(deleteButton.waitForExistence(timeout: 5))
@@ -169,53 +213,90 @@ final class RoutineAppUITests: XCTestCase {
 
         let deleteConfirmationSheet = app.sheets["Delete Routine"]
         XCTAssertTrue(deleteConfirmationSheet.waitForExistence(timeout: 5))
+        deleteConfirmationSheet.buttons["Delete Routine"].tap()
 
-        let confirmDeleteButton = deleteConfirmationSheet.buttons["Delete Routine"]
-        XCTAssertTrue(confirmDeleteButton.waitForExistence(timeout: 5))
-        confirmDeleteButton.tap()
-
+        XCTAssertTrue(app.navigationBars["Today"].waitForExistence(timeout: 5))
         XCTAssertFalse(
-            manageRoutineButton(labelPrefix: "UI Test Routine Updated,", in: app)
+            app.descendants(matching: .any)
+                .matching(identifier: "routine-card-primary-morning-yoga")
+                .firstMatch
                 .waitForExistence(timeout: 2)
         )
     }
 
-    func testManageFlowCanDeleteGroupThroughGroupActions() {
+    func testDashboardGroupEditUpdatesSectionHeader() {
+        let app = makeApp()
+        app.launch()
+
+        openManagementMenu(in: app)
+        app.buttons["Show Management Controls"].tap()
+
+        let editButton = app.buttons["dashboard-group-edit-morning"]
+        XCTAssertTrue(editButton.waitForExistence(timeout: 5))
+        editButton.tap()
+
+        let nameField = app.textFields["group-form-name-field"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 5))
+        clearAndTypeText("Sunrise", into: nameField)
+        app.buttons["group-form-save-button"].tap()
+
+        XCTAssertTrue(app.navigationBars["Today"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Sunrise"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
+    }
+
+    func testDashboardDeleteEmptyGroupHappensOnlyFromEditSheet() {
         let app = makeApp(
             seeded: false,
             additionalLaunchArguments: ["-routine-empty-in-memory-store"]
         )
         app.launch()
 
-        let manageButton = app.buttons["today-dashboard-empty-manage-button"]
-        XCTAssertTrue(manageButton.waitForExistence(timeout: 5))
-        manageButton.tap()
+        app.buttons["today-dashboard-empty-add-group-button"].tap()
 
-        XCTAssertTrue(app.navigationBars["Manage Routines"].waitForExistence(timeout: 5))
-
-        let addGroupButton = app.buttons["Add Group"]
-        XCTAssertTrue(addGroupButton.waitForExistence(timeout: 5))
-        addGroupButton.tap()
-
-        let nameField = app.textFields["group-form-name-field"]
-        XCTAssertTrue(nameField.waitForExistence(timeout: 5))
-        nameField.tap()
-        nameField.typeText("UI Test Group")
+        let addNameField = app.textFields["group-form-name-field"]
+        XCTAssertTrue(addNameField.waitForExistence(timeout: 5))
+        addNameField.tap()
+        addNameField.typeText("Archive")
         app.buttons["group-form-save-button"].tap()
 
-        let groupActionsButton = app.buttons["UI Test Group Actions"]
-        XCTAssertTrue(groupActionsButton.waitForExistence(timeout: 5))
-        groupActionsButton.tap()
-        app.buttons["Delete Group"].tap()
+        XCTAssertTrue(app.buttons["today-dashboard-empty-add-routine-button"].waitForExistence(timeout: 5))
 
-        let deleteConfirmationSheet = app.sheets["UI Test Group"]
+        openManagementMenu(in: app)
+        app.buttons["Organize Order"].tap()
+
+        let editButton = app.buttons["today-dashboard-organize-group-edit-archive"]
+        XCTAssertTrue(editButton.waitForExistence(timeout: 5))
+        editButton.tap()
+
+        let deleteButton = app.buttons["group-form-delete-button"]
+        XCTAssertTrue(deleteButton.waitForExistence(timeout: 5))
+        deleteButton.tap()
+
+        let deleteConfirmationSheet = app.sheets["Delete Group"]
         XCTAssertTrue(deleteConfirmationSheet.waitForExistence(timeout: 5))
+        deleteConfirmationSheet.buttons["Delete Group"].tap()
 
-        let confirmDeleteButton = deleteConfirmationSheet.buttons["Delete Group"]
-        XCTAssertTrue(confirmDeleteButton.waitForExistence(timeout: 5))
-        confirmDeleteButton.tap()
+        XCTAssertTrue(app.navigationBars["Today"].waitForExistence(timeout: 5))
+        XCTAssertFalse(editButton.waitForExistence(timeout: 2))
+        XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
+    }
 
-        XCTAssertFalse(groupActionsButton.waitForExistence(timeout: 2))
+    func testDashboardManagementFlowsDoNotReachManageScreen() {
+        let app = makeApp()
+        app.launch()
+
+        XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
+
+        openManagementMenu(in: app)
+        app.buttons["Show Management Controls"].tap()
+        XCTAssertTrue(app.navigationBars["Today"].exists)
+        XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
+
+        openManagementMenu(in: app)
+        app.buttons["Organize Order"].tap()
+        XCTAssertTrue(app.buttons["today-dashboard-organize-done-button"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
     }
 
     func testLaunchShowsFallbackScreenWhenBootstrapFails() {
@@ -241,8 +322,10 @@ final class RoutineAppUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["This routine may have been deleted."].exists)
         XCTAssertTrue(app.buttons["Back"].exists)
     }
+}
 
-    private func makeApp(
+extension RoutineAppUITests {
+    fileprivate func makeApp(
         seeded: Bool = true,
         additionalLaunchArguments: [String] = []
     ) -> XCUIApplication {
@@ -261,7 +344,19 @@ final class RoutineAppUITests: XCTestCase {
         return app
     }
 
-    private func routineCardButton(
+    fileprivate func managementMenu(in app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any)
+            .matching(identifier: "today-dashboard-management-menu")
+            .firstMatch
+    }
+
+    fileprivate func openManagementMenu(in app: XCUIApplication) {
+        let menu = managementMenu(in: app)
+        XCTAssertTrue(menu.waitForExistence(timeout: 5))
+        menu.tap()
+    }
+
+    fileprivate func routineCardButton(
         identifier: String,
         statePrefix: String,
         in app: XCUIApplication
@@ -272,16 +367,7 @@ final class RoutineAppUITests: XCTestCase {
         return element
     }
 
-    private func manageRoutineButton(
-        labelPrefix: String,
-        in app: XCUIApplication
-    ) -> XCUIElement {
-        app.buttons.matching(
-            NSPredicate(format: "label BEGINSWITH %@", labelPrefix)
-        ).firstMatch
-    }
-
-    private func clearAndTypeText(
+    fileprivate func clearAndTypeText(
         _ text: String,
         into element: XCUIElement
     ) {

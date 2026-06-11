@@ -3,6 +3,7 @@ import SwiftUI
 struct RoutineCardView: View {
     let viewData: RoutineCardViewData
     let onTap: () -> Void
+    let onEdit: (() -> Void)?
     let onMore: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -70,6 +71,20 @@ struct RoutineCardView: View {
             .accessibilityLabel(viewData.accessibilityLabel)
             .accessibilityHint(primaryAccessibilityHint)
             .accessibilityIdentifier("routine-card-primary-\(viewData.name.routineAccessibilityIdentifierComponent)")
+
+            if let onEdit {
+                Button(action: onEdit) {
+                    Image(systemName: "pencil.circle")
+                        .font(.system(size: 22, weight: .regular))
+                        .foregroundStyle(Color.routineLabelSecondary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Edit \(viewData.name)")
+                .accessibilityHint("Opens the routine editor.")
+                .accessibilityIdentifier("routine-card-edit-\(viewData.name.routineAccessibilityIdentifierComponent)")
+            }
 
             Button(action: onMore) {
                 Image(systemName: "ellipsis.circle")
@@ -155,12 +170,12 @@ struct RoutineCardView: View {
 #Preview("Routine Cards - Dark") {
     ComponentPreviewCanvas {
         VStack(spacing: 12) {
-            RoutineCardView(viewData: ComponentPreviewFixtures.incompleteCard, onTap: {}, onMore: {})
-            RoutineCardView(viewData: ComponentPreviewFixtures.completedTodayCard, onTap: {}, onMore: {})
-            RoutineCardView(viewData: ComponentPreviewFixtures.targetMetCard, onTap: {}, onMore: {})
-            RoutineCardView(viewData: ComponentPreviewFixtures.overTargetCard, onTap: {}, onMore: {})
-            RoutineCardView(viewData: ComponentPreviewFixtures.highTargetCard, onTap: {}, onMore: {})
-            RoutineCardView(viewData: ComponentPreviewFixtures.longNameCard, onTap: {}, onMore: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.incompleteCard, onTap: {}, onEdit: nil, onMore: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.completedTodayCard, onTap: {}, onEdit: {}, onMore: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.targetMetCard, onTap: {}, onEdit: nil, onMore: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.overTargetCard, onTap: {}, onEdit: nil, onMore: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.highTargetCard, onTap: {}, onEdit: nil, onMore: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.longNameCard, onTap: {}, onEdit: {}, onMore: {})
         }
     }
     .preferredColorScheme(.dark)
@@ -169,9 +184,9 @@ struct RoutineCardView: View {
 #Preview("Routine Cards - Light") {
     ComponentPreviewCanvas {
         VStack(spacing: 12) {
-            RoutineCardView(viewData: ComponentPreviewFixtures.incompleteCard, onTap: {}, onMore: {})
-            RoutineCardView(viewData: ComponentPreviewFixtures.completedTodayCard, onTap: {}, onMore: {})
-            RoutineCardView(viewData: ComponentPreviewFixtures.longNameCard, onTap: {}, onMore: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.incompleteCard, onTap: {}, onEdit: nil, onMore: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.completedTodayCard, onTap: {}, onEdit: nil, onMore: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.longNameCard, onTap: {}, onEdit: {}, onMore: {})
         }
     }
     .preferredColorScheme(.light)
@@ -180,8 +195,8 @@ struct RoutineCardView: View {
 #Preview("Routine Cards - Accessibility Type") {
     ComponentPreviewCanvas {
         VStack(spacing: 12) {
-            RoutineCardView(viewData: ComponentPreviewFixtures.incompleteCard, onTap: {}, onMore: {})
-            RoutineCardView(viewData: ComponentPreviewFixtures.longNameCard, onTap: {}, onMore: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.incompleteCard, onTap: {}, onEdit: nil, onMore: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.longNameCard, onTap: {}, onEdit: {}, onMore: {})
         }
     }
     .preferredColorScheme(.dark)
@@ -190,7 +205,7 @@ struct RoutineCardView: View {
 
 #Preview("Routine Cards - Reduce Motion") {
     ComponentPreviewCanvas {
-        RoutineCardView(viewData: ComponentPreviewFixtures.completedTodayCard, onTap: {}, onMore: {})
+        RoutineCardView(viewData: ComponentPreviewFixtures.completedTodayCard, onTap: {}, onEdit: nil, onMore: {})
     }
     .preferredColorScheme(.dark)
     .transaction { transaction in

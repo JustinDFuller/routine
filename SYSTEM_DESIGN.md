@@ -75,7 +75,7 @@ Layers:
    The iOS application entry point, SwiftData `ModelContainer`, root navigation, app-wide environment values, launch arguments, and debug configuration.
 
 2. SwiftUI views
-   Native UI surfaces for the Today Dashboard, Routine History, Manage Routines, Add/Edit Routine, group editing, reusable cards, progress rings, banners, and empty states.
+   Native UI surfaces for the Today Dashboard, Routine History, Add/Edit Routine, group editing, reusable cards, progress rings, banners, and empty states.
 
 3. View state and projections
    Lightweight immutable view data plus small observable form or screen state objects. These convert persisted models and domain values into UI-ready strings, flags, accessibility labels, and drawing inputs.
@@ -279,7 +279,7 @@ Required services:
   Converts one routine and its completions into summary, month grid, and recent-completion view data.
 
 - `ManageProjectionBuilder`
-  Converts groups and routines into management screen view data without dashboard progress concerns.
+  Converts groups and routines into dashboard-owned management view data without dashboard progress concerns.
 
 - `AppDiagnostics`
   Owns loggers, signpost helpers, and DEBUG-only diagnostic behavior.
@@ -303,19 +303,16 @@ Primary screens:
   Owns `NavigationStack`, route destinations, starter data seeding trigger, and app-level service construction.
 
 - `TodayDashboardView`
-  Default launch screen. Shows all grouped routines, handles one-tap completion, opens secondary actions, shows undo banner, and navigates to manage/history.
+  Default launch screen. Shows all grouped routines, handles one-tap completion, opens secondary actions, shows undo banner, owns routine/group management sheets and organize mode, and navigates to history.
 
 - `RoutineHistoryView`
   Routine-specific history screen with summary header, current-month calendar-like grid, recent completions, and destructive correction flow.
-
-- `ManageRoutinesView`
-  Configuration surface for adding, editing, deleting, and reordering routines and groups.
 
 - `AddEditRoutineView`
   Native form sheet with draft state for routine name, target count, period, and group assignment.
 
 - Group add/edit sheets
-  Small native forms for creating and renaming groups.
+  Small native forms for creating, renaming, and deleting groups.
 
 Reusable UI components:
 
@@ -351,10 +348,11 @@ Use `NavigationStack` with value-based routes.
 Routes:
 
 - Today Dashboard is the root and default launch screen.
-- Manage Routines is pushed from the dashboard toolbar.
 - Routine History is pushed from a routine's secondary action path.
-- Add/Edit Routine is presented as a sheet from Manage Routines.
-- Group add/edit is presented as a sheet from Manage Routines.
+- Add/Edit Routine is presented as a sheet from Today Dashboard.
+- Group add/edit is presented as a sheet from Today Dashboard.
+- The dashboard top bar uses a trailing `gearshape` menu for `Add Routine`, `Add Group`, `Show/Hide Management Controls`, and `Organize Order`.
+- Organize mode stays on Today Dashboard and exits with a top-bar `Done` action.
 
 Navigation rules:
 
@@ -564,10 +562,12 @@ Required coverage:
 - `View History` opens the correct routine history screen.
 - History shows last-done summary, month grid, and recent completions.
 - Removing a historical completion requires confirmation.
-- Manage opens from the dashboard toolbar.
-- Add routine sheet saves a valid routine.
-- Edit routine sheet updates a routine.
+- The dashboard gear menu is the only top-level management entry.
+- Add routine sheet saves a valid routine and returns to Today.
+- Edit routine sheet updates a routine and returns to Today.
 - Delete routine requires confirmation and removes it from dashboard.
+- Add group and edit group flows start from Today and return to Today.
+- No Manage Routines screen is reachable from app navigation.
 - Reorder mode is accessible enough for manual validation even if fully automated drag tests are brittle.
 
 ### Manual Device Acceptance
@@ -913,8 +913,8 @@ The system design is satisfied when an implementation can demonstrate:
 - Undo removes today's completion.
 - History shows last-done context, current-month marks, and recent completions.
 - Historical completions can be removed after confirmation.
-- Manage Routines supports add, edit, delete, and reorder.
-- Groups support add, rename, reorder, and empty-group deletion.
+- The Today Dashboard owns routine management through home-based menus, sheets, and organize mode.
+- Groups support add, rename, reorder, and empty-group deletion from dashboard-owned flows.
 - Current week progress uses Monday-start weeks.
 - Current month progress uses calendar months.
 - Data survives app relaunch.
