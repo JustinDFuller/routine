@@ -8,10 +8,8 @@ final class StarterDataService {
     nonisolated static let seedMetadataKey = "starterDataSeedVersion"
     nonisolated static let seedMetadataValue = "1"
 
-    private static let logger = Logger(
-        subsystem: Bundle.main.bundleIdentifier ?? "Routine",
-        category: "starter-data"
-    )
+    private static let logger = AppDiagnostics.logger(.starterData)
+    private static let signposter = AppDiagnostics.signposter(.starterData)
 
     private let context: ModelContext
     private let seedMetadataValue: String
@@ -27,6 +25,11 @@ final class StarterDataService {
     func seedIfNeeded(now: Date = .now) throws {
         guard try shouldSeedStarterData() else {
             return
+        }
+
+        let seedSignpost = Self.signposter.beginInterval("seedStarterData")
+        defer {
+            Self.signposter.endInterval("seedStarterData", seedSignpost)
         }
 
         var insertedGroups: [RoutineGroup] = []

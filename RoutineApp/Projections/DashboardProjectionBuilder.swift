@@ -1,9 +1,13 @@
 import Foundation
+import OSLog
 import RoutineCore
 import SwiftData
 
 @MainActor
 final class DashboardProjectionBuilder {
+    private static let logger = AppDiagnostics.logger(.projection)
+    private static let signposter = AppDiagnostics.signposter(.projection)
+
     private let context: ModelContext
     private let routineCalendar: RoutineCalendar
     private let progressCalculator: ProgressCalculator
@@ -15,6 +19,11 @@ final class DashboardProjectionBuilder {
     }
 
     func build(now: Date = .now) throws -> TodayDashboardViewData {
+        let buildSignpost = Self.signposter.beginInterval("buildDashboardProjection")
+        defer {
+            Self.signposter.endInterval("buildDashboardProjection", buildSignpost)
+        }
+
         let groups = try fetchGroups()
         let routines = try fetchRoutines()
         let completions = try fetchCompletions()
@@ -75,6 +84,9 @@ extension DashboardProjectionBuilder {
         do {
             return try RoutinePersistenceFetchExecutor.fetchGroups(context, descriptor)
         } catch {
+            Self.logger.error(
+                "fetchGroupsFailed e=\(String(describing: error), privacy: .private)"
+            )
             throw PersistenceError.fetchFailed(String(describing: error))
         }
     }
@@ -87,6 +99,9 @@ extension DashboardProjectionBuilder {
         do {
             return try RoutinePersistenceFetchExecutor.fetchRoutines(context, descriptor)
         } catch {
+            Self.logger.error(
+                "fetchRoutinesFailed e=\(String(describing: error), privacy: .private)"
+            )
             throw PersistenceError.fetchFailed(String(describing: error))
         }
     }
@@ -103,6 +118,9 @@ extension DashboardProjectionBuilder {
         do {
             return try RoutinePersistenceFetchExecutor.fetchCompletions(context, descriptor)
         } catch {
+            Self.logger.error(
+                "fetchCompletionsFailed e=\(String(describing: error), privacy: .private)"
+            )
             throw PersistenceError.fetchFailed(String(describing: error))
         }
     }

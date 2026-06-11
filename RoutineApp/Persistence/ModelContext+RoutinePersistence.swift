@@ -1,5 +1,11 @@
 import Foundation
+import OSLog
 import SwiftData
+
+private enum PersistenceDiagnostics {
+    static let logger = AppDiagnostics.logger(.persistence)
+    static let signposter = AppDiagnostics.signposter(.persistence)
+}
 
 @MainActor
 enum RoutinePersistenceSaveExecutor {
@@ -141,9 +147,17 @@ extension ModelContext {
     }
 
     func saveRoutineChanges() throws {
+        let saveSignpost = PersistenceDiagnostics.signposter.beginInterval("saveRoutineChanges")
+        defer {
+            PersistenceDiagnostics.signposter.endInterval("saveRoutineChanges", saveSignpost)
+        }
+
         do {
             try RoutinePersistenceSaveExecutor.save(self)
         } catch {
+            PersistenceDiagnostics.logger.error(
+                "saveRoutineChangesFailed e=\(String(describing: error), privacy: .private)"
+            )
             throw PersistenceError.saveFailed(String(describing: error))
         }
     }

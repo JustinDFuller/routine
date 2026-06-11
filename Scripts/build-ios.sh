@@ -4,9 +4,23 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-./Scripts/generate-project.sh
+source ./Scripts/xcode-destination-helpers.sh
 
-destinations="$(xcodebuild -project Routine.xcodeproj -scheme RoutineApp -showdestinations 2>&1)"
+configuration="${ROUTINE_BUILD_CONFIGURATION:-Debug}"
+
+"${GENERATE_PROJECT_SCRIPT:-./Scripts/generate-project.sh}"
+
+destinations="$(routine_show_destinations)"
+
+xcodebuild_args=(
+    -project Routine.xcodeproj
+    -scheme RoutineApp
+    -configuration "$configuration"
+)
+
+if [[ -n "${DEVELOPMENT_TEAM:-}" ]]; then
+    xcodebuild_args+=("DEVELOPMENT_TEAM=${DEVELOPMENT_TEAM}")
+fi
 
 if print -r -- "$destinations" | grep -Fq "Unable to find a destination matching"; then
     echo "Skipping iOS build: no eligible generic simulator or device destination is installed."
@@ -19,12 +33,12 @@ if print -r -- "$destinations" | grep -Fq "Ineligible destinations for the \"Rou
 fi
 
 if print -r -- "$destinations" | grep -Fq "platform:iOS Simulator"; then
-    xcodebuild -project Routine.xcodeproj -scheme RoutineApp -destination "generic/platform=iOS Simulator" build
+    routine_xcodebuild "${xcodebuild_args[@]}" -destination "generic/platform=iOS Simulator" build
     exit 0
 fi
 
 if print -r -- "$destinations" | grep -Fq "platform:iOS"; then
-    xcodebuild -project Routine.xcodeproj -scheme RoutineApp -destination "generic/platform=iOS" build
+    routine_xcodebuild "${xcodebuild_args[@]}" -destination "generic/platform=iOS" build
     exit 0
 fi
 

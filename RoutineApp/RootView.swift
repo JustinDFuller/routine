@@ -12,10 +12,8 @@ struct RootView: View {
 
     private let debugLaunchConfiguration: RoutineDebugLaunchConfiguration
 
-    private static let logger = Logger(
-        subsystem: Bundle.main.bundleIdentifier ?? "Routine",
-        category: "starter-data"
-    )
+    private static let starterDataLogger = AppDiagnostics.logger(.starterData)
+    private static let routingLogger = AppDiagnostics.logger(.routing)
 
     init(debugLaunchConfiguration: RoutineDebugLaunchConfiguration = .current) {
         self.debugLaunchConfiguration = debugLaunchConfiguration
@@ -40,7 +38,7 @@ struct RootView: View {
 
                 try applyDebugLaunchRouteIfNeeded()
             } catch {
-                Self.logger.error(
+                Self.starterDataLogger.error(
                     "Starter data setup failed at launch: \(String(describing: error), privacy: .private)")
                 seedErrorIsPresented = true
             }
@@ -88,6 +86,10 @@ struct RootView: View {
             now: runtime.now
         )
         path = [.routineHistory(routineID: routine.id)]
+        let routineID = routine.id.uuidString
+        Self.routingLogger.debug(
+            "applyLaunchRoute route=morningYogaHistoryWithCompletion routineID=\(routineID, privacy: .public)"
+        )
         hasAppliedDebugLaunchRoute = true
     }
 }

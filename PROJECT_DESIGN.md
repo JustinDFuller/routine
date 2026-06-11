@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**CURRENT: M14 - Dogfooding Readiness**
+**MVP implementation roadmap complete**
 
 The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -102,7 +102,7 @@ Core invariants that require automated coverage when touched:
 | DONE | M11 - Group And Reorder UI | The user can manage groups and reorder routines/groups through native controls. |
 | DONE | M12 - Routine History UI | The user can inspect and correct routine-specific completion history. |
 | DONE | M13 - Accessibility, Polish, And UI Coverage | Primary flows satisfy accessibility, motion, visual, and UI-test expectations. |
-| CURRENT | M14 - Dogfooding Readiness | Local validation, diagnostics, privacy, app icon, and device-readiness checks are complete. |
+| DONE | M14 - Dogfooding Readiness | Local validation, diagnostics, privacy, app icon, and device-readiness checks are complete. |
 
 ## Milestones
 
@@ -725,7 +725,7 @@ Completion note:
 
 ### M14 - Dogfooding Readiness
 
-Status: `CURRENT`
+Status: `DONE`
 
 Goal: make the MVP ready to install and rely on locally for personal dogfooding.
 
@@ -765,6 +765,10 @@ Completion update:
 - Mark this milestone `DONE`.
 - Replace the `Current Milestone` line with `MVP implementation roadmap complete`.
 - Do not add a new milestone unless a new product or engineering scope decision has been made.
+
+Completion note:
+
+- Passed `./Scripts/test-ios-script-tests.sh`, `./Scripts/test-core.sh`, `./Scripts/check-format.sh`, `./Scripts/lint.sh`, `./Scripts/build-ios.sh`, `ROUTINE_BUILD_CONFIGURATION=Release ./Scripts/build-ios.sh`, `./Scripts/test-ios.sh`, `./Scripts/validate.sh`, and `plutil -lint RoutineApp/PrivacyInfo.xcprivacy`. Verified the tracked AppIcon assets are 1024x1024 and fully opaque per-pixel. Physical iPhone install, Home Screen/App Library icon verification, and the manual dogfooding checklist were skipped because no personal device or interactive manual test pass was available in this environment.
 
 ## MVP Completion Criteria
 

@@ -10,17 +10,20 @@ enum AppBootstrapState {
 
 @MainActor
 enum AppBootstrap {
-    private static let logger = Logger(
-        subsystem: Bundle.main.bundleIdentifier ?? "Routine",
-        category: "app.bootstrap"
-    )
+    private static let logger = AppDiagnostics.logger(.appLifecycle)
 
     static let launchConfiguration = RoutineDebugLaunchConfiguration.current
 
     static func initialState() -> AppBootstrapState {
         do {
+            let modelContainer = try persistentContainer(launchConfiguration: launchConfiguration)
+            let storeMode = launchConfiguration.storeMode.logValue
+            let resetStore = launchConfiguration.resetsStore ? 1 : 0
+            logger.info(
+                "bootstrapReady storeMode=\(storeMode, privacy: .public) resetStore=\(resetStore, privacy: .public)"
+            )
             return .ready(
-                try persistentContainer(launchConfiguration: launchConfiguration),
+                modelContainer,
                 launchConfiguration.runtime
             )
         } catch {
@@ -52,6 +55,17 @@ enum AppBootstrap {
         }
 
         return modelContainer
+    }
+}
+
+extension RoutineDebugLaunchConfiguration.StoreMode {
+    fileprivate var logValue: String {
+        switch self {
+        case .persistent:
+            "persistent"
+        case .inMemory:
+            "inMemory"
+        }
     }
 }
 

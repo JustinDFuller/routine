@@ -23,10 +23,7 @@ enum RoutineManagementError: LocalizedError, Equatable {
 
 @MainActor
 final class RoutineManagementService {
-    private static let logger = Logger(
-        subsystem: Bundle.main.bundleIdentifier ?? "Routine",
-        category: "management"
-    )
+    private static let logger = AppDiagnostics.logger(.management)
 
     private let context: ModelContext
 

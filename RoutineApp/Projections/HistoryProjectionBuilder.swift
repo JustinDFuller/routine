@@ -1,9 +1,13 @@
 import Foundation
+import OSLog
 import RoutineCore
 import SwiftData
 
 @MainActor
 final class HistoryProjectionBuilder {
+    private static let logger = AppDiagnostics.logger(.projection)
+    private static let signposter = AppDiagnostics.signposter(.projection)
+
     private let context: ModelContext
     private let routineCalendar: RoutineCalendar
     private let progressCalculator: ProgressCalculator
@@ -15,6 +19,11 @@ final class HistoryProjectionBuilder {
     }
 
     func build(routineID: UUID, now: Date = .now) throws -> RoutineHistoryProjection {
+        let buildSignpost = Self.signposter.beginInterval("buildHistoryProjection")
+        defer {
+            Self.signposter.endInterval("buildHistoryProjection", buildSignpost)
+        }
+
         guard let routine = try fetchRoutine(id: routineID) else {
             return .notFound(routineID: routineID)
         }
@@ -64,6 +73,11 @@ extension HistoryProjectionBuilder {
         do {
             return try RoutinePersistenceFetchExecutor.fetchRoutines(context, descriptor).first
         } catch {
+            let routineID = id.uuidString
+            let errorText = String(describing: error)
+            Self.logger.error(
+                "fetchRoutineFailed routineID=\(routineID, privacy: .public) e=\(errorText, privacy: .private)"
+            )
             throw PersistenceError.fetchFailed(String(describing: error))
         }
     }
@@ -82,6 +96,12 @@ extension HistoryProjectionBuilder {
         do {
             return try RoutinePersistenceFetchExecutor.fetchCompletions(context, descriptor)
         } catch {
+            let routineIDText = routineID.uuidString
+            let errorText = String(describing: error)
+            let details = "routineID=\(routineIDText)"
+            Self.logger.error(
+                "fetchHistoryCompletionsFailed \(details, privacy: .public) e=\(errorText, privacy: .private)"
+            )
             throw PersistenceError.fetchFailed(String(describing: error))
         }
     }
