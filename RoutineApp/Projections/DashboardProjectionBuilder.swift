@@ -207,7 +207,35 @@ extension DashboardProjectionBuilder {
         return
             "\(routineName), \(completionText), \(progress.completedCount) of \(progress.targetCount) "
             + "this \(periodText), "
-            + "last done \(lastDoneText)"
+            + accessibilityLastDoneText(for: lastDoneText)
+    }
+
+    fileprivate func accessibilityLastDoneText(for lastDoneText: String) -> String {
+        switch lastDoneText {
+        case "Never":
+            "no completions yet"
+        case "Today":
+            "last done today"
+        case "Yesterday":
+            "last done yesterday"
+        default:
+            "last done \(expandedRelativeDayPhrase(for: lastDoneText))"
+        }
+    }
+
+    fileprivate func expandedRelativeDayPhrase(for text: String) -> String {
+        let suffix = "d ago"
+        guard text.hasSuffix(suffix) else {
+            return text
+        }
+
+        let dayCountText = text.dropLast(suffix.count)
+        guard let dayCount = Int(dayCountText) else {
+            return text
+        }
+
+        let unit = dayCount == 1 ? "day" : "days"
+        return "\(dayCount) \(unit) ago"
     }
 
     fileprivate func dashboardDateLabel(for date: Date) -> String {

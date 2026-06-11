@@ -5,8 +5,8 @@ import SwiftData
 
 @MainActor
 final class StarterDataService {
-    static let seedMetadataKey = "starterDataSeedVersion"
-    static let seedMetadataValue = "1"
+    nonisolated static let seedMetadataKey = "starterDataSeedVersion"
+    nonisolated static let seedMetadataValue = "1"
 
     private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "Routine",
@@ -14,9 +14,14 @@ final class StarterDataService {
     )
 
     private let context: ModelContext
+    private let seedMetadataValue: String
 
-    init(context: ModelContext) {
+    init(
+        context: ModelContext,
+        seedMetadataValue: String = StarterDataService.seedMetadataValue
+    ) {
         self.context = context
+        self.seedMetadataValue = seedMetadataValue
     }
 
     func seedIfNeeded(now: Date = .now) throws {
@@ -40,7 +45,7 @@ final class StarterDataService {
 
             let metadata = AppMetadata(
                 key: Self.seedMetadataKey,
-                value: Self.seedMetadataValue,
+                value: seedMetadataValue,
                 updatedAt: now
             )
             context.insert(metadata)

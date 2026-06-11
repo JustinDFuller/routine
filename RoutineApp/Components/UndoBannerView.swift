@@ -25,6 +25,9 @@ struct UndoBannerView: View {
             }
             .frame(minWidth: 44, minHeight: 44)
             .contentShape(Rectangle())
+            .accessibilityLabel("Undo completion")
+            .accessibilityHint("Removes today's completion.")
+            .accessibilityIdentifier("today-dashboard-undo-button")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)

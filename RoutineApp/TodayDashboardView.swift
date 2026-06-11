@@ -6,6 +6,7 @@ struct TodayDashboardView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.routineRuntimeConfiguration) private var runtime
 
     @Query(
         sort: [SortDescriptor(\RoutineGroup.sortOrder), SortDescriptor(\RoutineGroup.name)]
@@ -26,8 +27,7 @@ struct TodayDashboardView: View {
     )
     private var completions: [RoutineCompletion]
 
-    @State private var selectedCard: SelectedRoutineCard?
-    @State private var isSelectedCardDialogPresented = false
+    @State private var selectedRoutineID: UUID?
     @State private var undoBanner: UndoBannerPresentation?
     @State private var undoDismissTask: Task<Void, Never>?
     @State private var errorAlert: DashboardErrorAlert?
@@ -36,12 +36,13 @@ struct TodayDashboardView: View {
         DashboardProjectionBuilder(context: modelContext).build(
             groups: groups,
             routines: routines,
-            completions: completions
+            completions: completions,
+            now: runtime.now
         )
     }
 
     private var bannerTransition: AnyTransition {
-        if reduceMotion {
+        if animationsAreDisabled {
             return .opacity
         }
 
@@ -49,7 +50,11 @@ struct TodayDashboardView: View {
     }
 
     private var bannerAnimation: Animation? {
-        reduceMotion ? nil : .easeInOut(duration: 0.2)
+        animationsAreDisabled ? nil : .easeInOut(duration: 0.2)
+    }
+
+    private var animationsAreDisabled: Bool {
+        reduceMotion || runtime.disablesAnimations
     }
 
     var body: some View {
@@ -81,6 +86,8 @@ struct TodayDashboardView: View {
                 Button("Manage") {
                     path.append(.manageRoutines(editingRoutineID: nil))
                 }
+                .accessibilityHint("Opens routine management.")
+                .accessibilityIdentifier("today-dashboard-manage-button")
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -88,41 +95,9 @@ struct TodayDashboardView: View {
                 UndoBannerView(viewData: undoBanner.viewData) {
                     undoCompletion(routineID: undoBanner.routineID)
                 }
-                .accessibilityIdentifier("today-dashboard-undo-banner")
                 .padding(.horizontal, 16)
                 .padding(.bottom, 8)
                 .transition(bannerTransition)
-            }
-        }
-        .confirmationDialog(
-            selectedCard?.name ?? "Routine Actions",
-            isPresented: selectedCardDialogIsPresented,
-            titleVisibility: .visible,
-            presenting: selectedCard
-        ) { selectedCard in
-            Button("View History") {
-                self.selectedCard = nil
-                isSelectedCardDialogPresented = false
-                path.append(.routineHistory(routineID: selectedCard.id))
-            }
-
-            Button("Edit Routine") {
-                self.selectedCard = nil
-                isSelectedCardDialogPresented = false
-                path.append(.manageRoutines(editingRoutineID: selectedCard.id))
-            }
-
-            if selectedCard.isCompletedToday {
-                Button("Undo Today's Completion") {
-                    self.selectedCard = nil
-                    isSelectedCardDialogPresented = false
-                    undoCompletion(routineID: selectedCard.id)
-                }
-            }
-
-            Button("Cancel", role: .cancel) {
-                self.selectedCard = nil
-                isSelectedCardDialogPresented = false
             }
         }
         .alert(
@@ -159,10 +134,35 @@ struct TodayDashboardView: View {
                                     handlePrimaryTap(for: routine)
                                 },
                                 onMore: {
-                                    selectedCard = SelectedRoutineCard(from: routine)
-                                    isSelectedCardDialogPresented = true
+                                    selectedRoutineID = routine.id
                                 }
                             )
+                            .confirmationDialog(
+                                routine.name,
+                                isPresented: actionDialogIsPresented(for: routine.id),
+                                titleVisibility: .visible
+                            ) {
+                                Button("View History") {
+                                    selectedRoutineID = nil
+                                    path.append(.routineHistory(routineID: routine.id))
+                                }
+
+                                Button("Edit Routine") {
+                                    selectedRoutineID = nil
+                                    path.append(.manageRoutines(editingRoutineID: routine.id))
+                                }
+
+                                if routine.isCompletedToday {
+                                    Button("Undo Today's Completion") {
+                                        selectedRoutineID = nil
+                                        undoCompletion(routineID: routine.id)
+                                    }
+                                }
+
+                                Button("Cancel", role: .cancel) {
+                                    selectedRoutineID = nil
+                                }
+                            }
                         }
                     }
                 }
@@ -185,19 +185,22 @@ struct TodayDashboardView: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(Color.routineAccentActive)
+            .accessibilityHint("Opens routine management.")
+            .accessibilityIdentifier("today-dashboard-empty-manage-button")
         }
         .frame(maxWidth: .infinity, minHeight: 280, alignment: .center)
-        .accessibilityIdentifier("today-dashboard-empty-state")
     }
 
-    private var selectedCardDialogIsPresented: Binding<Bool> {
+    private func actionDialogIsPresented(for routineID: UUID) -> Binding<Bool> {
         Binding(
-            get: { isSelectedCardDialogPresented },
+            get: { selectedRoutineID == routineID },
             set: { isPresented in
-                isSelectedCardDialogPresented = isPresented
-
                 if isPresented == false {
-                    selectedCard = nil
+                    if selectedRoutineID == routineID {
+                        selectedRoutineID = nil
+                    }
+                } else {
+                    selectedRoutineID = routineID
                 }
             }
         )
@@ -216,17 +219,20 @@ struct TodayDashboardView: View {
 
     private func handlePrimaryTap(for routine: RoutineCardViewData) {
         if routine.isCompletedToday {
-            selectedCard = SelectedRoutineCard(from: routine)
-            isSelectedCardDialogPresented = true
+            selectedRoutineID = routine.id
             return
         }
 
         do {
-            let result = try RoutineTrackingService(context: modelContext).completeToday(routineID: routine.id)
+            let result = try RoutineTrackingService(context: modelContext).completeToday(
+                routineID: routine.id,
+                now: runtime.now
+            )
             guard result.didInsert else {
                 return
             }
 
+            RoutineHaptics.signalCompletion()
             showUndoBanner(
                 routineID: result.routineID,
                 message: "Completed \(result.routineName)"
@@ -238,12 +244,17 @@ struct TodayDashboardView: View {
 
     private func undoCompletion(routineID: UUID) {
         do {
-            let result = try RoutineTrackingService(context: modelContext).undoToday(routineID: routineID)
+            let result = try RoutineTrackingService(context: modelContext).undoToday(
+                routineID: routineID,
+                now: runtime.now
+            )
             clearUndoBanner()
 
             guard result.didRemove else {
                 return
             }
+
+            RoutineHaptics.signalUndo()
         } catch {
             presentUpdateError(error)
         }
@@ -291,18 +302,6 @@ struct TodayDashboardView: View {
     private func presentUpdateError(_ error: Error) {
         clearUndoBanner()
         errorAlert = DashboardErrorAlert(message: error.localizedDescription)
-    }
-}
-
-private struct SelectedRoutineCard: Identifiable, Equatable {
-    let id: UUID
-    let name: String
-    let isCompletedToday: Bool
-
-    init(from viewData: RoutineCardViewData) {
-        id = viewData.id
-        name = viewData.name
-        isCompletedToday = viewData.isCompletedToday
     }
 }
 

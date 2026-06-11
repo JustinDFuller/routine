@@ -45,7 +45,7 @@ final class DashboardProjectionBuilderTests: ProjectionBuilderTestCase {
         XCTAssertEqual(walkCard.lastDoneText, "Today")
         XCTAssertEqual(
             walkCard.accessibilityLabel,
-            "Walk, completed today, 2 of 5 this week, last done Today"
+            "Walk, completed today, 2 of 5 this week, last done today"
         )
         XCTAssertTrue(walkCard.isCompletedToday)
 
@@ -53,7 +53,7 @@ final class DashboardProjectionBuilderTests: ProjectionBuilderTestCase {
         XCTAssertEqual(readCard.lastDoneText, "Yesterday")
         XCTAssertEqual(
             readCard.accessibilityLabel,
-            "Read, not completed today, 1 of 4 this week, last done Yesterday"
+            "Read, not completed today, 1 of 4 this week, last done yesterday"
         )
         XCTAssertFalse(readCard.isCompletedToday)
     }
@@ -116,9 +116,25 @@ final class DashboardProjectionBuilderTests: ProjectionBuilderTestCase {
         let cardsByName = Dictionary(uniqueKeysWithValues: viewData.sections[0].routines.map { ($0.name, $0) })
 
         XCTAssertEqual(cardsByName["Never"]?.lastDoneText, "Never")
+        XCTAssertEqual(
+            cardsByName["Never"]?.accessibilityLabel,
+            "Never, not completed today, 0 of 1 this week, no completions yet"
+        )
         XCTAssertEqual(cardsByName["Today"]?.lastDoneText, "Today")
+        XCTAssertEqual(
+            cardsByName["Today"]?.accessibilityLabel,
+            "Today, completed today, 1 of 1 this week, last done today"
+        )
         XCTAssertEqual(cardsByName["Yesterday"]?.lastDoneText, "Yesterday")
+        XCTAssertEqual(
+            cardsByName["Yesterday"]?.accessibilityLabel,
+            "Yesterday, not completed today, 1 of 1 this week, last done yesterday"
+        )
         XCTAssertEqual(cardsByName["Recent"]?.lastDoneText, "3d ago")
+        XCTAssertEqual(
+            cardsByName["Recent"]?.accessibilityLabel,
+            "Recent, not completed today, 0 of 1 this week, last done 3 days ago"
+        )
         XCTAssertEqual(cardsByName["CurrentYear"]?.lastDoneText, "Jan 2")
         XCTAssertEqual(cardsByName["PriorYear"]?.lastDoneText, "Jun 2, 2025")
     }

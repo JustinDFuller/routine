@@ -71,7 +71,8 @@ struct ManageRoutinesView: View {
                 } label: {
                     Image(systemName: "plus")
                 }
-                .accessibilityLabel("Add")
+                .accessibilityLabel("Add routine or group")
+                .accessibilityHint("Opens options to add a routine or a group.")
                 .accessibilityIdentifier("manage-routines-add-button")
             }
         }
@@ -91,44 +92,6 @@ struct ManageRoutinesView: View {
         }
         .task {
             handleInitialEditTargetIfNeeded()
-        }
-        .confirmationDialog(
-            pendingRoutineDeletion?.name ?? "Delete Routine",
-            isPresented: pendingRoutineDeletionIsPresented,
-            titleVisibility: .visible
-        ) {
-            Button("Delete Routine", role: .destructive) {
-                guard let row = pendingRoutineDeletion else {
-                    return
-                }
-
-                deleteRoutine(row)
-            }
-
-            Button("Cancel", role: .cancel) {
-                pendingRoutineDeletion = nil
-            }
-        } message: {
-            Text("This deletes the routine and its completion history.")
-        }
-        .confirmationDialog(
-            pendingGroupDeletion?.name ?? "Delete Group",
-            isPresented: pendingGroupDeletionIsPresented,
-            titleVisibility: .visible
-        ) {
-            Button("Delete Group", role: .destructive) {
-                guard let group = pendingGroupDeletion else {
-                    return
-                }
-
-                deleteGroup(group)
-            }
-
-            Button("Cancel", role: .cancel) {
-                pendingGroupDeletion = nil
-            }
-        } message: {
-            Text("This deletes the group.")
         }
         .alert(
             alertPresentation?.title ?? "",
@@ -184,22 +147,22 @@ extension ManageRoutinesView {
         .padding(24)
     }
 
-    private var pendingRoutineDeletionIsPresented: Binding<Bool> {
+    private func pendingRoutineDeletionIsPresented(for routineID: UUID) -> Binding<Bool> {
         Binding(
-            get: { pendingRoutineDeletion != nil },
+            get: { pendingRoutineDeletion?.id == routineID },
             set: { isPresented in
-                if isPresented == false {
+                if isPresented == false, pendingRoutineDeletion?.id == routineID {
                     pendingRoutineDeletion = nil
                 }
             }
         )
     }
 
-    private var pendingGroupDeletionIsPresented: Binding<Bool> {
+    private func pendingGroupDeletionIsPresented(for groupID: UUID) -> Binding<Bool> {
         Binding(
-            get: { pendingGroupDeletion != nil },
+            get: { pendingGroupDeletion?.id == groupID },
             set: { isPresented in
-                if isPresented == false {
+                if isPresented == false, pendingGroupDeletion?.id == groupID {
                     pendingGroupDeletion = nil
                 }
             }
@@ -412,8 +375,30 @@ extension ManageRoutinesView {
                 } label: {
                     Image(systemName: "ellipsis.circle")
                         .foregroundStyle(Color.routineLabelSecondary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 .accessibilityLabel("\(section.name) Actions")
+                .accessibilityHint("Shows rename and delete actions for this group.")
+                .confirmationDialog(
+                    section.name,
+                    isPresented: pendingGroupDeletionIsPresented(for: section.id),
+                    titleVisibility: .visible
+                ) {
+                    Button("Delete Group", role: .destructive) {
+                        guard let group = pendingGroupDeletion else {
+                            return
+                        }
+
+                        deleteGroup(group)
+                    }
+
+                    Button("Cancel", role: .cancel) {
+                        pendingGroupDeletion = nil
+                    }
+                } message: {
+                    Text("This deletes the group.")
+                }
             }
         }
     }
@@ -445,12 +430,33 @@ extension ManageRoutinesView {
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(routine.name), \(routine.summaryText)")
+        .accessibilityHint("Opens the routine editor.")
+        .accessibilityIdentifier("manage-routine-row-\(routine.name.routineAccessibilityIdentifierComponent)")
         .swipeActions {
             Button(role: .destructive) {
                 pendingRoutineDeletion = routine
             } label: {
                 Label("Delete", systemImage: "trash")
             }
+        }
+        .confirmationDialog(
+            routine.name,
+            isPresented: pendingRoutineDeletionIsPresented(for: routine.id),
+            titleVisibility: .visible
+        ) {
+            Button("Delete Routine", role: .destructive) {
+                guard let row = pendingRoutineDeletion else {
+                    return
+                }
+
+                deleteRoutine(row)
+            }
+
+            Button("Cancel", role: .cancel) {
+                pendingRoutineDeletion = nil
+            }
+        } message: {
+            Text("This deletes the routine and its completion history.")
         }
     }
 }
