@@ -21,6 +21,10 @@ extension TodayDashboardView {
             }
         } label: {
             Image(systemName: "gearshape")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(Color.routineLabelPrimary)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
         }
         .accessibilityLabel("Management")
         .accessibilityHint("Shows dashboard management actions.")
@@ -31,9 +35,25 @@ extension TodayDashboardView {
         mode == .managementControls ? "Hide Management Controls" : "Show Management Controls"
     }
 
+    var dashboardHeader: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(viewData.title)
+                .font(.title.weight(.semibold))
+                .foregroundStyle(Color.routineLabelPrimary)
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("today-dashboard-title")
+
+            Spacer(minLength: 0)
+
+            managementMenu
+        }
+    }
+
     var trackingContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
+                dashboardHeader
+
                 Text(viewData.dateLabel)
                     .font(.subheadline)
                     .foregroundStyle(Color.routineLabelSecondary)

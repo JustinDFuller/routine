@@ -91,6 +91,7 @@ struct TodayDashboardView: View {
             }
         }
         .navigationTitle(viewData.title)
+        .toolbar(mode == .organize ? .visible : .hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 if mode == .organize {
@@ -98,8 +99,6 @@ struct TodayDashboardView: View {
                         exitOrganizeMode()
                     }
                     .accessibilityIdentifier("today-dashboard-organize-done-button")
-                } else {
-                    managementMenu
                 }
             }
         }

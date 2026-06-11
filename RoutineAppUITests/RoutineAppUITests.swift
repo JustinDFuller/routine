@@ -6,7 +6,7 @@ final class RoutineAppUITests: XCTestCase {
         let app = makeApp()
         app.launch()
 
-        XCTAssertTrue(app.navigationBars["Today"].exists)
+        XCTAssertTrue(dashboardTitle(in: app).waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Morning"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Morning yoga"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Movement"].waitForExistence(timeout: 5))
@@ -20,7 +20,7 @@ final class RoutineAppUITests: XCTestCase {
         )
         app.launch()
 
-        XCTAssertTrue(app.navigationBars["Today"].exists)
+        XCTAssertTrue(dashboardTitle(in: app).waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["No groups yet"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Add a group to start organizing your routines."].exists)
 
@@ -34,7 +34,7 @@ final class RoutineAppUITests: XCTestCase {
         nameField.typeText("UI Test Group")
         app.buttons["group-form-save-button"].tap()
 
-        XCTAssertTrue(app.navigationBars["Today"].waitForExistence(timeout: 5))
+        XCTAssertTrue(dashboardTitle(in: app).waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["No routines yet"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["today-dashboard-empty-add-routine-button"].exists)
         XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
@@ -154,7 +154,7 @@ final class RoutineAppUITests: XCTestCase {
         nameField.typeText("UI Test Routine")
         app.buttons["routine-form-save-button"].tap()
 
-        XCTAssertTrue(app.navigationBars["Today"].waitForExistence(timeout: 5))
+        XCTAssertTrue(dashboardTitle(in: app).waitForExistence(timeout: 5))
         XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
         XCTAssertTrue(
             app.descendants(matching: .any)
@@ -183,7 +183,7 @@ final class RoutineAppUITests: XCTestCase {
         clearAndTypeText("Morning yoga updated", into: nameField)
         app.buttons["routine-form-save-button"].tap()
 
-        XCTAssertTrue(app.navigationBars["Today"].waitForExistence(timeout: 5))
+        XCTAssertTrue(dashboardTitle(in: app).waitForExistence(timeout: 5))
         XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
         XCTAssertTrue(
             app.descendants(matching: .any)
@@ -215,7 +215,7 @@ final class RoutineAppUITests: XCTestCase {
         XCTAssertTrue(deleteConfirmationSheet.waitForExistence(timeout: 5))
         deleteConfirmationSheet.buttons["Delete Routine"].tap()
 
-        XCTAssertTrue(app.navigationBars["Today"].waitForExistence(timeout: 5))
+        XCTAssertTrue(dashboardTitle(in: app).waitForExistence(timeout: 5))
         XCTAssertFalse(
             app.descendants(matching: .any)
                 .matching(identifier: "routine-card-primary-morning-yoga")
@@ -240,7 +240,7 @@ final class RoutineAppUITests: XCTestCase {
         clearAndTypeText("Sunrise", into: nameField)
         app.buttons["group-form-save-button"].tap()
 
-        XCTAssertTrue(app.navigationBars["Today"].waitForExistence(timeout: 5))
+        XCTAssertTrue(dashboardTitle(in: app).waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Sunrise"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
     }
@@ -290,7 +290,7 @@ final class RoutineAppUITests: XCTestCase {
 
         openManagementMenu(in: app)
         app.buttons["Show Management Controls"].tap()
-        XCTAssertTrue(app.navigationBars["Today"].exists)
+        XCTAssertTrue(dashboardTitle(in: app).exists)
         XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
 
         openManagementMenu(in: app)
@@ -309,7 +309,7 @@ final class RoutineAppUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Unable to Open Routine"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Routine could not open its local data."].exists)
         XCTAssertTrue(app.staticTexts["Try relaunching the app."].exists)
-        XCTAssertFalse(app.navigationBars["Today"].exists)
+        XCTAssertFalse(dashboardTitle(in: app).exists)
     }
 
     func testMissingHistoryRouteShowsNotFoundState() {
@@ -348,6 +348,10 @@ extension RoutineAppUITests {
         app.descendants(matching: .any)
             .matching(identifier: "today-dashboard-management-menu")
             .firstMatch
+    }
+
+    fileprivate func dashboardTitle(in app: XCUIApplication) -> XCUIElement {
+        app.staticTexts["today-dashboard-title"]
     }
 
     fileprivate func openManagementMenu(in app: XCUIApplication) {
