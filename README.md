@@ -35,6 +35,7 @@ Use the scripts directly or the matching `make` targets:
 
 - Format Swift sources: `./Scripts/format.sh` or `make format`
 - Check formatting: `./Scripts/check-format.sh` or `make check-format`
+- Regenerate launcher icons: `swift Scripts/generate-app-icons.swift` or `make app-icons`
 - Run SwiftLint: `./Scripts/lint.sh` or `make lint`
 - Run portable package tests: `./Scripts/test-core.sh` or `make test-core`
 - Run script-level destination-resolution tests: `./Scripts/test-ios-script-tests.sh` or `make test-scripts`

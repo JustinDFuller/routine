@@ -1,7 +1,10 @@
-.PHONY: generate format check-format lint test-core test-scripts build-ios test-ios validate
+.PHONY: generate app-icons format check-format lint test-core test-scripts build-ios test-ios validate
 
 generate:
 	./Scripts/generate-project.sh
+
+app-icons:
+	swift Scripts/generate-app-icons.swift
 
 format:
 	./Scripts/format.sh
