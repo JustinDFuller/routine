@@ -280,12 +280,15 @@ final class RoutineAppUITests: XCTestCase {
         enterEditMode(in: app)
         XCTAssertTrue(dashboardTitle(in: app).exists)
         XCTAssertTrue(app.buttons["routine-card-edit-morning-yoga"].exists)
+        XCTAssertFalse(managementMenu(in: app).exists)
+        let doneButton = app.buttons["today-dashboard-edit-done-button"]
+        XCTAssertTrue(doneButton.exists)
         XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
 
-        openManagementMenu(in: app)
-        app.buttons["Done Editing"].tap()
+        doneButton.tap()
         XCTAssertTrue(dashboardTitle(in: app).exists)
         XCTAssertFalse(app.buttons["routine-card-edit-morning-yoga"].exists)
+        XCTAssertTrue(managementMenu(in: app).waitForExistence(timeout: 5))
         XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
     }
 

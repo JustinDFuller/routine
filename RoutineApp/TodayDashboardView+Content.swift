@@ -12,7 +12,7 @@ extension TodayDashboardView {
                 openAddGroup()
             }
 
-            Button(managementControlsMenuTitle) {
+            Button("Edit") {
                 toggleManagementControls()
             }
 
@@ -35,8 +35,17 @@ extension TodayDashboardView {
         .accessibilityIdentifier("today-dashboard-management-menu")
     }
 
-    var managementControlsMenuTitle: String {
-        mode == .managementControls ? "Done Editing" : "Edit"
+    var managementControlsDoneButton: some View {
+        Button("Done") {
+            toggleManagementControls()
+        }
+        .font(.body.weight(.semibold))
+        .foregroundStyle(Color.routineAccentActive)
+        .frame(minWidth: 44, minHeight: 44, alignment: .trailing)
+        .contentShape(Rectangle())
+        .accessibilityLabel("Done Editing")
+        .accessibilityHint("Exits dashboard edit mode.")
+        .accessibilityIdentifier("today-dashboard-edit-done-button")
     }
 
     var dashboardHeader: some View {
@@ -49,7 +58,14 @@ extension TodayDashboardView {
 
             Spacer(minLength: 0)
 
-            managementMenu
+            switch mode {
+            case .tracking:
+                managementMenu
+            case .managementControls:
+                managementControlsDoneButton
+            case .rearrangeGroups, .rearrangeRoutines:
+                EmptyView()
+            }
         }
     }
 
