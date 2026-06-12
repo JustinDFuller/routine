@@ -1,4 +1,5 @@
 included:
+  - Scripts
   - RoutineApp
   - RoutineAppTests
   - RoutineAppUITests
