@@ -217,7 +217,6 @@ Recommended symbol directions:
 
 - Completion check state: `checkmark`
 - View history: `calendar`, `clock.arrow.circlepath`, or similar native symbol
-- More actions: `ellipsis.circle`
 - Add routine: `plus`
 - Edit: `pencil`
 - Delete: `trash`
@@ -270,15 +269,16 @@ Primary surfaces:
 
 1. Today Dashboard
 2. Routine History
-3. Manage Routines
-4. Add/Edit Routine
+3. Add/Edit Routine
+4. Add/Edit Group
 
 Navigation model:
 
 - Launch into the Today Dashboard
 - Use a `NavigationStack` as the base app hierarchy
-- Open Manage Routines from a dashboard toolbar action
-- Present Add/Edit Routine as a focused modal sheet from Manage
+- Keep management entry on the Today Dashboard as a trailing `gearshape` menu in the top bar
+- Present Add/Edit Routine as a focused modal sheet over the Today Dashboard
+- Present Add/Edit Group as a focused modal sheet over the Today Dashboard
 - Open Routine History from an individual routine's secondary action path
 
 Navigation should feel shallow and clear. The app does not need a persistent tab bar for MVP.
@@ -287,7 +287,7 @@ Reasoning:
 
 - The dashboard is the product
 - History is routine-specific, not a primary destination
-- Management is necessary but secondary
+- Management is necessary but should stay attached to home rather than become its own destination
 - A tab bar would add visual weight without improving the main flow
 
 ## Screen Specifications
@@ -302,7 +302,7 @@ The Today Dashboard is the default landing screen and primary daily-use surface.
 - Keep all routines visible
 - Separate today's state visually
 - Make completion a one-tap action
-- Provide lightweight access to history and management
+- Provide lightweight access to history and focused management
 
 #### Top bar
 
@@ -310,11 +310,37 @@ Use native navigation chrome.
 
 Recommended structure:
 
-- Title: `Today`
+- Leading title: `Today`
 - Optional subtitle/date context near the top of the content area, such as `Saturday, June 6`
-- Trailing toolbar button: `Manage`
+- Trailing toolbar button: `gearshape`
 
-For MVP, prefer the text label `Manage` over an icon-only control. The action is important but secondary, and a labeled control improves clarity without adding much visual weight.
+The top bar should feel balanced: a clear home title on the left and a single management entry point on the right.
+
+The gear menu is the only top-level management entry. It should expose:
+
+- `Add Routine`
+- `Add Group`
+- `Edit` or `Done Editing`
+- `Rearrange Groups`
+- `Rearrange Routines`
+
+Normal dashboard mode should stay focused on tracking. Management controls are available on demand rather than always competing with completion affordances.
+
+#### Dashboard management entry points
+
+Management belongs to the Today Dashboard, not a separate screen.
+
+Recommended behavior:
+
+- The gear menu opens native menu actions for creation and mode changes
+- `Add Routine` opens a routine sheet over the dashboard
+- `Add Group` opens a group sheet over the dashboard
+- `Edit` reveals inline edit affordances on group headers and routine rows
+- `Done Editing` returns the dashboard to its normal tracking-focused state
+- `Rearrange Groups` enters a visible drag-and-drop mode for groups with a clear `Done` exit in the top bar
+- `Rearrange Routines` enters a visible drag-and-drop mode for routines grouped by their current group, also with a clear `Done` exit
+
+Routine history remains directly available from each routine card, and same-day undo remains available from the transient undo banner and from history correction.
 
 #### Content structure
 
@@ -462,21 +488,14 @@ Do not rely on:
 
 ### Secondary Actions on a Routine
 
-Every routine needs a visible path to history and secondary actions without interfering with one-tap completion.
+Every routine needs a visible path to history without interfering with one-tap completion.
 
 Recommended pattern:
 
-- Provide a trailing `ellipsis.circle` button on every routine card
-- Tapping that button opens a lightweight action sheet or confirmation dialog
+- Provide a trailing calendar/history button on every routine card
+- Tapping that button opens the routine history screen directly
 
-Recommended actions:
-
-- `View History`
-- `Edit Routine`
-- `Undo Today's Completion` when applicable
-- `Cancel`
-
-Do not place delete on the dashboard action sheet. Deletion belongs in routine management, not daily use.
+Editing belongs to dashboard Edit mode, and deletion belongs in the edit sheet, not daily use.
 
 ### Completion Interaction
 
@@ -540,7 +559,7 @@ Routine History is the main answer to the question: "When did I last do this?"
 
 #### Navigation
 
-Access history from a routine's secondary actions.
+Access history from the routine card's direct history affordance or from tapping a card already completed today.
 
 History should open as a dedicated routine-specific screen in the navigation hierarchy, not as a tiny popover or a cramped inline expansion.
 
@@ -620,51 +639,35 @@ Behavior:
 - The history surface updates immediately after confirmation
 - Dashboard state and period progress should reflect the change when the user returns
 
-### Manage Routines
+### Dashboard Management Controls
 
-Manage Routines is the utilitarian configuration surface for the product.
+The Today Dashboard owns management tasks directly.
 
-It should feel simple, direct, and native, not like a setup wizard.
+It should feel simple, direct, and native, without turning the tracking surface into a dense editor by default.
 
-#### Navigation
+#### Inline routine and group controls
 
-Open Manage Routines from the dashboard toolbar.
+When management controls are visible, the dashboard may show quiet inline affordances for:
 
-Recommended presentation:
+- Editing a routine
+- Editing a group
+- Creating a routine within a group context when useful
 
-- Push onto the navigation stack from the dashboard
+These controls should remain secondary to the routine card's completion target and should disappear when management controls are hidden.
 
-Reasoning:
+#### Rearrange modes
 
-- It preserves the dashboard as the app's home surface
-- It avoids stacking too many modal layers
-- It fits a settings-like maintenance task
+Rearrange modes are temporary visible states for drag-and-drop ordering.
 
-#### Manage screen structure
+Requirements:
 
-The main management view should include:
+- The state change must be explicit and obvious
+- `Rearrange Groups` shows group rows only, with drag handles
+- `Rearrange Routines` shows routine rows grouped by their current group, with drag handles
+- Moving routines across groups stays in the routine edit form, not drag-and-drop
+- The top bar replaces the gear action with a clear `Done` exit while a rearrange mode is active
 
-- Sectioned list of routines by group
-- Routine summary rows
-- Add routine affordance
-- Native edit mode for reorder behavior
-
-Each row should show:
-
-- Routine name
-- Short summary, such as `5 per week`
-- Optional group context if needed for clarity
-
-#### Actions
-
-Manage screen supports:
-
-- Add routine
-- Open routine for editing
-- Reorder routines
-- Delete routine
-
-Delete should not be the dominant action visually.
+Rearrange modes should not hide the dashboard context. The user should still feel like they are reordering the home surface, not navigating to a different tool.
 
 ### Add/Edit Routine
 
@@ -672,13 +675,13 @@ Adding and editing a routine should use a focused native form.
 
 Recommended presentation:
 
-- Modal sheet over Manage Routines
+- Modal sheet over the Today Dashboard
 
 Reasoning:
 
 - This is a contained task
 - Native form sheets support clear cancel/save behavior
-- It keeps management flow lightweight
+- It keeps management flow lightweight and home-owned
 
 #### Form fields
 
@@ -706,6 +709,7 @@ Form behavior:
 - Keep labels direct and utilitarian
 - Avoid helper text unless needed for clarity
 - Reflect the same dark surface language as the rest of the app
+- After save or cancel, dismiss back to the Today Dashboard
 
 #### Delete from edit
 
@@ -714,6 +718,25 @@ Deletion may also be exposed within edit, but it must:
 - Use destructive red styling
 - Be visually separated from save actions
 - Require confirmation
+
+Deletion should remain confined to the edit sheet rather than top-level dashboard menus.
+
+### Add/Edit Group
+
+Adding and editing a group should follow the same home-owned sheet model as routine editing.
+
+Recommended presentation:
+
+- Modal sheet over the Today Dashboard
+
+Form expectations:
+
+- Group name field
+- Save and cancel actions
+- Clear validation for empty or duplicate names
+- Destructive delete action only when editing an existing group and only after confirmation
+
+If group deletion is blocked because routines still belong to the group, the sheet should explain the failure in concise native language and keep the user on the dashboard flow after dismissal.
 
 ## User Flows
 
@@ -734,8 +757,8 @@ Success criteria:
 
 ### 2. Check last-done flow
 
-1. User opens a routine's secondary actions.
-2. User chooses `View History`.
+1. User taps the history button on a routine card, or taps a routine already completed today.
+2. History opens directly for that routine.
 3. History opens with last-done information visible near the top.
 4. User inspects calendar markings or recent completions.
 5. User returns to the dashboard.
@@ -761,8 +784,8 @@ Success criteria:
 ### 4. Already completed routine flow
 
 1. User taps a routine already completed today.
-2. The app opens secondary actions instead of creating another completion.
-3. User may undo today's completion or view history.
+2. The app opens history instead of creating another completion.
+3. User may inspect history or correct the completion there if needed.
 
 Success criteria:
 
@@ -771,17 +794,31 @@ Success criteria:
 
 ### 5. Routine setup and maintenance flow
 
-1. User taps `Manage`.
-2. User adds, edits, reorders, or deletes routines.
-3. User dismisses the add/edit form.
-4. User returns to the dashboard and sees the updated routine structure immediately.
+1. User opens the gear menu from the Today Dashboard.
+2. User chooses to add, edit, or enter a rearrange state.
+3. The app opens the relevant sheet or rearrange state without leaving home.
+4. User saves or cancels and returns to the dashboard.
+5. The updated routine structure is visible immediately.
 
 Success criteria:
 
 - Setup is straightforward
 - Editing does not feel like leaving the app's main model
 
-### 6. Empty state flow
+### 6. Rearrange order flow
+
+1. User opens the gear menu.
+2. User chooses `Rearrange Groups` or `Rearrange Routines`.
+3. The dashboard enters an obvious rearrange state with drag handles and a `Done` exit.
+4. User reorders groups or routines within the current group.
+5. User taps `Done` and stays on the dashboard.
+
+Success criteria:
+
+- Reordering feels explicit and reversible while active
+- The user never needs a separate manage screen to reorganize home
+
+### 7. Empty state flow
 
 If the user has no routines configured:
 
@@ -805,9 +842,10 @@ Avoid:
 ### Primary interactions
 
 - Tap incomplete routine card to complete
-- Tap completed routine card to open secondary actions
-- Tap trailing more button for history/edit/undo actions
-- Tap `Manage` for maintenance tasks
+- Tap completed routine card to open history
+- Tap trailing history button to open history directly
+- Tap the trailing gear menu for management actions
+- Tap `Done` to exit a rearrange mode
 
 ### Secondary interactions
 

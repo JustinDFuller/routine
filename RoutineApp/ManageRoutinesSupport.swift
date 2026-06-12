@@ -98,7 +98,7 @@ enum GroupFormPresentation: Equatable, Sendable {
         case .add:
             "Add Group"
         case .rename:
-            "Rename Group"
+            "Edit Group"
         }
     }
 
@@ -126,6 +126,15 @@ enum GroupFormPresentation: Equatable, Sendable {
             nil
         case .rename(let snapshot):
             snapshot.name
+        }
+    }
+
+    var editingGroupID: UUID? {
+        switch self {
+        case .add:
+            nil
+        case .rename(let snapshot):
+            snapshot.groupID
         }
     }
 }

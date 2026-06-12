@@ -103,6 +103,7 @@ Core invariants that require automated coverage when touched:
 | DONE | M12 - Routine History UI | The user can inspect and correct routine-specific completion history. |
 | DONE | M13 - Accessibility, Polish, And UI Coverage | Primary flows satisfy accessibility, motion, visual, and UI-test expectations. |
 | DONE | M14 - Dogfooding Readiness | Local validation, diagnostics, privacy, app icon, and device-readiness checks are complete. |
+| DONE | M15 - Dashboard-First Management Redesign | The Today Dashboard becomes the tracking and management surface, with home-owned sheets and organize mode replacing the separate manage screen. |
 
 ## Milestones
 
@@ -770,6 +771,51 @@ Completion note:
 
 - Passed `./Scripts/test-ios-script-tests.sh`, `./Scripts/test-core.sh`, `./Scripts/check-format.sh`, `./Scripts/lint.sh`, `./Scripts/build-ios.sh`, `ROUTINE_BUILD_CONFIGURATION=Release ./Scripts/build-ios.sh`, `./Scripts/test-ios.sh`, `./Scripts/validate.sh`, and `plutil -lint RoutineApp/PrivacyInfo.xcprivacy`. Verified the tracked AppIcon assets are 1024x1024 and fully opaque per-pixel. Physical iPhone install, Home Screen/App Library icon verification, and the manual dogfooding checklist were skipped because no personal device or interactive manual test pass was available in this environment.
 
+### M15 - Dashboard-First Management Redesign
+
+Status: `DONE`
+
+Goal: move routine and group management back onto the Today Dashboard so tracking and maintenance share one shallow home flow.
+
+Dependencies: M09, M10, M11, M12, M13, M14.
+
+Primary references: [PRODUCT_BRIEF.md](PRODUCT_BRIEF.md), [VISUAL_DESIGN.md](VISUAL_DESIGN.md) Today Dashboard and Dashboard Management Controls, [DATA_DESIGN.md](DATA_DESIGN.md) views and routing sections, [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md) navigation and app-structure sections.
+
+Deliverables:
+
+- Replace the dashboard `Manage` destination with a balanced home top bar using `Today` plus a trailing `gearshape` management menu.
+- Make the gear menu the single top-level management entry point with actions for `Add Routine`, `Add Group`, `Show/Hide Management Controls`, and `Organize Order`.
+- Present Add/Edit Routine as a sheet owned by the Today Dashboard, returning to the dashboard after save or cancel.
+- Present Add/Edit Group as a sheet owned by the Today Dashboard, returning to the dashboard after save or cancel.
+- Add dashboard-owned routine and group management affordances so edit flows start from home rather than from a separate manage route.
+- Implement an explicit organize mode on the dashboard with visible drag handles for both groups and routines plus a clear `Done` exit.
+- Remove the separate manage-screen navigation flow and any return-to-manage behavior after saving or canceling edits.
+- Keep routine and group deletion confined to edit sheets with destructive confirmation.
+- Preserve routine history and undo access from routine secondary actions in normal dashboard mode.
+- Reconcile stale routing, view, and architecture references in [DATA_DESIGN.md](DATA_DESIGN.md) and [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md) where the old manage-screen model is still described.
+- Add or update tests that cover the redesigned home-owned management flows without regressing completion or history behavior.
+
+Validation:
+
+- Build the iOS app.
+- Run dashboard, management, projection, and routing tests.
+- Run `RoutineCore` tests.
+- Run formatting and lint checks.
+- If a simulator or device is available, manually verify add/edit routine, add/edit group, organize mode, and history access from the dashboard.
+
+Required tests:
+
+- Add routine from the dashboard returns to the dashboard with the new routine visible.
+- Edit routine from the dashboard returns to the dashboard with updated data visible.
+- Add and edit group flows start from the dashboard and preserve home context on save and cancel.
+- Organize mode reorders groups and routines from the dashboard and persists the new order.
+- No separate manage page is reachable through app navigation.
+- Existing completion, undo, and history flows still work after the redesign.
+
+Completion note:
+
+- Passed focused dashboard, management, projection, reorder, routing/debug-launch, and UI test coverage; `./Scripts/test-core.sh`; `./Scripts/check-format.sh`; `./Scripts/lint.sh`; `./Scripts/build-ios.sh`; `./Scripts/test-ios.sh`; and `./Scripts/validate.sh`. Physical iPhone/device validation and the manual dashboard-management/history checklist were skipped because no connected device or interactive manual test pass was available in this environment.
+
 ## MVP Completion Criteria
 
 The roadmap is complete when the app demonstrates the MVP acceptance criteria from [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md):
@@ -785,8 +831,9 @@ The roadmap is complete when the app demonstrates the MVP acceptance criteria fr
 - Undo removes today's completion.
 - History shows last-done context, current-month marks, and recent completions.
 - Historical completions can be removed after confirmation.
-- Manage Routines supports add, edit, delete, and reorder.
-- Groups support add, rename, reorder, and empty-group deletion.
+- The Today Dashboard owns routine management through home-based menus, sheets, and organize mode.
+- Groups support add, rename, reorder, and empty-group deletion from dashboard-owned flows.
+- No separate manage page is required for routine or group maintenance.
 - Current week progress uses Monday-start weeks.
 - Current month progress uses calendar months.
 - Data survives app relaunch.

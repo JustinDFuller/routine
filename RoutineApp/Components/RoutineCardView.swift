@@ -3,7 +3,8 @@ import SwiftUI
 struct RoutineCardView: View {
     let viewData: RoutineCardViewData
     let onTap: () -> Void
-    let onMore: () -> Void
+    let onEdit: (() -> Void)?
+    let onHistory: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -17,7 +18,7 @@ struct RoutineCardView: View {
 
     private var primaryAccessibilityHint: String {
         if viewData.isCompletedToday {
-            return "Opens routine actions."
+            return "Opens completion history."
         }
 
         return "Completes this routine for today."
@@ -71,17 +72,31 @@ struct RoutineCardView: View {
             .accessibilityHint(primaryAccessibilityHint)
             .accessibilityIdentifier("routine-card-primary-\(viewData.name.routineAccessibilityIdentifierComponent)")
 
-            Button(action: onMore) {
-                Image(systemName: "ellipsis.circle")
+            if let onEdit {
+                Button(action: onEdit) {
+                    Image(systemName: "pencil.circle")
+                        .font(.system(size: 22, weight: .regular))
+                        .foregroundStyle(Color.routineLabelSecondary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Edit \(viewData.name)")
+                .accessibilityHint("Opens the routine editor.")
+                .accessibilityIdentifier("routine-card-edit-\(viewData.name.routineAccessibilityIdentifierComponent)")
+            }
+
+            Button(action: onHistory) {
+                Image(systemName: "calendar")
                     .font(.system(size: 22, weight: .regular))
                     .foregroundStyle(Color.routineLabelSecondary)
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("More actions for \(viewData.name)")
-            .accessibilityHint("Shows routine actions.")
-            .accessibilityIdentifier("routine-card-more-\(viewData.name.routineAccessibilityIdentifierComponent)")
+            .accessibilityLabel("History for \(viewData.name)")
+            .accessibilityHint("Opens completion history.")
+            .accessibilityIdentifier("routine-card-history-\(viewData.name.routineAccessibilityIdentifierComponent)")
             .padding(.trailing, 8)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -155,12 +170,12 @@ struct RoutineCardView: View {
 #Preview("Routine Cards - Dark") {
     ComponentPreviewCanvas {
         VStack(spacing: 12) {
-            RoutineCardView(viewData: ComponentPreviewFixtures.incompleteCard, onTap: {}, onMore: {})
-            RoutineCardView(viewData: ComponentPreviewFixtures.completedTodayCard, onTap: {}, onMore: {})
-            RoutineCardView(viewData: ComponentPreviewFixtures.targetMetCard, onTap: {}, onMore: {})
-            RoutineCardView(viewData: ComponentPreviewFixtures.overTargetCard, onTap: {}, onMore: {})
-            RoutineCardView(viewData: ComponentPreviewFixtures.highTargetCard, onTap: {}, onMore: {})
-            RoutineCardView(viewData: ComponentPreviewFixtures.longNameCard, onTap: {}, onMore: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.incompleteCard, onTap: {}, onEdit: nil, onHistory: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.completedTodayCard, onTap: {}, onEdit: {}, onHistory: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.targetMetCard, onTap: {}, onEdit: nil, onHistory: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.overTargetCard, onTap: {}, onEdit: nil, onHistory: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.highTargetCard, onTap: {}, onEdit: nil, onHistory: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.longNameCard, onTap: {}, onEdit: {}, onHistory: {})
         }
     }
     .preferredColorScheme(.dark)
@@ -169,9 +184,14 @@ struct RoutineCardView: View {
 #Preview("Routine Cards - Light") {
     ComponentPreviewCanvas {
         VStack(spacing: 12) {
-            RoutineCardView(viewData: ComponentPreviewFixtures.incompleteCard, onTap: {}, onMore: {})
-            RoutineCardView(viewData: ComponentPreviewFixtures.completedTodayCard, onTap: {}, onMore: {})
-            RoutineCardView(viewData: ComponentPreviewFixtures.longNameCard, onTap: {}, onMore: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.incompleteCard, onTap: {}, onEdit: nil, onHistory: {})
+            RoutineCardView(
+                viewData: ComponentPreviewFixtures.completedTodayCard,
+                onTap: {},
+                onEdit: nil,
+                onHistory: {}
+            )
+            RoutineCardView(viewData: ComponentPreviewFixtures.longNameCard, onTap: {}, onEdit: {}, onHistory: {})
         }
     }
     .preferredColorScheme(.light)
@@ -180,8 +200,8 @@ struct RoutineCardView: View {
 #Preview("Routine Cards - Accessibility Type") {
     ComponentPreviewCanvas {
         VStack(spacing: 12) {
-            RoutineCardView(viewData: ComponentPreviewFixtures.incompleteCard, onTap: {}, onMore: {})
-            RoutineCardView(viewData: ComponentPreviewFixtures.longNameCard, onTap: {}, onMore: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.incompleteCard, onTap: {}, onEdit: nil, onHistory: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.longNameCard, onTap: {}, onEdit: {}, onHistory: {})
         }
     }
     .preferredColorScheme(.dark)
@@ -190,7 +210,7 @@ struct RoutineCardView: View {
 
 #Preview("Routine Cards - Reduce Motion") {
     ComponentPreviewCanvas {
-        RoutineCardView(viewData: ComponentPreviewFixtures.completedTodayCard, onTap: {}, onMore: {})
+        RoutineCardView(viewData: ComponentPreviewFixtures.completedTodayCard, onTap: {}, onEdit: nil, onHistory: {})
     }
     .preferredColorScheme(.dark)
     .transaction { transaction in

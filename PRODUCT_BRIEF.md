@@ -164,9 +164,12 @@ Result of completion:
 
 Secondary interaction on an already completed item:
 
-- Open a lightweight action sheet or detail affordance with:
-- Undo today's completion
-- View history
+- Open routine history directly
+
+Secondary interaction from the routine row:
+
+- A dedicated History affordance opens routine history without interfering with one-tap completion
+- Routine editing remains available from dashboard Edit mode, not from a routine action sheet
 
 ### 3. Routine History / Calendar View
 

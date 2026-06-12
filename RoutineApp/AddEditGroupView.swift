@@ -9,6 +9,7 @@ struct AddEditGroupView: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var formState: GroupFormState
+    @State private var isDeleteConfirmationPresented = false
     @State private var alertPresentation: ManageAlertPresentation?
 
     init(
@@ -37,6 +38,29 @@ struct AddEditGroupView: View {
                         .textInputAutocapitalization(.words)
                         .autocorrectionDisabled()
                         .accessibilityIdentifier("group-form-name-field")
+                }
+
+                if case .rename = presentation {
+                    Section {
+                        Button("Delete Group", role: .destructive) {
+                            isDeleteConfirmationPresented = true
+                        }
+                        .accessibilityHint("Deletes this group after confirmation.")
+                        .accessibilityIdentifier("group-form-delete-button")
+                        .confirmationDialog(
+                            "Delete Group",
+                            isPresented: $isDeleteConfirmationPresented,
+                            titleVisibility: .visible
+                        ) {
+                            Button("Delete Group", role: .destructive) {
+                                delete()
+                            }
+
+                            Button("Cancel", role: .cancel) {}
+                        } message: {
+                            Text("This deletes the group.")
+                        }
+                    }
                 }
             }
             .scrollContentBackground(.hidden)
@@ -111,6 +135,31 @@ struct AddEditGroupView: View {
             }
         } catch {
             alertPresentation = .groupSaveFailure(detail: userSafeAlertDetail(for: error))
+        }
+    }
+
+    private func delete() {
+        guard let groupID = presentation.editingGroupID else {
+            return
+        }
+
+        do {
+            try RoutineManagementService(context: modelContext).deleteGroup(id: groupID)
+            dismiss()
+        } catch let error as RoutineManagementError {
+            if case .nonEmptyGroup = error {
+                alertPresentation = .nonEmptyGroupBlocked
+            } else {
+                alertPresentation = .groupDeleteFailure(detail: userSafeAlertDetail(for: error))
+            }
+        } catch let error as PersistenceError {
+            if case .groupNotFound = error {
+                alertPresentation = .groupNotFound
+            } else {
+                alertPresentation = .groupDeleteFailure(detail: userSafeAlertDetail(for: error))
+            }
+        } catch {
+            alertPresentation = .groupDeleteFailure(detail: userSafeAlertDetail(for: error))
         }
     }
 
