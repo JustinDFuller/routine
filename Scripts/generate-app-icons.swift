@@ -84,11 +84,13 @@ let center = CGPoint(x: 512, y: 512)
 let ringRadius: CGFloat = 292
 let ringLineWidth: CGFloat = 112
 
+// In the rendered PNG, -90 is 12 o'clock, 0 is 3 o'clock, 90 is 6 o'clock,
+// and increasing degrees move clockwise.
 let phaseAngles: [(start: CGFloat, end: CGFloat)] = [
-    (-92, -8),
-    (2, 88),
-    (98, 192),
-    (202, 258)
+    (-90, -52.5),
+    (-42.5, -5),
+    (5, 42.5),
+    (52.5, 90)
 ]
 
 let iconVariants = [
