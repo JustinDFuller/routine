@@ -33,6 +33,8 @@ class RoutineTrackingServiceTestCase: XCTestCase {
             name: seed.name,
             targetCount: seed.targetCount,
             period: seed.period,
+            availabilityStartMinute: seed.availabilityStartMinute,
+            availabilityEndMinute: seed.availabilityEndMinute,
             sortOrder: seed.sortOrder,
             group: group
         )

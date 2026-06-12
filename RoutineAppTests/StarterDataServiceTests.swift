@@ -80,6 +80,11 @@ final class StarterDataServiceTests: XCTestCase {
             XCTAssertEqual(actualRoutines.map(\.targetCount), expectedGroup.routines.map(\.targetCount))
             XCTAssertEqual(actualRoutines.map(\.period), expectedGroup.routines.map(\.period))
             XCTAssertTrue(actualRoutines.allSatisfy { $0.groupID == $0.group?.id })
+            XCTAssertTrue(
+                actualRoutines.allSatisfy {
+                    $0.availabilityStartMinute == nil && $0.availabilityEndMinute == nil
+                }
+            )
         }
     }
 

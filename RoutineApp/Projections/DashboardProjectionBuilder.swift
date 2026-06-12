@@ -37,7 +37,11 @@ final class DashboardProjectionBuilder {
         now: Date = .now
     ) -> TodayDashboardViewData {
         let today = routineCalendar.today(now: now)
-        let completionDaysByRoutineID = completionDaysByRoutineID(from: completions)
+        let buildContext = DashboardBuildContext(
+            completionDaysByRoutineID: completionDaysByRoutineID(from: completions),
+            today: today,
+            currentMinuteOfDay: routineCalendar.minuteOfDay(containing: now)
+        )
         let routinesByGroupID = Dictionary(grouping: routines, by: \.groupID)
 
         var sections = groups.map { group in
@@ -45,8 +49,7 @@ final class DashboardProjectionBuilder {
                 id: group.id,
                 name: group.name,
                 routines: routinesByGroupID[group.id] ?? [],
-                completionDaysByRoutineID: completionDaysByRoutineID,
-                today: today
+                buildContext: buildContext
             )
         }
 
@@ -59,8 +62,7 @@ final class DashboardProjectionBuilder {
                     id: ProjectionFallbackSection.ungrouped.id,
                     name: ProjectionFallbackSection.ungrouped.name,
                     routines: ungroupedRoutines,
-                    completionDaysByRoutineID: completionDaysByRoutineID,
-                    today: today
+                    buildContext: buildContext
                 )
             )
         }
@@ -141,21 +143,21 @@ extension DashboardProjectionBuilder {
         id: UUID,
         name: String,
         routines: [Routine],
-        completionDaysByRoutineID: [UUID: [RoutineDay]],
-        today: RoutineDay
+        buildContext: DashboardBuildContext
     ) -> RoutineSectionViewData {
         let cards = routines.map { routine in
             buildCard(
                 routine: routine,
-                completionDays: completionDaysByRoutineID[routine.id] ?? [],
-                today: today
+                completionDays: buildContext.completionDaysByRoutineID[routine.id] ?? [],
+                today: buildContext.today,
+                currentMinuteOfDay: buildContext.currentMinuteOfDay
             )
         }
 
         return RoutineSectionViewData(
             id: id,
             name: name,
-            remainingCount: cards.filter { $0.isCompletedToday == false }.count,
+            remainingCount: cards.filter { $0.isCompletedToday == false && $0.isAvailableNow }.count,
             routines: cards
         )
     }
@@ -163,7 +165,8 @@ extension DashboardProjectionBuilder {
     fileprivate func buildCard(
         routine: Routine,
         completionDays: [RoutineDay],
-        today: RoutineDay
+        today: RoutineDay,
+        currentMinuteOfDay: Int
     ) -> RoutineCardViewData {
         let progress = progressCalculator.progress(
             period: routine.period,
@@ -173,6 +176,10 @@ extension DashboardProjectionBuilder {
         )
         let periodText = periodUnitText(for: routine.period)
         let lastDoneText = routineCalendar.relativeLabel(for: progress.lastCompletedDay, today: today)
+        let availabilityState = availabilityState(
+            for: routine,
+            currentMinuteOfDay: currentMinuteOfDay
+        )
 
         return RoutineCardViewData(
             id: routine.id,
@@ -181,12 +188,15 @@ extension DashboardProjectionBuilder {
             countText: "\(progress.completedCount)/\(routine.targetCount)",
             periodText: periodText,
             lastDoneText: lastDoneText,
+            availabilityText: availabilityState.text,
             accessibilityLabel: accessibilityLabel(
                 routineName: routine.name,
+                unavailableAccessibilityPhrase: availabilityState.unavailableAccessibilityPhrase,
                 progress: progress,
                 periodText: periodText,
                 lastDoneText: lastDoneText
             ),
+            unavailableAccessibilityPhrase: availabilityState.unavailableAccessibilityPhrase,
             progressRing: ProgressRingViewData(
                 targetCount: routine.targetCount,
                 completedCount: progress.completedCount,
@@ -194,9 +204,40 @@ extension DashboardProjectionBuilder {
                 showsSegments: (1...8).contains(routine.targetCount),
                 showsTodayCheckmark: progress.isCompletedToday
             ),
+            isAvailableNow: availabilityState.isAvailableNow,
             isCompletedToday: progress.isCompletedToday,
             isTargetMet: progress.isTargetMet,
             isOverTarget: progress.isOverTarget
+        )
+    }
+
+    fileprivate func availabilityState(
+        for routine: Routine,
+        currentMinuteOfDay: Int
+    ) -> RoutineAvailabilityState {
+        guard let availabilityWindow = routine.availabilityWindow else {
+            return RoutineAvailabilityState(
+                text: nil,
+                unavailableAccessibilityPhrase: nil,
+                isAvailableNow: true
+            )
+        }
+
+        let isAvailableNow = availabilityWindow.contains(minuteOfDay: currentMinuteOfDay)
+        return RoutineAvailabilityState(
+            text: RoutineAvailabilityText.cardLabel(
+                for: availabilityWindow,
+                isAvailableNow: isAvailableNow,
+                routineCalendar: routineCalendar
+            ),
+            unavailableAccessibilityPhrase:
+                isAvailableNow
+                ? nil
+                : RoutineAvailabilityText.unavailableAccessibilityPhrase(
+                    for: availabilityWindow,
+                    routineCalendar: routineCalendar
+                ),
+            isAvailableNow: isAvailableNow
         )
     }
 
@@ -211,6 +252,7 @@ extension DashboardProjectionBuilder {
 
     fileprivate func accessibilityLabel(
         routineName: String,
+        unavailableAccessibilityPhrase: String?,
         progress: RoutineProgress,
         periodText: String,
         lastDoneText: String
@@ -222,9 +264,16 @@ extension DashboardProjectionBuilder {
                 "not completed today"
             }
 
+        let unavailableText =
+            if let unavailableAccessibilityPhrase {
+                "\(unavailableAccessibilityPhrase), "
+            } else {
+                ""
+            }
+
         return
-            "\(routineName), \(completionText), \(progress.completedCount) of \(progress.targetCount) "
-            + "this \(periodText), "
+            "\(routineName), \(unavailableText)\(completionText), "
+            + "\(progress.completedCount) of \(progress.targetCount) this \(periodText), "
             + accessibilityLastDoneText(for: lastDoneText)
     }
 
@@ -264,4 +313,16 @@ extension DashboardProjectionBuilder {
         formatter.dateFormat = "EEEE, MMM d"
         return formatter.string(from: date)
     }
+}
+
+private struct DashboardBuildContext {
+    let completionDaysByRoutineID: [UUID: [RoutineDay]]
+    let today: RoutineDay
+    let currentMinuteOfDay: Int
+}
+
+private struct RoutineAvailabilityState {
+    let text: String?
+    let unavailableAccessibilityPhrase: String?
+    let isAvailableNow: Bool
 }

@@ -33,6 +33,15 @@ public struct RoutineCalendar: Sendable {
         day(containing: now)
     }
 
+    public func minuteOfDay(containing date: Date) -> Int {
+        let components = calendar.dateComponents([.hour, .minute], from: date)
+        guard let hour = components.hour, let minute = components.minute else {
+            preconditionFailure("Unable to derive minute of day from \(date)")
+        }
+
+        return (hour * 60) + minute
+    }
+
     public func currentPeriodRange(
         for period: RoutinePeriod,
         containing day: RoutineDay

@@ -226,6 +226,8 @@ final class Routine {
     var periodRawValue: String
     var groupID: UUID
     var sortOrder: Int
+    var availabilityStartMinute: Int?
+    var availabilityEndMinute: Int?
     var createdAt: Date
     var updatedAt: Date
 
@@ -239,6 +241,8 @@ final class Routine {
         set { periodRawValue = newValue.rawValue }
     }
 
+    var availabilityWindow: RoutineAvailabilityWindow? { ... }
+
     init(
         id: UUID = UUID(),
         name: String,
@@ -246,6 +250,8 @@ final class Routine {
         period: RoutinePeriod,
         sortOrder: Int,
         group: RoutineGroup,
+        availabilityStartMinute: Int? = nil,
+        availabilityEndMinute: Int? = nil,
         createdAt: Date = .now,
         updatedAt: Date = .now,
         completions: [RoutineCompletion] = []
@@ -268,6 +274,10 @@ Design notes:
 
 - `periodRawValue` stores the enum as a stable string.
 - `groupID` is duplicated from the relationship intentionally so fetching, routing, and reorder operations can use stable values.
+- `availabilityStartMinute` and `availabilityEndMinute` persist an optional local wall-clock completion window in minutes after midnight.
+- `nil` and `nil` is the only canonical all-day state.
+- Partial persisted availability should be treated defensively as all-day in projections and tracking, but normal service and form saves must reject it.
+- `availabilityWindow` should return `nil` unless both persisted minutes form a valid configured window.
 - `group` is optional at the SwiftData relationship level to support migration and framework behavior, but the app domain treats it as required.
 - Deleting a routine cascades to its completions. This matches the MVP decision that deleted routine history is intentionally removed after confirmation.
 
@@ -307,6 +317,42 @@ Design notes:
 - `dayKey` is the canonical calendar-day identity for progress.
 - `completedAt` is not used for period membership; it exists for audit context and stable descending sort when needed.
 
+### Routine Availability
+
+Time-based availability is modeled as local wall-clock values, not absolute timestamps or stored timezone-specific schedules.
+
+```swift
+struct RoutineTimeOfDay: Equatable, Sendable {
+    let hour: Int
+    let minute: Int
+
+    var minuteOfDay: Int { ... }
+
+    init?(hour: Int, minute: Int)
+    init?(minuteOfDay: Int)
+}
+
+struct RoutineAvailabilityWindow: Equatable, Sendable {
+    let start: RoutineTimeOfDay
+    let end: RoutineTimeOfDay
+
+    var spansMidnight: Bool { ... }
+
+    func contains(minuteOfDay: Int) -> Bool
+}
+```
+
+Rules:
+
+- Valid hours are `0...23`.
+- Valid minutes are `0...59`.
+- Valid minute-of-day values are `0..<1440`.
+- Configured windows must use distinct start and end minutes because all-day availability is represented by `nil`.
+- Membership is start-inclusive and end-exclusive.
+- Same-day windows contain minutes between `start.minuteOfDay` and `end.minuteOfDay`.
+- Cross-midnight windows contain minutes greater than or equal to the start minute or strictly less than the end minute.
+- Completion day keys always use the actual local calendar day of the tap, even when the window crosses midnight.
+
 #### AppMetadata
 
 ```swift
@@ -344,6 +390,7 @@ The domain layer must preserve these invariants:
 - A completion's `dayKey` is a valid `RoutineDay.key`.
 - A completion's `routineDayKey` is unique.
 - A routine can have at most one completion per local calendar day.
+- If a routine persists an availability window, both availability minute fields are present and distinct.
 - A group can be deleted only when it has no routines.
 - Routine and group order is represented by contiguous integer `sortOrder` values after reorder operations.
 - Period progress is derived from completion day keys, not stored.
@@ -370,6 +417,7 @@ struct RoutineCalendar: Sendable {
     }
 
     func day(containing date: Date) -> RoutineDay
+    func minuteOfDay(containing date: Date) -> Int
     func today(now: Date) -> RoutineDay
     func currentPeriodRange(for period: RoutinePeriod, containing day: RoutineDay) -> ClosedRange<RoutineDay>
     func currentWeekRange(containing day: RoutineDay) -> ClosedRange<RoutineDay>
@@ -383,6 +431,7 @@ struct RoutineCalendar: Sendable {
 Rules:
 
 - `today` uses the user's current local calendar and timezone.
+- `minuteOfDay(containing:)` uses the same configured Gregorian calendar, locale, and timezone as `today`.
 - Calendar weeks start on Monday.
 - Weekly progress includes Monday 00:00 through the start of the following Monday.
 - Weekly range calculation should find the Monday containing the current day directly, not depend on locale-specific week-of-year numbering.
@@ -472,6 +521,7 @@ Responsibilities:
 - Undo today's completion.
 - Remove a historical completion.
 - Prevent duplicate completions.
+- Enforce configured availability windows for new same-day completions.
 - Save after successful mutations.
 
 Recommended interface:
@@ -505,6 +555,10 @@ struct UndoResult: Equatable, Sendable {
     let day: RoutineDay
     let didRemove: Bool
 }
+
+enum RoutineTrackingError: LocalizedError, Equatable {
+    case unavailable(routineName: String, windowText: String)
+}
 ```
 
 Behavior:
@@ -513,7 +567,9 @@ Behavior:
 - It computes today's `RoutineDay`.
 - It checks for an existing completion with `routineDayKey`.
 - If one exists, it returns `didInsert = false` and does not write.
-- If none exists, it inserts `RoutineCompletion`, saves, and returns `didInsert = true`.
+- If no completion exists, it evaluates the routine's availability window against the current local minute-of-day.
+- If the routine is outside its configured window, it throws a user-safe unavailable error and does not insert a completion.
+- If the routine is all-day or currently available, it inserts `RoutineCompletion`, saves, and returns `didInsert = true`.
 - `undoToday` removes only the completion matching today's day key.
 - `removeCompletion` removes a specific historical completion after the view has already confirmed the destructive action.
 - All mutations save explicitly.
@@ -559,6 +615,8 @@ struct RoutineDraft: Equatable, Sendable {
     var targetCount: Int
     var period: RoutinePeriod
     var groupID: UUID
+    var availabilityStartMinute: Int?
+    var availabilityEndMinute: Int?
 }
 ```
 
@@ -568,6 +626,7 @@ Validation:
 enum RoutineValidationError: LocalizedError, Equatable {
     case emptyName
     case invalidTargetCount(period: RoutinePeriod)
+    case invalidAvailabilityWindow
     case missingGroup
     case emptyGroupName
     case nonEmptyGroup
@@ -578,6 +637,8 @@ Behavior:
 
 - Names are trimmed before validation and persistence.
 - Routine names do not need to be globally unique in MVP.
+- Equal start/end availability minutes are invalid because all-day availability is represented by `nil`.
+- Service validation should reject partial availability values if the API surface can express them.
 - Group names should be unique after trimming and case-insensitive comparison to avoid accidental duplicate sections.
 - New routines are appended to the end of the selected group.
 - Moving routines updates group assignment and order.
@@ -804,9 +865,12 @@ struct RoutineCardViewData: Identifiable, Equatable, Sendable {
     let countText: String
     let periodText: String
     let lastDoneText: String
+    let availabilityText: String?
     let accessibilityLabel: String
+    let unavailableAccessibilityPhrase: String?
     let progressRing: ProgressRingViewData
     let isCompletedToday: Bool
+    let isAvailableNow: Bool
     let isTargetMet: Bool
     let isOverTarget: Bool
 }
@@ -824,7 +888,11 @@ Rules:
 
 - `showsSegments` is true for target counts `1...8`.
 - For target counts above `8`, use a continuous or lightly ticked ring.
-- Accessibility label includes routine name, completed-today state, count, and period, such as `Morning Yoga, completed today, 3 of 5 this week`.
+- All-day routines omit availability text to avoid clutter.
+- Configured routines show a concise availability label, such as `Available until 6:45 AM` when currently available and `Available 12:00 AM-6:45 AM` when currently unavailable.
+- Incomplete unavailable routines remain visible in their normal group and order but present disabled completion state.
+- Section `remainingCount` includes incomplete routines that are currently available, not disabled unavailable routines.
+- Accessibility label includes routine name, availability state when relevant, completed-today state, count, and period.
 
 ### History View Data
 
@@ -863,6 +931,9 @@ final class RoutineFormState {
     var targetCount: Int
     var period: RoutinePeriod
     var groupID: UUID?
+    var isAvailableAllDay: Bool
+    var availabilityStartMinute: Int?
+    var availabilityEndMinute: Int?
 
     var isValid: Bool { ... }
     func makeDraft() throws -> RoutineDraft
@@ -874,6 +945,7 @@ Benefits:
 - Cancel can dismiss without mutating persisted data.
 - Validation can be shown before save.
 - Edit forms can initialize from persisted state and commit only on Save.
+- All-day mode can preserve temporary picker values in state while still emitting `nil` availability in the saved draft.
 
 ## Views
 

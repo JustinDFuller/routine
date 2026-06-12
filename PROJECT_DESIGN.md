@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**MVP implementation roadmap complete**
+**Implementation roadmap complete through M16**
 
 The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -104,6 +104,7 @@ Core invariants that require automated coverage when touched:
 | DONE | M13 - Accessibility, Polish, And UI Coverage | Primary flows satisfy accessibility, motion, visual, and UI-test expectations. |
 | DONE | M14 - Dogfooding Readiness | Local validation, diagnostics, privacy, app icon, and device-readiness checks are complete. |
 | DONE | M15 - Dashboard-First Management Redesign | The Today Dashboard becomes the tracking and management surface, with home-owned sheets and organize mode replacing the separate manage screen. |
+| DONE | M16 - Time-Based Routine Availability | Routines can optionally limit completion to local-time windows while staying visible and correct across all-day, same-day, and cross-midnight cases. |
 
 ## Milestones
 
@@ -815,6 +816,49 @@ Required tests:
 Completion note:
 
 - Passed focused dashboard, management, projection, reorder, routing/debug-launch, and UI test coverage; `./Scripts/test-core.sh`; `./Scripts/check-format.sh`; `./Scripts/lint.sh`; `./Scripts/build-ios.sh`; `./Scripts/test-ios.sh`; and `./Scripts/validate.sh`. Physical iPhone/device validation and the manual dashboard-management/history checklist were skipped because no connected device or interactive manual test pass was available in this environment.
+
+### M16 - Time-Based Routine Availability
+
+Status: `DONE`
+
+Goal: let routines optionally limit when they can be completed without hiding them from Today or changing historical day-key behavior.
+
+Dependencies: M02, M03, M05, M06, M07, M08, M09, M10, M13, M15.
+
+Primary references: [PRODUCT_BRIEF.md](PRODUCT_BRIEF.md), [DATA_DESIGN.md](DATA_DESIGN.md), [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md), and [VISUAL_DESIGN.md](VISUAL_DESIGN.md).
+
+Deliverables:
+
+- Add local wall-clock availability window domain types in `RoutineCore` plus validation for distinct start and end times.
+- Persist optional availability start and end minutes on `Routine` with lightweight-migration-compatible defaults so existing routines remain all-day.
+- Extend routine create and update flows, draft state, and Add/Edit Routine UI to round-trip all-day or configured availability windows.
+- Keep unavailable routines visible on Today with muted disabled completion affordances, availability labels, and accessibility phrasing while leaving history access active.
+- Gate `RoutineTrackingService.completeToday` by the current local minute-of-day after duplicate-idempotence checks, including cross-midnight support.
+- Keep historical completion day keys bound to the actual local calendar day of the tap, even when the configured window spans midnight.
+- Update management summaries, starter-data expectations, projections, and accessibility strings to reflect configured windows without changing sort/group/history behavior.
+- Add or update tests for domain validation, local minute extraction, persistence, management, form state, projections, tracking, and seeded all-day defaults.
+
+Validation:
+
+- Run `./Scripts/test-core.sh`.
+- Run `./Scripts/test-ios.sh`.
+- Run `./Scripts/check-format.sh`.
+- Run `./Scripts/lint.sh`.
+- Run `./Scripts/validate.sh`.
+
+Required tests:
+
+- RoutineCore minute-of-day validation, window validation, same-day containment, end-exclusive boundaries, and cross-midnight containment.
+- RoutineCalendar local minute extraction in a configured non-UTC timezone and on a DST-adjacent date.
+- Persistence of configured availability fields and nil/nil all-day routines.
+- Management create/update coverage for all-day defaults, configured windows, equal start/end rejection, and partial availability rejection.
+- Form-state add defaults, snapshot round-trip, all-day draft output, configured-window draft output, and equal-time validation messaging.
+- Dashboard projection coverage for all-day, configured available, configured unavailable, cross-midnight before midnight, cross-midnight after midnight, and remaining-count behavior.
+- Tracking coverage for allowed in-window completion, blocked out-of-window completion, duplicate idempotence outside the window, all-day behavior, and cross-midnight completion day keys.
+
+Completion note:
+
+- Passed `./Scripts/test-core.sh`, `./Scripts/test-ios.sh`, `./Scripts/check-format.sh`, `./Scripts/lint.sh`, and `./Scripts/validate.sh` with no skipped scripted checks.
 
 ## MVP Completion Criteria
 

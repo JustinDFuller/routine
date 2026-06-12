@@ -111,7 +111,7 @@ The MVP is optimized for one person who wants a practical personal tracker on an
 - Weekly routines count completions in the current calendar week.
 - Monthly routines count completions in the current calendar month.
 - "Remaining today" means not yet completed today.
-- The app does not decide which routines are required on a specific day in the MVP.
+- The app does not decide which routines are required on a specific day, but routines may optionally limit when they can be completed.
 
 ### Visibility rules
 

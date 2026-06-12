@@ -5,9 +5,11 @@ import SwiftData
 @MainActor
 final class ManageProjectionBuilder {
     private let context: ModelContext
+    private let routineCalendar: RoutineCalendar
 
-    init(context: ModelContext) {
+    init(context: ModelContext, routineCalendar: RoutineCalendar = .current) {
         self.context = context
+        self.routineCalendar = routineCalendar
     }
 
     func build() throws -> ManageRoutinesViewData {
@@ -78,16 +80,29 @@ extension ManageProjectionBuilder {
     }
 
     fileprivate func buildRow(for routine: Routine) -> ManageRoutineRowViewData {
-        ManageRoutineRowViewData(
+        let availabilitySummary: String
+        if let availabilityWindow = routine.availabilityWindow {
+            let formattedAvailability = RoutineAvailabilityText.manageSummaryText(
+                for: availabilityWindow,
+                routineCalendar: routineCalendar
+            )
+            availabilitySummary = ", \(formattedAvailability)"
+        } else {
+            availabilitySummary = ""
+        }
+
+        return ManageRoutineRowViewData(
             id: routine.id,
             name: routine.name,
             targetCount: routine.targetCount,
             period: routine.period,
             groupID: routine.groupID,
+            availabilityStartMinute: routine.availabilityStartMinute,
+            availabilityEndMinute: routine.availabilityEndMinute,
             summaryText: summaryText(
                 targetCount: routine.targetCount,
                 period: routine.period
-            )
+            ) + availabilitySummary
         )
     }
 
