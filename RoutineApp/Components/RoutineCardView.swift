@@ -150,8 +150,18 @@ struct RoutineCardView: View {
     @ViewBuilder
     private var metadataContent: some View {
         if let availabilityText = viewData.availabilityText {
-            metadataContentWithAvailability(availabilityText)
-        } else if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 6) {
+                primaryMetadataContent
+                availabilityLabel(availabilityText)
+            }
+        } else {
+            primaryMetadataContent
+        }
+    }
+
+    @ViewBuilder
+    private var primaryMetadataContent: some View {
+        if dynamicTypeSize.isAccessibilitySize {
             VStack(alignment: .leading, spacing: 6) {
                 metadataPills
                 lastDoneText
@@ -165,29 +175,6 @@ struct RoutineCardView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     metadataPills
                     lastDoneText
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func metadataContentWithAvailability(_ availabilityText: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            metadataPills
-
-            if dynamicTypeSize.isAccessibilitySize {
-                availabilityLabel(availabilityText)
-                lastDoneText
-            } else {
-                ViewThatFits(in: .horizontal) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        availabilityLabel(availabilityText)
-                        lastDoneText
-                    }
-                    VStack(alignment: .leading, spacing: 6) {
-                        availabilityLabel(availabilityText)
-                        lastDoneText
-                    }
                 }
             }
         }
