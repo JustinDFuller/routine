@@ -4,7 +4,7 @@ struct RoutineCardView: View {
     let viewData: RoutineCardViewData
     let onTap: () -> Void
     let onEdit: (() -> Void)?
-    let onHistory: () -> Void
+    let onHistory: (() -> Void)?
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -107,18 +107,22 @@ struct RoutineCardView: View {
                 .accessibilityIdentifier("routine-card-edit-\(viewData.name.routineAccessibilityIdentifierComponent)")
             }
 
-            Button(action: onHistory) {
-                Image(systemName: "calendar")
-                    .font(.system(size: 22, weight: .regular))
-                    .foregroundStyle(Color.routineLabelSecondary)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
+            if let onHistory {
+                Button(action: onHistory) {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 22, weight: .regular))
+                        .foregroundStyle(Color.routineLabelSecondary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("History for \(viewData.name)")
+                .accessibilityHint("Opens completion history.")
+                .accessibilityIdentifier(
+                    "routine-card-history-\(viewData.name.routineAccessibilityIdentifierComponent)"
+                )
+                .padding(.trailing, 8)
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("History for \(viewData.name)")
-            .accessibilityHint("Opens completion history.")
-            .accessibilityIdentifier("routine-card-history-\(viewData.name.routineAccessibilityIdentifierComponent)")
-            .padding(.trailing, 8)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
