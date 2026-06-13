@@ -82,6 +82,19 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routine.uitests
     dependencies:
       - target: RoutineApp
+
+  RoutineAppScreenshotTests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: RoutineAppScreenshotTests
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: true
+        PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routine.screenshottests
+    dependencies:
+      - target: RoutineApp
 schemes:
   RoutineApp:
     build:
@@ -92,3 +105,11 @@ schemes:
       targets:
         - name: RoutineAppTests
         - name: RoutineAppUITests
+  RoutineScreenshots:
+    build:
+      targets:
+        RoutineApp: all
+    test:
+      gatherCoverageData: false
+      targets:
+        - name: RoutineAppScreenshotTests

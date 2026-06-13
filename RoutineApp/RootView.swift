@@ -29,7 +29,12 @@ struct RootView: View {
         }
         .task {
             do {
-                if runtime.skipsStarterSeeding == false {
+                if let screenshotFixture = runtime.screenshotFixture {
+                    try RoutineScreenshotFixtureSeeder(context: modelContext).seed(
+                        screenshotFixture,
+                        now: runtime.now
+                    )
+                } else if runtime.skipsStarterSeeding == false {
                     try StarterDataService(
                         context: modelContext,
                         seedMetadataValue: runtime.starterSeedVersion

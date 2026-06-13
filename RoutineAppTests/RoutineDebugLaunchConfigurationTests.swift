@@ -80,6 +80,20 @@ final class RoutineDebugLaunchConfigurationTests: ProjectionBuilderTestCase {
         XCTAssertTrue(precompletedHistoryConfiguration.initialPath.isEmpty)
     }
 
+    func testScreenshotFixtureArgumentParsesKnownFixtureAndIgnoresUnknownValue() {
+        let configuredFixture = RoutineDebugLaunchConfiguration(
+            arguments: ["Routine", "-routine-screenshot-fixture", "full-app"],
+            calendar: makeCalendar().calendar
+        )
+        let unknownFixture = RoutineDebugLaunchConfiguration(
+            arguments: ["Routine", "-routine-screenshot-fixture", "unknown"],
+            calendar: makeCalendar().calendar
+        )
+
+        XCTAssertEqual(configuredFixture.runtime.screenshotFixture, .fullApp)
+        XCTAssertNil(unknownFixture.runtime.screenshotFixture)
+    }
+
     func testMalformedOrMissingFixedDateFallsBackSafely() {
         let missingDateValue = RoutineDebugLaunchConfiguration(
             arguments: ["Routine", "-routine-fixed-date"],

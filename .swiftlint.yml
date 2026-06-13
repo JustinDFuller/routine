@@ -3,6 +3,7 @@ included:
   - RoutineApp
   - RoutineAppTests
   - RoutineAppUITests
+  - RoutineAppScreenshotTests
   - RoutineCore/Sources
   - RoutineCore/Tests
 
