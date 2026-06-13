@@ -56,6 +56,108 @@ assert_line_before() {
     fi
 }
 
+run_command_and_capture() {
+    local output_file="$1"
+    local had_errexit=0
+    shift
+
+    if [[ -o errexit ]]; then
+        had_errexit=1
+    fi
+
+    set +e
+    "$@" >"$output_file" 2>&1
+    local exit_code=$?
+    if (( had_errexit )); then
+        set -e
+    else
+        set +e
+    fi
+    REPLY="$(<"$output_file")"
+    return "$exit_code"
+}
+
+create_fake_screenshot_export() {
+    local export_root="$1"
+    local mode="${2:-valid}"
+
+    python3 - "$export_root" "$mode" <<'PY'
+import json
+import pathlib
+import sys
+import uuid
+
+export_root = pathlib.Path(sys.argv[1])
+mode = sys.argv[2]
+export_root.mkdir(parents=True, exist_ok=True)
+
+slugs = [
+    "dashboard-overview",
+    "dashboard-lower-progress",
+    "completion-undo-banner",
+    "history-rich",
+    "history-remove-confirmation",
+    "history-after-removal",
+    "management-menu",
+    "add-routine-form-default",
+    "add-routine-form-configured",
+    "dashboard-after-add-routine",
+    "dashboard-edit-mode",
+    "add-group-form",
+    "dashboard-after-add-group",
+    "edit-group-form",
+    "delete-group-confirmation",
+    "rearrange-groups",
+    "rearrange-routines",
+]
+
+attachments = []
+counter = 0
+for index, slug in enumerate(slugs, start=1):
+    for appearance in ["light", "dark"]:
+        counter += 1
+        exported_file_name = f"export-{counter:02d}.png"
+        suggested_name = f"{index:02d}-{slug}-{appearance}_0_{str(uuid.uuid4()).upper()}.png"
+        attachments.append(
+            {
+                "configurationName": "Test Scheme Action",
+                "deviceId": "SIM-ULATOR-ID",
+                "deviceName": "iPhone 17",
+                "exportedFileName": exported_file_name,
+                "isAssociatedWithFailure": False,
+                "suggestedHumanReadableName": suggested_name,
+                "timestamp": counter,
+            }
+        )
+
+        if mode != "missing-file" or counter != 34:
+            (export_root / exported_file_name).write_bytes(f"png-{counter}".encode("utf-8"))
+
+attachments.reverse()
+
+if mode == "duplicate":
+    attachments[-1]["suggestedHumanReadableName"] = attachments[-2]["suggestedHumanReadableName"]
+elif mode == "malformed-name":
+    attachments[-1]["suggestedHumanReadableName"] = "bad-name.png"
+elif mode == "missing-appearance":
+    for attachment in attachments:
+        suggested_name = attachment["suggestedHumanReadableName"]
+        if suggested_name.startswith("17-rearrange-routines-light_0_"):
+            attachment["suggestedHumanReadableName"] = (
+                f"17-rearrange-routines-alt-dark_0_{str(uuid.uuid4()).upper()}.png"
+            )
+            break
+
+manifest = [
+    {
+        "attachments": attachments,
+        "testIdentifier": "RoutineAppScreenshotTests/testCaptureFullAppScreenshotsInSingleLaunch()",
+    }
+]
+(export_root / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+PY
+}
+
 script_test_dir="$workdir/build-test-ios"
 mkdir -p "$script_test_dir"
 
@@ -487,4 +589,311 @@ assert_line_before "$shutdown_selected_xcrun_log" "simctl boot SHUTDOWN-NAMED" "
 assert_line_before "$shutdown_selected_xcrun_log" "simctl install SHUTDOWN-NAMED DerivedData/RunIOS/Build/Products/Debug-iphonesimulator/Routine.app" "simctl launch --terminate-running-process SHUTDOWN-NAMED com.justinfuller.routine"
 assert_contains "$shutdown_selected_open_log" "-a Simulator"
 
-echo "Scripts/build-ios.sh, Scripts/test-ios.sh, Scripts/validate.sh, and Scripts/run-ios.sh script tests passed."
+screenshot_assets_dir="$workdir/screenshot-assets"
+mkdir -p "$screenshot_assets_dir"
+
+run_screenshot_assets_and_capture() {
+    local output_file="$screenshot_assets_dir/output.txt"
+    run_command_and_capture "$output_file" python3 ./Scripts/screenshot-assets.py "$@"
+}
+
+valid_export_root="$screenshot_assets_dir/valid-export"
+valid_canonical_root="$screenshot_assets_dir/canonical"
+create_fake_screenshot_export "$valid_export_root" valid
+mkdir -p "$valid_canonical_root"
+print -r -- "stale" >"$valid_canonical_root/stale.png"
+run_screenshot_assets_and_capture promote --export-root "$valid_export_root" --canonical-root "$valid_canonical_root" --expected-count 34
+assert_equals "$?" "0"
+assert_equals "$(find "$valid_canonical_root" -maxdepth 1 -type f -name '*.png' | wc -l | tr -d ' ')" "34"
+assert_equals "$(find "$valid_canonical_root" -maxdepth 1 -type f -name 'stale.png' | wc -l | tr -d ' ')" "0"
+canonical_manifest="$(<"$valid_canonical_root/manifest.json")"
+assert_line_before "$canonical_manifest" "\"file\": \"01-dashboard-overview-dark.png\"" "\"file\": \"01-dashboard-overview-light.png\""
+assert_line_before "$canonical_manifest" "\"file\": \"01-dashboard-overview-light.png\"" "\"file\": \"17-rearrange-routines-light.png\""
+
+duplicate_export_root="$screenshot_assets_dir/duplicate-export"
+duplicate_canonical_root="$screenshot_assets_dir/duplicate-canonical"
+create_fake_screenshot_export "$duplicate_export_root" duplicate
+set +e
+run_screenshot_assets_and_capture promote --export-root "$duplicate_export_root" --canonical-root "$duplicate_canonical_root" --expected-count 34
+duplicate_exit_code=$?
+set -e
+assert_equals "$duplicate_exit_code" "1"
+assert_contains "$REPLY" "duplicate canonical screenshot name"
+
+missing_file_export_root="$screenshot_assets_dir/missing-file-export"
+missing_file_canonical_root="$screenshot_assets_dir/missing-file-canonical"
+create_fake_screenshot_export "$missing_file_export_root" missing-file
+set +e
+run_screenshot_assets_and_capture promote --export-root "$missing_file_export_root" --canonical-root "$missing_file_canonical_root" --expected-count 34
+missing_file_exit_code=$?
+set -e
+assert_equals "$missing_file_exit_code" "1"
+assert_contains "$REPLY" "missing exported screenshot file"
+
+malformed_export_root="$screenshot_assets_dir/malformed-export"
+malformed_canonical_root="$screenshot_assets_dir/malformed-canonical"
+create_fake_screenshot_export "$malformed_export_root" malformed-name
+set +e
+run_screenshot_assets_and_capture promote --export-root "$malformed_export_root" --canonical-root "$malformed_canonical_root" --expected-count 34
+malformed_exit_code=$?
+set -e
+assert_equals "$malformed_exit_code" "1"
+assert_contains "$REPLY" "malformed suggestedHumanReadableName"
+
+missing_appearance_export_root="$screenshot_assets_dir/missing-appearance-export"
+missing_appearance_canonical_root="$screenshot_assets_dir/missing-appearance-canonical"
+create_fake_screenshot_export "$missing_appearance_export_root" missing-appearance
+set +e
+run_screenshot_assets_and_capture promote --export-root "$missing_appearance_export_root" --canonical-root "$missing_appearance_canonical_root" --expected-count 34
+missing_appearance_exit_code=$?
+set -e
+assert_equals "$missing_appearance_exit_code" "1"
+assert_contains "$REPLY" "screenshot index 17 must include exactly one dark and one light capture"
+
+run_screenshot_assets_and_capture \
+    render-pr-section \
+    --manifest "$valid_canonical_root/manifest.json" \
+    --canonical-root Docs/Screenshots \
+    --repo-owner JustinDFuller \
+    --repo-name routine \
+    --branch screenshots
+assert_equals "$?" "0"
+rendered_pr_section="$REPLY"
+assert_contains "$rendered_pr_section" "## Screenshots"
+assert_contains "$rendered_pr_section" "Canonical assets: Docs/Screenshots"
+assert_contains "$rendered_pr_section" "https://raw.githubusercontent.com/JustinDFuller/routine/screenshots/Docs/Screenshots/01-dashboard-overview-dark.png"
+assert_line_before "$rendered_pr_section" "| 01 Dashboard Overview |" "| 17 Rearrange Routines |"
+
+replace_input_file="$screenshot_assets_dir/pr-body-with-markers.md"
+replace_output_file="$screenshot_assets_dir/pr-body-with-markers-updated.md"
+cat >"$replace_input_file" <<'EOF'
+## Summary
+- summary line
+
+## Validation
+- ./Scripts/validate.sh
+
+<!-- BEGIN GENERATED SCREENSHOTS -->
+old screenshot block
+<!-- END GENERATED SCREENSHOTS -->
+
+## Notes
+- keep this
+EOF
+
+run_screenshot_assets_and_capture \
+    replace-pr-body \
+    --manifest "$valid_canonical_root/manifest.json" \
+    --canonical-root Docs/Screenshots \
+    --repo-owner JustinDFuller \
+    --repo-name routine \
+    --branch screenshots \
+    --input "$replace_input_file" \
+    --output "$replace_output_file"
+assert_equals "$?" "0"
+replaced_pr_body="$(<"$replace_output_file")"
+assert_contains "$replaced_pr_body" "## Summary"
+assert_contains "$replaced_pr_body" "## Validation"
+assert_contains "$replaced_pr_body" "## Notes"
+assert_not_contains "$replaced_pr_body" "old screenshot block"
+assert_contains "$replaced_pr_body" "<!-- BEGIN GENERATED SCREENSHOTS -->"
+assert_contains "$replaced_pr_body" "https://raw.githubusercontent.com/JustinDFuller/routine/screenshots/Docs/Screenshots/17-rearrange-routines-light.png"
+assert_line_before "$replaced_pr_body" "## Validation" "<!-- BEGIN GENERATED SCREENSHOTS -->"
+assert_line_before "$replaced_pr_body" "<!-- END GENERATED SCREENSHOTS -->" "## Notes"
+
+append_input_file="$screenshot_assets_dir/pr-body-without-markers.md"
+append_output_file="$screenshot_assets_dir/pr-body-without-markers-updated.md"
+cat >"$append_input_file" <<'EOF'
+## Summary
+- summary line
+
+## Validation
+- ./Scripts/capture-screenshots.sh
+- ./Scripts/validate.sh
+
+## Notes
+- keep this
+EOF
+
+run_screenshot_assets_and_capture \
+    replace-pr-body \
+    --manifest "$valid_canonical_root/manifest.json" \
+    --canonical-root Docs/Screenshots \
+    --repo-owner JustinDFuller \
+    --repo-name routine \
+    --branch screenshots \
+    --input "$append_input_file" \
+    --output "$append_output_file"
+assert_equals "$?" "0"
+appended_pr_body="$(<"$append_output_file")"
+assert_line_before "$appended_pr_body" "## Validation" "<!-- BEGIN GENERATED SCREENSHOTS -->"
+assert_line_before "$appended_pr_body" "<!-- END GENERATED SCREENSHOTS -->" "## Notes"
+
+capture_screenshots_dir="$workdir/capture-screenshots"
+mkdir -p "$capture_screenshots_dir"
+
+capture_xcodebuild_log="$capture_screenshots_dir/xcodebuild.log"
+capture_xcrun_log="$capture_screenshots_dir/xcrun.log"
+capture_generate_log="$capture_screenshots_dir/generate.log"
+capture_promote_log="$capture_screenshots_dir/promote.log"
+fake_capture_xcodebuild="$capture_screenshots_dir/xcodebuild"
+fake_capture_xcrun="$capture_screenshots_dir/xcrun"
+fake_capture_generate="$capture_screenshots_dir/generate-project.sh"
+fake_capture_promoter="$capture_screenshots_dir/fake-promoter.py"
+
+cat >"$fake_capture_xcodebuild" <<'EOF'
+#!/bin/zsh
+set -euo pipefail
+
+print -r -- "$*" >>"${FAKE_CAPTURE_XCODEBUILD_LOG}"
+
+if [[ "$*" == *"-showdestinations"* ]]; then
+    cat <<'OUT'
+Available destinations for the "RoutineScreenshots" scheme:
+    { platform:iOS Simulator, arch:arm64, id:SIM-ULATOR-ID, OS:26.0, name:iPhone 17 }
+OUT
+    exit 0
+fi
+
+result_bundle_path=""
+while (( $# > 0 )); do
+    case "$1" in
+        -resultBundlePath)
+            result_bundle_path="$2"
+            shift 2
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
+
+if [[ -n "$result_bundle_path" ]]; then
+    mkdir -p "$result_bundle_path"
+fi
+EOF
+
+cat >"$fake_capture_xcrun" <<'EOF'
+#!/bin/zsh
+set -euo pipefail
+
+print -r -- "$*" >>"${FAKE_CAPTURE_XCRUN_LOG}"
+
+if [[ "$1" == "xcresulttool" && "$2" == "export" && "$3" == "attachments" ]]; then
+    output_root=""
+    while (( $# > 0 )); do
+        case "$1" in
+            --output-path)
+                output_root="$2"
+                shift 2
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+
+    python3 - "$output_root" <<'PY'
+import json
+import pathlib
+import sys
+import uuid
+
+output_root = pathlib.Path(sys.argv[1])
+output_root.mkdir(parents=True, exist_ok=True)
+
+attachments = []
+slugs = [
+    "dashboard-overview",
+    "dashboard-lower-progress",
+    "completion-undo-banner",
+    "history-rich",
+    "history-remove-confirmation",
+    "history-after-removal",
+    "management-menu",
+    "add-routine-form-default",
+    "add-routine-form-configured",
+    "dashboard-after-add-routine",
+    "dashboard-edit-mode",
+    "add-group-form",
+    "dashboard-after-add-group",
+    "edit-group-form",
+    "delete-group-confirmation",
+    "rearrange-groups",
+    "rearrange-routines",
+]
+
+counter = 0
+for index, slug in enumerate(slugs, start=1):
+    for appearance in ["dark", "light"]:
+        counter += 1
+        exported_file_name = f"capture-{counter:02d}.png"
+        suggested_name = f"{index:02d}-{slug}-{appearance}_0_{str(uuid.uuid4()).upper()}.png"
+        (output_root / exported_file_name).write_bytes(b"png")
+        attachments.append(
+            {
+                "configurationName": "Test Scheme Action",
+                "deviceId": "SIM-ULATOR-ID",
+                "deviceName": "iPhone 17",
+                "exportedFileName": exported_file_name,
+                "isAssociatedWithFailure": False,
+                "suggestedHumanReadableName": suggested_name,
+                "timestamp": counter,
+            }
+        )
+
+manifest = [{"attachments": attachments}]
+(output_root / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+PY
+    exit 0
+fi
+
+exit 0
+EOF
+
+cat >"$fake_capture_generate" <<'EOF'
+#!/bin/zsh
+set -euo pipefail
+
+print -r -- "generate" >>"${FAKE_CAPTURE_GENERATE_LOG}"
+EOF
+
+cat >"$fake_capture_promoter" <<'EOF'
+#!/usr/bin/env python3
+import os
+import pathlib
+import sys
+
+log_path = pathlib.Path(os.environ["CAPTURE_PROMOTE_LOG"])
+log_path.write_text(" ".join(sys.argv[1:]) + "\n")
+EOF
+
+chmod +x "$fake_capture_xcodebuild" "$fake_capture_xcrun" "$fake_capture_generate" "$fake_capture_promoter"
+
+run_capture_screenshots_and_capture() {
+    local output_file="$capture_screenshots_dir/output.txt"
+    run_command_and_capture "$output_file" env \
+        FAKE_CAPTURE_XCODEBUILD_LOG="$capture_xcodebuild_log" \
+        FAKE_CAPTURE_XCRUN_LOG="$capture_xcrun_log" \
+        FAKE_CAPTURE_GENERATE_LOG="$capture_generate_log" \
+        XCODEBUILD_BIN="$fake_capture_xcodebuild" \
+        XCRUN_BIN="$fake_capture_xcrun" \
+        GENERATE_PROJECT_SCRIPT="$fake_capture_generate" \
+        ROUTINE_SCREENSHOT_ASSET_SCRIPT="$fake_capture_promoter" \
+        ROUTINE_SCREENSHOT_OUTPUT_ROOT="$capture_screenshots_dir/raw" \
+        ROUTINE_SCREENSHOT_CANONICAL_ROOT="$capture_screenshots_dir/canonical" \
+        CAPTURE_PROMOTE_LOG="$capture_promote_log" \
+        ./Scripts/capture-screenshots.sh
+}
+
+run_capture_screenshots_and_capture
+assert_equals "$?" "0"
+capture_output="$REPLY"
+assert_contains "$capture_output" "Captured 34 screenshots on iPhone 17."
+assert_contains "$capture_output" "Canonical output: $capture_screenshots_dir/canonical"
+assert_equals "$(<"$capture_generate_log")" "generate"
+promote_invocation="$(<"$capture_promote_log")"
+assert_contains "$promote_invocation" "promote --export-root $capture_screenshots_dir/raw/"
+assert_contains "$promote_invocation" "--canonical-root $capture_screenshots_dir/canonical --expected-count 34"
+
+echo "Scripts/build-ios.sh, Scripts/test-ios.sh, Scripts/validate.sh, Scripts/run-ios.sh, Scripts/capture-screenshots.sh, and Scripts/screenshot-assets.py script tests passed."

@@ -6,10 +6,13 @@ cd "$(dirname "$0")/.."
 
 source ./Scripts/xcode-destination-helpers.sh
 
+xcrun_bin="${XCRUN_BIN:-xcrun}"
 timestamp="$(date '+%Y%m%d-%H%M%S')"
 output_root="${ROUTINE_SCREENSHOT_OUTPUT_ROOT:-Screenshots/local}/${timestamp}"
+canonical_root="${ROUTINE_SCREENSHOT_CANONICAL_ROOT:-Docs/Screenshots}"
 result_bundle_path="${output_root}/RoutineScreenshots.xcresult"
 destination_override="${ROUTINE_SCREENSHOT_DESTINATION:-${IOS_TEST_DESTINATION:-}}"
+screenshot_asset_script="${ROUTINE_SCREENSHOT_ASSET_SCRIPT:-./Scripts/screenshot-assets.py}"
 
 mkdir -p "$output_root"
 
@@ -69,7 +72,7 @@ parse_destination_override() {
 simulator_udid=""
 cleanup() {
     if [[ -n "$simulator_udid" ]]; then
-        xcrun simctl status_bar "$simulator_udid" clear >/dev/null 2>&1 || true
+        "$xcrun_bin" simctl status_bar "$simulator_udid" clear >/dev/null 2>&1 || true
     fi
 }
 trap cleanup EXIT
@@ -101,9 +104,9 @@ if [[ -z "$resolved_destination" ]]; then
     resolved_destination="platform=iOS Simulator,id=${simulator_udid}"
 fi
 
-xcrun simctl boot "$simulator_udid" >/dev/null 2>&1 || true
-xcrun simctl bootstatus "$simulator_udid" -b
-xcrun simctl status_bar "$simulator_udid" override \
+"$xcrun_bin" simctl boot "$simulator_udid" >/dev/null 2>&1 || true
+"$xcrun_bin" simctl bootstatus "$simulator_udid" -b
+"$xcrun_bin" simctl status_bar "$simulator_udid" override \
     --time 9:41 \
     --dataNetwork wifi \
     --wifiMode active \
@@ -123,7 +126,7 @@ routine_xcodebuild_with_optional_quiet \
     -resultBundlePath "$result_bundle_path" \
     test
 
-xcrun xcresulttool export attachments \
+"$xcrun_bin" xcresulttool export attachments \
     --path "$result_bundle_path" \
     --output-path "$output_root" \
     --filter "*.png"
@@ -136,5 +139,11 @@ if [[ "$png_count" != "$expected_png_count" ]]; then
     exit 1
 fi
 
+python3 "$screenshot_asset_script" promote \
+    --export-root "$output_root" \
+    --canonical-root "$canonical_root" \
+    --expected-count "$expected_png_count"
+
 echo "Captured ${png_count} screenshots on ${simulator_name}."
 echo "Output: ${output_root}"
+echo "Canonical output: ${canonical_root}"
