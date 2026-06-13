@@ -23,7 +23,7 @@ When a milestone is complete:
 - Do not use baselines, suppression comments, config disables, or exclusions to avoid fixing real SwiftLint violations.
 - `Scripts/lint.sh` is the canonical lint command and must pass in strict mode.
 - `./Scripts/validate.sh` is the canonical final validation command for completed work.
-- Individual scripts such as `./Scripts/test-core.sh`, `./Scripts/test-ios.sh`, `./Scripts/check-format.sh`, `./Scripts/lint.sh`, and `./Scripts/build-ios.sh` are allowed for narrow preflight checks while implementing.
+- If `./Scripts/validate.sh` fails, individual scripts such as `./Scripts/test-core.sh`, `./Scripts/test-ios.sh`, `./Scripts/check-format.sh`, `./Scripts/lint.sh`, and `./Scripts/build-ios.sh` may be used to isolate, dig into, or rerun specific failing stages.
 
 ## References
 
