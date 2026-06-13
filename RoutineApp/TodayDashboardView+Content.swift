@@ -112,9 +112,11 @@ extension TodayDashboardView {
                                         handlePrimaryTap(for: routine)
                                     },
                                     onEdit: routineEditAction(for: routine.id),
-                                    onHistory: {
-                                        openHistory(for: routine.id)
-                                    }
+                                    onHistory: mode == .tracking
+                                        ? {
+                                            openHistory(for: routine.id)
+                                        }
+                                        : nil
                                 )
                             }
                         }

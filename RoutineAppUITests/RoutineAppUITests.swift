@@ -278,10 +278,12 @@ final class RoutineAppUITests: XCTestCase {
         app.launch()
 
         XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
+        XCTAssertTrue(app.buttons["routine-card-history-morning-yoga"].waitForExistence(timeout: 5))
 
         enterEditMode(in: app)
         XCTAssertTrue(dashboardTitle(in: app).exists)
         XCTAssertTrue(app.buttons["routine-card-edit-morning-yoga"].exists)
+        XCTAssertFalse(app.buttons["routine-card-history-morning-yoga"].exists)
         XCTAssertFalse(managementMenu(in: app).exists)
         let doneButton = app.buttons["today-dashboard-edit-done-button"]
         XCTAssertTrue(doneButton.exists)
@@ -290,6 +292,7 @@ final class RoutineAppUITests: XCTestCase {
         doneButton.tap()
         XCTAssertTrue(dashboardTitle(in: app).exists)
         XCTAssertFalse(app.buttons["routine-card-edit-morning-yoga"].exists)
+        XCTAssertTrue(app.buttons["routine-card-history-morning-yoga"].waitForExistence(timeout: 5))
         XCTAssertTrue(managementMenu(in: app).waitForExistence(timeout: 5))
         XCTAssertFalse(app.navigationBars["Manage Routines"].exists)
     }
