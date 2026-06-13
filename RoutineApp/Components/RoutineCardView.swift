@@ -58,7 +58,7 @@ struct RoutineCardView: View {
         HStack(spacing: 4) {
             Button(action: onTap) {
                 HStack(alignment: .center, spacing: 12) {
-                    SegmentedProgressRingView(
+                    ProgressRingView(
                         viewData: viewData.progressRing,
                         size: 34,
                         lineWidth: 4.5,

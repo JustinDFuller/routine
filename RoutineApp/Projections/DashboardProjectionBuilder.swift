@@ -201,7 +201,6 @@ extension DashboardProjectionBuilder {
                 targetCount: routine.targetCount,
                 completedCount: progress.completedCount,
                 fillRatio: progress.fillRatio,
-                showsSegments: (1...8).contains(routine.targetCount),
                 showsTodayCheckmark: progress.isCompletedToday
             ),
             isAvailableNow: availabilityState.isAvailableNow,

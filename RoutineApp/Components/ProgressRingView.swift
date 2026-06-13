@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct SegmentedProgressRingView: View {
+struct ProgressRingView: View {
     let viewData: ProgressRingViewData
     let size: CGFloat
     let lineWidth: CGFloat
@@ -32,11 +32,7 @@ struct SegmentedProgressRingView: View {
 
     var body: some View {
         ZStack {
-            if drawingModel.usesSegments {
-                segmentedRing
-            } else {
-                continuousRing
-            }
+            continuousRing
 
             if viewData.showsTodayCheckmark {
                 Image(systemName: "checkmark")
@@ -50,19 +46,6 @@ struct SegmentedProgressRingView: View {
         .accessibilityLabel(accessibilityLabel)
         .animation(animation, value: drawingModel)
         .animation(animation, value: viewData.showsTodayCheckmark)
-    }
-
-    private var segmentedRing: some View {
-        ZStack {
-            ForEach(0..<drawingModel.segmentCount, id: \.self) { index in
-                segmentStroke(index: index, color: trackColor)
-            }
-
-            ForEach(0..<drawingModel.completedCount, id: \.self) { index in
-                segmentStroke(index: index, color: accentColor)
-            }
-        }
-        .rotationEffect(.degrees(-90))
     }
 
     private var continuousRing: some View {
@@ -80,54 +63,33 @@ struct SegmentedProgressRingView: View {
     private var strokeStyle: StrokeStyle {
         StrokeStyle(lineWidth: lineWidth, lineCap: .round)
     }
-
-    private func segmentStroke(index: Int, color: Color) -> some View {
-        let segmentGap = segmentGapFraction
-        let segmentSize = 1 / Double(drawingModel.segmentCount)
-        let start = Double(index) * segmentSize + segmentGap / 2
-        let end = (Double(index + 1) * segmentSize) - segmentGap / 2
-
-        return Circle()
-            .trim(from: start, to: drawingModel.segmentCount == 1 ? 1 : max(end, start))
-            .stroke(color, style: strokeStyle)
-    }
-
-    private var segmentGapFraction: Double {
-        guard drawingModel.segmentCount > 1 else {
-            return 0
-        }
-
-        let circumference = max(.pi * size, 1)
-        let gapLength = min(max(lineWidth * 0.75, 1.5), circumference * 0.035)
-        return gapLength / circumference
-    }
 }
 
 #Preview("Progress Rings - Dark") {
     ComponentPreviewCanvas {
         HStack(spacing: 20) {
-            SegmentedProgressRingView(
+            ProgressRingView(
                 viewData: ComponentPreviewFixtures.incompleteCard.progressRing,
                 size: 34,
                 lineWidth: 4.5,
                 accentColor: .routineAccentActive,
                 accessibilityLabel: ComponentPreviewFixtures.incompleteCard.accessibilityLabel
             )
-            SegmentedProgressRingView(
+            ProgressRingView(
                 viewData: ComponentPreviewFixtures.completedTodayCard.progressRing,
                 size: 34,
                 lineWidth: 4.5,
                 accentColor: .routineAccentComplete,
                 accessibilityLabel: ComponentPreviewFixtures.completedTodayCard.accessibilityLabel
             )
-            SegmentedProgressRingView(
+            ProgressRingView(
                 viewData: ComponentPreviewFixtures.targetMetCard.progressRing,
                 size: 34,
                 lineWidth: 4.5,
                 accentColor: .routineAccentComplete,
                 accessibilityLabel: ComponentPreviewFixtures.targetMetCard.accessibilityLabel
             )
-            SegmentedProgressRingView(
+            ProgressRingView(
                 viewData: ComponentPreviewFixtures.highTargetCard.progressRing,
                 size: 34,
                 lineWidth: 4.5,
@@ -142,21 +104,21 @@ struct SegmentedProgressRingView: View {
 #Preview("Progress Rings - Light") {
     ComponentPreviewCanvas {
         HStack(spacing: 20) {
-            SegmentedProgressRingView(
+            ProgressRingView(
                 viewData: ComponentPreviewFixtures.incompleteCard.progressRing,
                 size: 34,
                 lineWidth: 4.5,
                 accentColor: .routineAccentActive,
                 accessibilityLabel: ComponentPreviewFixtures.incompleteCard.accessibilityLabel
             )
-            SegmentedProgressRingView(
+            ProgressRingView(
                 viewData: ComponentPreviewFixtures.completedTodayCard.progressRing,
                 size: 34,
                 lineWidth: 4.5,
                 accentColor: .routineAccentComplete,
                 accessibilityLabel: ComponentPreviewFixtures.completedTodayCard.accessibilityLabel
             )
-            SegmentedProgressRingView(
+            ProgressRingView(
                 viewData: ComponentPreviewFixtures.highTargetCard.progressRing,
                 size: 34,
                 lineWidth: 4.5,
@@ -170,7 +132,7 @@ struct SegmentedProgressRingView: View {
 
 #Preview("Progress Rings - Reduce Motion") {
     ComponentPreviewCanvas {
-        SegmentedProgressRingView(
+        ProgressRingView(
             viewData: ComponentPreviewFixtures.completedTodayCard.progressRing,
             size: 40,
             lineWidth: 5,

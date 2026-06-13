@@ -317,7 +317,7 @@ Primary screens:
 Reusable UI components:
 
 - `RoutineCardView`.
-- `SegmentedProgressRingView`.
+- `ProgressRingView`.
 - `UndoBannerView`.
 - `HistoryMonthGridView`.
 - `CompletionListRow`.
@@ -736,8 +736,7 @@ Performance rules:
 - Avoid per-row database fetch loops.
 - Avoid storing derived progress caches in v1.
 - Keep progress ring drawing simple and deterministic.
-- Use segmented rings only for target counts `1...8`.
-- Use a continuous or lightly ticked ring for target counts above `8`.
+- Use one continuous ring for every target count.
 - Cap visual fill at target count while text shows actual overage.
 - Keep completion animation short.
 - Respect Reduce Motion.

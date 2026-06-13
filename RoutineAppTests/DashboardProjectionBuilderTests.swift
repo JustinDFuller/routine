@@ -139,7 +139,7 @@ final class DashboardProjectionBuilderTests: ProjectionBuilderTestCase {
         XCTAssertEqual(cardsByName["PriorYear"]?.lastDoneText, "Jun 2, 2025")
     }
 
-    func testBuildProducesTargetMetOverTargetAndSegmentSwitchAtNine() throws {
+    func testBuildProducesTargetMetAndOverTargetProgressData() throws {
         let context = try makeContext()
         let calendar = makeCalendar()
         let now = makeDate(year: 2026, month: 6, day: 11, hour: 9, minute: 0, calendar: calendar.calendar)
@@ -154,7 +154,6 @@ final class DashboardProjectionBuilderTests: ProjectionBuilderTestCase {
         XCTAssertFalse(metCard.isOverTarget)
         XCTAssertEqual(metCard.countText, "3/3")
         XCTAssertEqual(metCard.progressRing.fillRatio, 1)
-        XCTAssertTrue(metCard.progressRing.showsSegments)
 
         let overCard = try XCTUnwrap(cardsByName["Over"])
         XCTAssertTrue(overCard.isTargetMet)
@@ -165,7 +164,6 @@ final class DashboardProjectionBuilderTests: ProjectionBuilderTestCase {
 
         let nineCard = try XCTUnwrap(cardsByName["Nine"])
         XCTAssertEqual(nineCard.countText, "10/9")
-        XCTAssertFalse(nineCard.progressRing.showsSegments)
         XCTAssertEqual(nineCard.progressRing.completedCount, 10)
         XCTAssertEqual(nineCard.progressRing.fillRatio, 1)
     }

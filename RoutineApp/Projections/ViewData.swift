@@ -36,7 +36,6 @@ struct ProgressRingViewData: Equatable, Sendable {
     let targetCount: Int
     let completedCount: Int
     let fillRatio: Double
-    let showsSegments: Bool
     let showsTodayCheckmark: Bool
 }
 

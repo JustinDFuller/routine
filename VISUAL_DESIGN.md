@@ -382,7 +382,7 @@ When a routine has a configured availability window, add a compact sixth metadat
 
 Recommended visual layout:
 
-- Leading: segmented progress ring
+- Leading: continuous progress ring
 - Center: routine name and metadata line
 - Trailing: secondary action affordance
 
@@ -456,9 +456,9 @@ The dashboard must clearly distinguish at least these states:
 - Count text shows actual overage, such as `6/5`
 - Do not introduce badges, trophies, or reward styling
 
-### Segmented Progress Ring
+### Continuous Progress Ring
 
-The segmented progress ring is the primary visual motif of the app.
+The continuous progress ring is the primary visual motif of the app.
 
 #### Purpose
 
@@ -468,21 +468,17 @@ The segmented progress ring is the primary visual motif of the app.
 
 #### Behavior
 
-- Segment count should equal the target count when the target remains legible in ring form
-- Filled segments should equal current period completions
+- Fill amount should reflect current period progress as one smooth stroke
 - The ring should update immediately after a completion or undo
 - A center checkmark should appear only when the routine is completed today
 
-#### Legibility rule
+#### Ring rule
 
-Segmented rings work best for modest target counts, which matches the initial product examples.
+Use one continuous ring for every target count.
 
-Design decision for larger targets:
-
-- For targets from `1` to `8`, use one visible segment per target
-- For targets above `8`, switch to a continuous ring or lightly ticked ring while keeping the exact count in text
-
-This keeps the visual language stable without forcing unreadable micro-segments in the dashboard.
+- Do not introduce visible segment gaps or count-based sectioning
+- Keep the exact count in adjacent text instead of encoding target count as wedges
+- Cap the visual fill at a full circle even when actual completions exceed target
 
 #### Color and non-color communication
 
@@ -490,7 +486,7 @@ The ring must remain understandable without color alone.
 
 Use:
 
-- Filled versus unfilled segments
+- Filled versus unfilled ring stroke
 - Different opacity levels
 - A center checkmark for done-today state
 - Adjacent count text
@@ -498,7 +494,7 @@ Use:
 Do not rely on:
 
 - Accent color alone
-- Tiny segment details that disappear at small sizes
+- Tiny ring details that disappear at small sizes
 
 ### Secondary Actions on a Routine
 

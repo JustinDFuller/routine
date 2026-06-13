@@ -21,7 +21,6 @@ enum ComponentPreviewFixtures {
             targetCount: 5,
             completedCount: 1,
             fillRatio: 0.2,
-            showsSegments: true,
             showsTodayCheckmark: false
         ),
         isAvailableNow: true,
@@ -44,7 +43,6 @@ enum ComponentPreviewFixtures {
             targetCount: 5,
             completedCount: 3,
             fillRatio: 0.6,
-            showsSegments: true,
             showsTodayCheckmark: true
         ),
         isAvailableNow: true,
@@ -67,7 +65,6 @@ enum ComponentPreviewFixtures {
             targetCount: 1,
             completedCount: 1,
             fillRatio: 1,
-            showsSegments: true,
             showsTodayCheckmark: false
         ),
         isAvailableNow: true,
@@ -90,7 +87,6 @@ enum ComponentPreviewFixtures {
             targetCount: 5,
             completedCount: 6,
             fillRatio: 1,
-            showsSegments: true,
             showsTodayCheckmark: false
         ),
         isAvailableNow: true,
@@ -113,7 +109,6 @@ enum ComponentPreviewFixtures {
             targetCount: 12,
             completedCount: 9,
             fillRatio: 0.75,
-            showsSegments: false,
             showsTodayCheckmark: true
         ),
         isAvailableNow: true,
@@ -136,7 +131,6 @@ enum ComponentPreviewFixtures {
             targetCount: 4,
             completedCount: 0,
             fillRatio: 0,
-            showsSegments: true,
             showsTodayCheckmark: false
         ),
         isAvailableNow: false,
@@ -159,7 +153,6 @@ enum ComponentPreviewFixtures {
             targetCount: 3,
             completedCount: 2,
             fillRatio: 0.67,
-            showsSegments: true,
             showsTodayCheckmark: false
         ),
         isAvailableNow: true,
