@@ -10,7 +10,7 @@ canonical_root="${ROUTINE_SCREENSHOT_CANONICAL_ROOT:-Docs/Screenshots}"
 manifest_path="${canonical_root}/manifest.json"
 screenshot_asset_script="${ROUTINE_SCREENSHOT_ASSET_SCRIPT:-./Scripts/screenshot-assets.py}"
 
-pr_json="$("$gh_bin" pr view "$pr_number" --json body,headRefName,headRepositoryOwner,headRepository,url)"
+pr_json="$("$gh_bin" pr view "$pr_number" --json body,headRefName,headRefOid,headRepositoryOwner,headRepository,url)"
 
 workdir="$(mktemp -d)"
 trap 'rm -rf "$workdir"' EXIT
@@ -46,7 +46,7 @@ if not owner or not name:
 metadata = {
     "owner": owner,
     "name": name,
-    "branch": payload.get("headRefName") or "screenshots",
+    "ref": payload.get("headRefOid") or payload.get("headRefName") or "screenshots",
     "url": payload.get("url") or "",
 }
 
@@ -74,13 +74,13 @@ print(payload["name"])
 PY
 )"
 
-branch_name="$(python3 - "$metadata_file" <<'PY'
+ref_name="$(python3 - "$metadata_file" <<'PY'
 import json
 import pathlib
 import sys
 
 payload = json.loads(pathlib.Path(sys.argv[1]).read_text())
-print(payload["branch"])
+print(payload["ref"])
 PY
 )"
 
@@ -99,7 +99,7 @@ python3 "$screenshot_asset_script" replace-pr-body \
     --canonical-root "$canonical_root" \
     --repo-owner "$repo_owner" \
     --repo-name "$repo_name" \
-    --branch "$branch_name" \
+    --ref "$ref_name" \
     --input "$body_file" \
     --output "$updated_body_file"
 

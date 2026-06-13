@@ -656,13 +656,24 @@ run_screenshot_assets_and_capture \
     --canonical-root Docs/Screenshots \
     --repo-owner JustinDFuller \
     --repo-name routine \
-    --branch screenshots
+    --ref 0123456789abcdef0123456789abcdef01234567
 assert_equals "$?" "0"
 rendered_pr_section="$REPLY"
 assert_contains "$rendered_pr_section" "## Screenshots"
 assert_contains "$rendered_pr_section" "Canonical assets: Docs/Screenshots"
-assert_contains "$rendered_pr_section" "https://raw.githubusercontent.com/JustinDFuller/routine/screenshots/Docs/Screenshots/01-dashboard-overview-dark.png"
+assert_contains "$rendered_pr_section" "https://github.com/JustinDFuller/routine/blob/0123456789abcdef0123456789abcdef01234567/Docs/Screenshots/01-dashboard-overview-dark.png?raw=true"
+assert_not_contains "$rendered_pr_section" "raw.githubusercontent.com"
 assert_line_before "$rendered_pr_section" "| 01 Dashboard Overview |" "| 17 Rearrange Routines |"
+
+run_screenshot_assets_and_capture \
+    render-pr-section \
+    --manifest "$valid_canonical_root/manifest.json" \
+    --canonical-root Docs/Screenshots \
+    --repo-owner JustinDFuller \
+    --repo-name routine \
+    --branch screenshots
+assert_equals "$?" "0"
+assert_contains "$REPLY" "https://github.com/JustinDFuller/routine/blob/screenshots/Docs/Screenshots/01-dashboard-overview-dark.png?raw=true"
 
 replace_input_file="$screenshot_assets_dir/pr-body-with-markers.md"
 replace_output_file="$screenshot_assets_dir/pr-body-with-markers-updated.md"
@@ -687,7 +698,7 @@ run_screenshot_assets_and_capture \
     --canonical-root Docs/Screenshots \
     --repo-owner JustinDFuller \
     --repo-name routine \
-    --branch screenshots \
+    --ref 89abcdef0123456789abcdef0123456789abcdef \
     --input "$replace_input_file" \
     --output "$replace_output_file"
 assert_equals "$?" "0"
@@ -697,7 +708,8 @@ assert_contains "$replaced_pr_body" "## Validation"
 assert_contains "$replaced_pr_body" "## Notes"
 assert_not_contains "$replaced_pr_body" "old screenshot block"
 assert_contains "$replaced_pr_body" "<!-- BEGIN GENERATED SCREENSHOTS -->"
-assert_contains "$replaced_pr_body" "https://raw.githubusercontent.com/JustinDFuller/routine/screenshots/Docs/Screenshots/17-rearrange-routines-light.png"
+assert_contains "$replaced_pr_body" "https://github.com/JustinDFuller/routine/blob/89abcdef0123456789abcdef0123456789abcdef/Docs/Screenshots/17-rearrange-routines-light.png?raw=true"
+assert_not_contains "$replaced_pr_body" "raw.githubusercontent.com"
 assert_line_before "$replaced_pr_body" "## Validation" "<!-- BEGIN GENERATED SCREENSHOTS -->"
 assert_line_before "$replaced_pr_body" "<!-- END GENERATED SCREENSHOTS -->" "## Notes"
 
@@ -721,13 +733,14 @@ run_screenshot_assets_and_capture \
     --canonical-root Docs/Screenshots \
     --repo-owner JustinDFuller \
     --repo-name routine \
-    --branch screenshots \
+    --ref screenshots \
     --input "$append_input_file" \
     --output "$append_output_file"
 assert_equals "$?" "0"
 appended_pr_body="$(<"$append_output_file")"
 assert_line_before "$appended_pr_body" "## Validation" "<!-- BEGIN GENERATED SCREENSHOTS -->"
 assert_line_before "$appended_pr_body" "<!-- END GENERATED SCREENSHOTS -->" "## Notes"
+assert_not_contains "$appended_pr_body" "raw.githubusercontent.com"
 
 capture_screenshots_dir="$workdir/capture-screenshots"
 mkdir -p "$capture_screenshots_dir"

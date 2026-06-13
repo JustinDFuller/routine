@@ -287,17 +287,17 @@ def state_label(screenshot: CanonicalScreenshot) -> str:
     return f"{screenshot.index:02d} {title}"
 
 
-def raw_image_url(
+def blob_image_url(
     repo_owner: str,
     repo_name: str,
-    branch: str,
+    ref: str,
     canonical_root: str,
     file_name: str,
 ) -> str:
     canonical_root = canonical_root.strip("/")
     return (
-        "https://raw.githubusercontent.com/"
-        f"{repo_owner}/{repo_name}/{branch}/{canonical_root}/{file_name}"
+        "https://github.com/"
+        f"{repo_owner}/{repo_name}/blob/{ref}/{canonical_root}/{file_name}?raw=true"
     )
 
 
@@ -305,7 +305,7 @@ def render_pr_section(
     screenshots: list[CanonicalScreenshot],
     repo_owner: str,
     repo_name: str,
-    branch: str,
+    ref: str,
     canonical_root: str,
 ) -> str:
     rows_by_index: dict[int, dict[str, CanonicalScreenshot]] = {}
@@ -326,8 +326,8 @@ def render_pr_section(
         row = rows_by_index[index]
         dark = row["dark"]
         light = row["light"]
-        dark_url = raw_image_url(repo_owner, repo_name, branch, canonical_root, dark.file)
-        light_url = raw_image_url(repo_owner, repo_name, branch, canonical_root, light.file)
+        dark_url = blob_image_url(repo_owner, repo_name, ref, canonical_root, dark.file)
+        light_url = blob_image_url(repo_owner, repo_name, ref, canonical_root, light.file)
         lines.append(
             f"| {state_label(dark)} | "
             f'<img src="{dark_url}" width="240"> | '
@@ -344,7 +344,7 @@ def render_pr_section_command(args: argparse.Namespace) -> int:
         screenshots=screenshots,
         repo_owner=args.repo_owner,
         repo_name=args.repo_name,
-        branch=args.branch,
+        ref=args.ref,
         canonical_root=args.canonical_root,
     )
     sys.stdout.write(f"{section}\n")
@@ -388,7 +388,7 @@ def replace_pr_body_command(args: argparse.Namespace) -> int:
         screenshots=screenshots,
         repo_owner=args.repo_owner,
         repo_name=args.repo_name,
-        branch=args.branch,
+        ref=args.ref,
         canonical_root=args.canonical_root,
     )
     body = Path(args.input).read_text()
@@ -412,7 +412,7 @@ def build_parser() -> argparse.ArgumentParser:
     render_parser.add_argument("--canonical-root", required=True)
     render_parser.add_argument("--repo-owner", required=True)
     render_parser.add_argument("--repo-name", required=True)
-    render_parser.add_argument("--branch", required=True)
+    render_parser.add_argument("--ref", "--branch", dest="ref", required=True)
     render_parser.set_defaults(func=render_pr_section_command)
 
     replace_parser = subparsers.add_parser("replace-pr-body")
@@ -420,7 +420,7 @@ def build_parser() -> argparse.ArgumentParser:
     replace_parser.add_argument("--canonical-root", required=True)
     replace_parser.add_argument("--repo-owner", required=True)
     replace_parser.add_argument("--repo-name", required=True)
-    replace_parser.add_argument("--branch", required=True)
+    replace_parser.add_argument("--ref", "--branch", dest="ref", required=True)
     replace_parser.add_argument("--input", required=True)
     replace_parser.add_argument("--output", required=True)
     replace_parser.set_defaults(func=replace_pr_body_command)
