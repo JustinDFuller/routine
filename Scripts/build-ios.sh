@@ -33,12 +33,12 @@ if print -r -- "$destinations" | grep -Fq "Ineligible destinations for the \"Rou
 fi
 
 if print -r -- "$destinations" | grep -Fq "platform:iOS Simulator"; then
-    routine_xcodebuild "${xcodebuild_args[@]}" -destination "generic/platform=iOS Simulator" build
+    routine_xcodebuild_with_optional_quiet "${xcodebuild_args[@]}" -destination "generic/platform=iOS Simulator" build
     exit 0
 fi
 
 if print -r -- "$destinations" | grep -Fq "platform:iOS"; then
-    routine_xcodebuild "${xcodebuild_args[@]}" -destination "generic/platform=iOS" build
+    routine_xcodebuild_with_optional_quiet "${xcodebuild_args[@]}" -destination "generic/platform=iOS" build
     exit 0
 fi
 
