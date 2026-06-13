@@ -80,6 +80,44 @@ final class RoutineDebugLaunchConfigurationTests: ProjectionBuilderTestCase {
         XCTAssertTrue(precompletedHistoryConfiguration.initialPath.isEmpty)
     }
 
+    func testScreenshotFixtureArgumentParsesKnownFixtureAndIgnoresUnknownValue() {
+        let configuredFixture = RoutineDebugLaunchConfiguration(
+            arguments: ["Routine", "-routine-screenshot-fixture", "full-app"],
+            calendar: makeCalendar().calendar
+        )
+        let unknownFixture = RoutineDebugLaunchConfiguration(
+            arguments: ["Routine", "-routine-screenshot-fixture", "unknown"],
+            calendar: makeCalendar().calendar
+        )
+
+        XCTAssertEqual(configuredFixture.runtime.screenshotFixture, .fullApp)
+        XCTAssertNil(unknownFixture.runtime.screenshotFixture)
+    }
+
+    func testForcedColorSchemeArgumentParsesKnownValuesAndIgnoresInvalidInput() {
+        let darkConfiguration = RoutineDebugLaunchConfiguration(
+            arguments: ["Routine", "-routine-force-color-scheme", "dark"],
+            calendar: makeCalendar().calendar
+        )
+        let lightConfiguration = RoutineDebugLaunchConfiguration(
+            arguments: ["Routine", "-routine-force-color-scheme", "light"],
+            calendar: makeCalendar().calendar
+        )
+        let missingValueConfiguration = RoutineDebugLaunchConfiguration(
+            arguments: ["Routine", "-routine-force-color-scheme"],
+            calendar: makeCalendar().calendar
+        )
+        let unknownValueConfiguration = RoutineDebugLaunchConfiguration(
+            arguments: ["Routine", "-routine-force-color-scheme", "sepia"],
+            calendar: makeCalendar().calendar
+        )
+
+        XCTAssertEqual(darkConfiguration.runtime.forcedColorScheme, .dark)
+        XCTAssertEqual(lightConfiguration.runtime.forcedColorScheme, .light)
+        XCTAssertNil(missingValueConfiguration.runtime.forcedColorScheme)
+        XCTAssertNil(unknownValueConfiguration.runtime.forcedColorScheme)
+    }
+
     func testMalformedOrMissingFixedDateFallsBackSafely() {
         let missingDateValue = RoutineDebugLaunchConfiguration(
             arguments: ["Routine", "-routine-fixed-date"],
