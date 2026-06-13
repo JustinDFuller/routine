@@ -50,7 +50,8 @@ struct RoutineDebugLaunchConfiguration: Equatable, Sendable {
                     disablesAnimations: arguments.contains("-routine-disable-animations"),
                     skipsStarterSeeding: usesEmptyInMemoryStore,
                     starterSeedVersion: starterSeedVersion,
-                    screenshotFixture: Self.screenshotFixture(in: arguments)
+                    screenshotFixture: Self.screenshotFixture(in: arguments),
+                    forcedColorScheme: Self.forcedColorScheme(in: arguments)
                 ),
                 launchRoute: Self.launchRoute(in: arguments)
             )
@@ -102,6 +103,16 @@ struct RoutineDebugLaunchConfiguration: Equatable, Sendable {
         }
 
         return RoutineScreenshotFixture(rawValue: rawValue)
+    }
+
+    private static func forcedColorScheme(
+        in arguments: [String]
+    ) -> RoutineRuntimeConfiguration.ForcedColorScheme? {
+        guard let rawValue = argumentValue(after: "-routine-force-color-scheme", in: arguments) else {
+            return nil
+        }
+
+        return RoutineRuntimeConfiguration.ForcedColorScheme(rawValue: rawValue)
     }
 
     private static func argumentValue(

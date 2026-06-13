@@ -131,7 +131,10 @@ for index, slug in enumerate(slugs, start=1):
         )
 
         if mode != "missing-file" or counter != 34:
-            (export_root / exported_file_name).write_bytes(f"png-{counter}".encode("utf-8"))
+            payload = f"png-{index:02d}-{slug}-{appearance}".encode("utf-8")
+            if mode == "identical-appearance-content" and slug == "dashboard-overview":
+                payload = b"png-01-dashboard-overview-shared"
+            (export_root / exported_file_name).write_bytes(payload)
 
 attachments.reverse()
 
@@ -151,7 +154,7 @@ elif mode == "missing-appearance":
 manifest = [
     {
         "attachments": attachments,
-        "testIdentifier": "RoutineAppScreenshotTests/testCaptureFullAppScreenshotsInSingleLaunch()",
+        "testIdentifier": "RoutineAppScreenshotTests/testCaptureFullAppScreenshotsAcrossForcedAppearances()",
     }
 ]
 (export_root / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
@@ -649,6 +652,16 @@ missing_appearance_exit_code=$?
 set -e
 assert_equals "$missing_appearance_exit_code" "1"
 assert_contains "$REPLY" "screenshot index 17 must include exactly one dark and one light capture"
+
+identical_appearance_export_root="$screenshot_assets_dir/identical-appearance-export"
+identical_appearance_canonical_root="$screenshot_assets_dir/identical-appearance-canonical"
+create_fake_screenshot_export "$identical_appearance_export_root" identical-appearance-content
+set +e
+run_screenshot_assets_and_capture promote --export-root "$identical_appearance_export_root" --canonical-root "$identical_appearance_canonical_root" --expected-count 34
+identical_appearance_exit_code=$?
+set -e
+assert_equals "$identical_appearance_exit_code" "1"
+assert_contains "$REPLY" "screenshot index 01 has byte-identical dark and light captures"
 
 run_screenshot_assets_and_capture \
     render-pr-section \

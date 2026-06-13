@@ -80,6 +80,7 @@ struct AppBootstrapRootView: View {
             RootView(debugLaunchConfiguration: .current)
                 .modelContainer(modelContainer)
                 .environment(\.routineRuntimeConfiguration, runtime)
+                .preferredColorScheme(runtime.forcedColorScheme?.swiftUIColorScheme)
                 .transaction { transaction in
                     guard runtime.disablesAnimations else {
                         return

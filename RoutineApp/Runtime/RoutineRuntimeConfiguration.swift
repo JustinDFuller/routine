@@ -2,24 +2,41 @@ import Foundation
 import SwiftUI
 
 struct RoutineRuntimeConfiguration: Equatable, Sendable {
+    enum ForcedColorScheme: String, Equatable, Sendable {
+        case dark
+        case light
+
+        var swiftUIColorScheme: ColorScheme {
+            switch self {
+            case .dark:
+                .dark
+            case .light:
+                .light
+            }
+        }
+    }
+
     let fixedNow: Date?
     let disablesAnimations: Bool
     let skipsStarterSeeding: Bool
     let starterSeedVersion: String
     let screenshotFixture: RoutineScreenshotFixture?
+    let forcedColorScheme: ForcedColorScheme?
 
     init(
         fixedNow: Date? = nil,
         disablesAnimations: Bool = false,
         skipsStarterSeeding: Bool = false,
         starterSeedVersion: String = StarterDataService.seedMetadataValue,
-        screenshotFixture: RoutineScreenshotFixture? = nil
+        screenshotFixture: RoutineScreenshotFixture? = nil,
+        forcedColorScheme: ForcedColorScheme? = nil
     ) {
         self.fixedNow = fixedNow
         self.disablesAnimations = disablesAnimations
         self.skipsStarterSeeding = skipsStarterSeeding
         self.starterSeedVersion = starterSeedVersion
         self.screenshotFixture = screenshotFixture
+        self.forcedColorScheme = forcedColorScheme
     }
 
     var now: Date {

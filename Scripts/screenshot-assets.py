@@ -186,6 +186,28 @@ def validate_expected_set(
             )
 
 
+def validate_distinct_appearance_content(
+    screenshots: list[CanonicalScreenshot],
+    export_root: Path,
+) -> None:
+    screenshots_by_index: dict[int, dict[str, CanonicalScreenshot]] = {}
+    for screenshot in screenshots:
+        screenshots_by_index.setdefault(screenshot.index, {})[screenshot.appearance] = screenshot
+
+    for index in EXPECTED_INDEXES:
+        pair = screenshots_by_index[index]
+        dark = pair["dark"]
+        light = pair["light"]
+        dark_bytes = (export_root / dark.source_file).read_bytes()
+        light_bytes = (export_root / light.source_file).read_bytes()
+
+        if dark_bytes == light_bytes:
+            fail(
+                f"screenshot index {index:02d} has byte-identical dark and light captures; "
+                "appearance capture likely failed"
+            )
+
+
 def promote_command(args: argparse.Namespace) -> int:
     export_root = Path(args.export_root)
     canonical_root = Path(args.canonical_root)
@@ -198,6 +220,7 @@ def promote_command(args: argparse.Namespace) -> int:
     ]
     screenshots = sort_screenshots(screenshots)
     validate_expected_set(screenshots, args.expected_count)
+    validate_distinct_appearance_content(screenshots, export_root)
 
     canonical_root.mkdir(parents=True, exist_ok=True)
 
