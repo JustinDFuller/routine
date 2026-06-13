@@ -16,4 +16,10 @@ else
     exit 127
 fi
 
-"$xcodegen_cmd" --spec project.yml
+arguments=(--spec project.yml)
+
+if ! [[ "${ROUTINE_VALIDATE_VERBOSE:-0}" == "1" || "${ROUTINE_SCRIPT_VERBOSE:-0}" == "1" ]]; then
+    arguments=(--quiet "${arguments[@]}")
+fi
+
+"$xcodegen_cmd" "${arguments[@]}"

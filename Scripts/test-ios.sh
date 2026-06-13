@@ -18,7 +18,7 @@ fi
 
 "${GENERATE_PROJECT_SCRIPT:-./Scripts/generate-project.sh}"
 
-"${XCODEBUILD_BIN:-xcodebuild}" \
+routine_xcodebuild_with_optional_quiet \
     -project Routine.xcodeproj \
     -scheme RoutineApp \
     -destination "${resolved_destination}" \

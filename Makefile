@@ -1,4 +1,4 @@
-.PHONY: generate app-icons format check-format lint test-core test-scripts build-ios test-ios validate
+.PHONY: generate app-icons format check-format lint test-core test-scripts build-ios run-ios test-ios validate
 
 generate:
 	./Scripts/generate-project.sh
@@ -23,6 +23,9 @@ test-scripts:
 
 build-ios:
 	./Scripts/build-ios.sh
+
+run-ios:
+	./Scripts/run-ios.sh
 
 test-ios:
 	./Scripts/test-ios.sh

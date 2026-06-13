@@ -1,7 +1,22 @@
 #!/bin/zsh
 
+routine_verbose_enabled() {
+    [[ "${ROUTINE_VALIDATE_VERBOSE:-0}" == "1" || "${ROUTINE_SCRIPT_VERBOSE:-0}" == "1" ]]
+}
+
 routine_xcodebuild() {
     "${XCODEBUILD_BIN:-xcodebuild}" "$@"
+}
+
+routine_xcodebuild_with_optional_quiet() {
+    local -a args
+    args=("$@")
+
+    if ! routine_verbose_enabled; then
+        args=(-quiet "${args[@]}")
+    fi
+
+    routine_xcodebuild "${args[@]}"
 }
 
 routine_show_destinations() {

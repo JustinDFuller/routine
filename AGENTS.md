@@ -13,7 +13,7 @@ Before implementing, read [PROJECT_DESIGN.md](PROJECT_DESIGN.md) and work only o
 When a milestone is complete:
 
 1. Update [PROJECT_DESIGN.md](PROJECT_DESIGN.md) by marking the completed milestone `DONE`, advancing the next milestone to `CURRENT`, and updating the roadmap table and current milestone line.
-2. Run the milestone's relevant validation and report any skipped checks.
+2. Run narrow preflight validation as needed during implementation, then run `./Scripts/validate.sh` as the final completion validation and report any skipped lines it emits.
 3. Commit, push, open a pull request, and stop.
 
 ## Validation Policy
@@ -22,6 +22,8 @@ When a milestone is complete:
 - Do not treat lint violations as acceptable because they were already present.
 - Do not use baselines, suppression comments, config disables, or exclusions to avoid fixing real SwiftLint violations.
 - `Scripts/lint.sh` is the canonical lint command and must pass in strict mode.
+- `./Scripts/validate.sh` is the canonical final validation command for completed work.
+- Individual scripts such as `./Scripts/test-core.sh`, `./Scripts/test-ios.sh`, `./Scripts/check-format.sh`, `./Scripts/lint.sh`, and `./Scripts/build-ios.sh` are allowed for narrow preflight checks while implementing.
 
 ## References
 
