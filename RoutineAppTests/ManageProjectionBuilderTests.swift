@@ -43,7 +43,14 @@ final class ManageProjectionBuilderTests: ProjectionBuilderTestCase {
         let calendar = makeCalendar()
         let group = insertGroup(name: "Manage", sortOrder: 0, into: context)
         let weekly = insertRoutine(
-            seed: RoutineTestSeed(name: "Walk", targetCount: 5, period: .weekly, sortOrder: 0),
+            seed: RoutineTestSeed(
+                name: "Walk",
+                targetCount: 5,
+                period: .weekly,
+                availabilityStartMinute: 0,
+                availabilityEndMinute: 405,
+                sortOrder: 0
+            ),
             group: group,
             into: context
         )
@@ -53,34 +60,21 @@ final class ManageProjectionBuilderTests: ProjectionBuilderTestCase {
             into: context
         )
 
-        insertCompletion(
-            routine: weekly,
-            day: try makeDay(year: 2026, month: 6, day: 8),
-            completedAt: makeDate(year: 2026, month: 6, day: 8, calendar: calendar.calendar),
-            into: context
-        )
-        insertCompletion(
-            routine: weekly,
-            day: try makeDay(year: 2026, month: 6, day: 9),
-            completedAt: makeDate(year: 2026, month: 6, day: 9, calendar: calendar.calendar),
-            into: context
-        )
-        insertCompletion(
-            routine: monthly,
-            day: try makeDay(year: 2026, month: 6, day: 1),
-            completedAt: makeDate(year: 2026, month: 6, day: 1, calendar: calendar.calendar),
-            into: context
-        )
+        try insertCompletion(onDay: 8, for: weekly, calendar: calendar.calendar, into: context)
+        try insertCompletion(onDay: 9, for: weekly, calendar: calendar.calendar, into: context)
+        try insertCompletion(onDay: 1, for: monthly, calendar: calendar.calendar, into: context)
 
         try saveChanges(in: context)
 
         let viewData = try ManageProjectionBuilder(context: context).build()
-        let rowsByName = Dictionary(uniqueKeysWithValues: viewData.sections[0].routines.map { ($0.name, $0) })
+        let rowsByName = rowsByName(in: viewData.sections[0])
 
-        XCTAssertEqual(rowsByName["Walk"]?.summaryText, "5 per week")
+        XCTAssertEqual(rowsByName["Walk"]?.summaryText, "5 per week, available 12:00 AM-6:45 AM")
         XCTAssertEqual(rowsByName["Walk"]?.targetCount, 5)
         XCTAssertEqual(rowsByName["Walk"]?.period, .weekly)
         XCTAssertEqual(rowsByName["Walk"]?.groupID, group.id)
+        XCTAssertEqual(rowsByName["Walk"]?.availabilityStartMinute, 0)
+        XCTAssertEqual(rowsByName["Walk"]?.availabilityEndMinute, 405)
         XCTAssertEqual(rowsByName["Budget"]?.summaryText, "2 per month")
         XCTAssertEqual(rowsByName["Budget"]?.targetCount, 2)
         XCTAssertEqual(rowsByName["Budget"]?.period, .monthly)
@@ -131,6 +125,8 @@ final class ManageProjectionBuilderTests: ProjectionBuilderTestCase {
         XCTAssertEqual(viewData.sections.map { $0.name }, ["First", "Second"])
         XCTAssertTrue(viewData.sections[0].routines.isEmpty)
         XCTAssertEqual(viewData.sections[1].routines.map { $0.name }, ["Walk"])
+        XCTAssertNil(viewData.sections[1].routines[0].availabilityStartMinute)
+        XCTAssertNil(viewData.sections[1].routines[0].availabilityEndMinute)
     }
 
     func testBuildMapsFetchFailuresToPersistenceError() throws {
@@ -148,5 +144,25 @@ final class ManageProjectionBuilderTests: ProjectionBuilderTestCase {
                 .fetchFailed("simulated projection fetch failure")
             )
         }
+    }
+
+    private func rowsByName(
+        in section: ManageGroupSectionViewData
+    ) -> [String: ManageRoutineRowViewData] {
+        Dictionary(uniqueKeysWithValues: section.routines.map { ($0.name, $0) })
+    }
+
+    private func insertCompletion(
+        onDay day: Int,
+        for routine: Routine,
+        calendar: Calendar,
+        into context: ModelContext
+    ) throws {
+        insertCompletion(
+            routine: routine,
+            day: try makeDay(year: 2026, month: 6, day: day),
+            completedAt: makeDate(year: 2026, month: 6, day: day, calendar: calendar),
+            into: context
+        )
     }
 }

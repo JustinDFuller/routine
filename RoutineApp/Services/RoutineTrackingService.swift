@@ -16,6 +16,17 @@ struct UndoResult: Equatable, Sendable {
     let didRemove: Bool
 }
 
+enum RoutineTrackingError: LocalizedError, Equatable {
+    case unavailable(routineName: String, windowText: String)
+
+    var errorDescription: String? {
+        switch self {
+        case .unavailable(let routineName, let windowText):
+            "\(routineName) is unavailable now. It can only be completed \(windowText)."
+        }
+    }
+}
+
 @MainActor
 final class RoutineTrackingService {
     private static let logger = AppDiagnostics.logger(.tracking)
@@ -45,6 +56,19 @@ final class RoutineTrackingService {
                 day: today,
                 didInsert: false
             )
+        }
+
+        let currentMinuteOfDay = routineCalendar.minuteOfDay(containing: now)
+        if let availabilityWindow = routine.availabilityWindow {
+            guard availabilityWindow.contains(minuteOfDay: currentMinuteOfDay) else {
+                throw RoutineTrackingError.unavailable(
+                    routineName: routine.name,
+                    windowText: RoutineAvailabilityText.trackingWindowText(
+                        for: availabilityWindow,
+                        routineCalendar: routineCalendar
+                    )
+                )
+            }
         }
 
         let completion = RoutineCompletion(routine: routine, day: today, completedAt: now)

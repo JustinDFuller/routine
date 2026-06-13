@@ -376,6 +376,10 @@ Each routine card should contain five pieces of information:
 4. Frequency period context
 5. Last-done cue
 
+When a routine has a configured availability window, add a compact sixth metadata element:
+
+6. Availability label
+
 Recommended visual layout:
 
 - Leading: segmented progress ring
@@ -407,6 +411,7 @@ Recommended visual treatment:
 
 - Count and period can be shown as separate quiet pills, or as a single compact pill
 - Last-done text should remain plain secondary text, not another dominant chip
+- Availability can use a quiet pill or concise secondary label, but it should remain visible when the routine is unavailable
 
 #### Card states
 
@@ -428,6 +433,15 @@ The dashboard must clearly distinguish at least these states:
 - Card contrast softens slightly to indicate completion without disappearing
 - Routine name remains readable and present
 - Do not gray the row into irrelevance
+
+##### Unavailable now
+
+- Incomplete unavailable routines remain visible in the same section and order as available routines
+- The primary completion affordance is visibly disabled and should read as inactive before the user taps it
+- Card contrast softens further than a normal incomplete card, but the card remains readable
+- Availability text becomes explicit, such as `Available 11:00 PM-3:00 AM`
+- History access remains active
+- If the routine is already completed today, the card may still open history even when the current time is outside the window
 - Do not use strikethrough
 
 ##### Period target met
@@ -691,6 +705,7 @@ MVP fields:
 - Target count
 - Frequency period: `Weekly` or `Monthly`
 - Group assignment
+- Availability: `Available all day` toggle plus start and end time when the toggle is off
 
 Preferred control patterns:
 
@@ -698,6 +713,8 @@ Preferred control patterns:
 - Target count: stepper or compact numeric picker
 - Frequency period: segmented picker or inline picker with only two options
 - Group assignment: picker or editable grouped choice based on existing groups
+- Availability toggle: native `Toggle`
+- Availability times: native time pickers with hour/minute precision
 
 #### Form actions
 
@@ -886,12 +903,15 @@ Requirements:
 - Maintain sufficient contrast in dark and light appearances
 - Provide accessible labels for progress rings and secondary action buttons
 - Do not rely on color alone for completion or period status
+- Unavailable routine cards must announce that completion is unavailable now and include the configured window in the spoken summary
+- Disabled completion affordances must still leave the history affordance reachable by assistive technology
 - Keep core controls at or above comfortable iPhone tap-target sizes
 - Respect reduced motion where appropriate
 
 Recommended VoiceOver phrasing example:
 
 - `Morning Yoga, completed today, 3 of 5 this week`
+- `Wake Up Early, unavailable now, available 12:00 AM to 6:45 AM, not completed today, 0 of 5 this week`
 
 The dashboard should remain understandable when:
 

@@ -87,4 +87,56 @@ final class RoutineManagementServiceValidationTests: RoutineManagementServiceTes
         XCTAssertEqual(unchangedGroup.name, "Home")
         XCTAssertEqual(unchangedGroup.sortOrder, 4)
     }
+
+    func testCreateRoutineRejectsEqualAvailabilityStartAndEnd() throws {
+        let context = try makeContext()
+        let group = try insertGroup(name: "Health", sortOrder: 0, into: context)
+        let service = RoutineManagementService(context: context)
+
+        XCTAssertThrowsError(
+            try service.createRoutine(
+                RoutineDraft(
+                    name: "Wake up early",
+                    targetCount: 4,
+                    period: .weekly,
+                    groupID: group.id,
+                    availabilityStartMinute: 60,
+                    availabilityEndMinute: 60
+                )
+            )
+        ) { error in
+            XCTAssertEqual(error as? RoutineValidationError, .invalidAvailabilityWindow)
+        }
+    }
+
+    func testUpdateRoutineRejectsPartialAvailabilityStateAndLeavesRoutineUnchanged() throws {
+        let context = try makeContext()
+        let group = try insertGroup(name: "Health", sortOrder: 0, into: context)
+        let routine = try insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 0),
+            group: group,
+            into: context
+        )
+        let service = RoutineManagementService(context: context)
+
+        XCTAssertThrowsError(
+            try service.updateRoutine(
+                id: routine.id,
+                with: RoutineDraft(
+                    name: "Walk",
+                    targetCount: 3,
+                    period: .weekly,
+                    groupID: group.id,
+                    availabilityStartMinute: 120,
+                    availabilityEndMinute: nil
+                )
+            )
+        ) { error in
+            XCTAssertEqual(error as? RoutineValidationError, .invalidAvailabilityWindow)
+        }
+
+        let unchangedRoutine = try context.routine(id: routine.id)
+        XCTAssertNil(unchangedRoutine.availabilityStartMinute)
+        XCTAssertNil(unchangedRoutine.availabilityEndMinute)
+    }
 }

@@ -14,7 +14,9 @@ enum ComponentPreviewFixtures {
         countText: "1/5",
         periodText: "week",
         lastDoneText: "Yesterday",
+        availabilityText: nil,
         accessibilityLabel: "Morning Yoga, not completed today, 1 of 5 this week, last done Yesterday",
+        unavailableAccessibilityPhrase: nil,
         progressRing: ProgressRingViewData(
             targetCount: 5,
             completedCount: 1,
@@ -22,6 +24,7 @@ enum ComponentPreviewFixtures {
             showsSegments: true,
             showsTodayCheckmark: false
         ),
+        isAvailableNow: true,
         isCompletedToday: false,
         isTargetMet: false,
         isOverTarget: false
@@ -34,7 +37,9 @@ enum ComponentPreviewFixtures {
         countText: "3/5",
         periodText: "week",
         lastDoneText: "Today",
+        availabilityText: nil,
         accessibilityLabel: "Functional Workout, completed today, 3 of 5 this week, last done Today",
+        unavailableAccessibilityPhrase: nil,
         progressRing: ProgressRingViewData(
             targetCount: 5,
             completedCount: 3,
@@ -42,6 +47,7 @@ enum ComponentPreviewFixtures {
             showsSegments: true,
             showsTodayCheckmark: true
         ),
+        isAvailableNow: true,
         isCompletedToday: true,
         isTargetMet: false,
         isOverTarget: false
@@ -54,7 +60,9 @@ enum ComponentPreviewFixtures {
         countText: "1/1",
         periodText: "week",
         lastDoneText: "2d ago",
+        availabilityText: nil,
         accessibilityLabel: "Water Plants, not completed today, 1 of 1 this week, last done 2d ago",
+        unavailableAccessibilityPhrase: nil,
         progressRing: ProgressRingViewData(
             targetCount: 1,
             completedCount: 1,
@@ -62,6 +70,7 @@ enum ComponentPreviewFixtures {
             showsSegments: true,
             showsTodayCheckmark: false
         ),
+        isAvailableNow: true,
         isCompletedToday: false,
         isTargetMet: true,
         isOverTarget: false
@@ -74,7 +83,9 @@ enum ComponentPreviewFixtures {
         countText: "6/5",
         periodText: "week",
         lastDoneText: "Yesterday",
+        availabilityText: nil,
         accessibilityLabel: "Walk The Dog, not completed today, 6 of 5 this week, last done Yesterday",
+        unavailableAccessibilityPhrase: nil,
         progressRing: ProgressRingViewData(
             targetCount: 5,
             completedCount: 6,
@@ -82,6 +93,7 @@ enum ComponentPreviewFixtures {
             showsSegments: true,
             showsTodayCheckmark: false
         ),
+        isAvailableNow: true,
         isCompletedToday: false,
         isTargetMet: true,
         isOverTarget: true
@@ -94,7 +106,9 @@ enum ComponentPreviewFixtures {
         countText: "9/12",
         periodText: "month",
         lastDoneText: "Today",
+        availabilityText: nil,
         accessibilityLabel: "Practice Piano, completed today, 9 of 12 this month, last done Today",
+        unavailableAccessibilityPhrase: nil,
         progressRing: ProgressRingViewData(
             targetCount: 12,
             completedCount: 9,
@@ -102,7 +116,31 @@ enum ComponentPreviewFixtures {
             showsSegments: false,
             showsTodayCheckmark: true
         ),
+        isAvailableNow: true,
         isCompletedToday: true,
+        isTargetMet: false,
+        isOverTarget: false
+    )
+
+    static let unavailableCard = RoutineCardViewData(
+        id: UUID(uuidString: "10000000-0000-0000-0000-000000000007") ?? UUID(),
+        name: "Wake Up Early",
+        period: .weekly,
+        countText: "0/4",
+        periodText: "week",
+        lastDoneText: "3d ago",
+        availabilityText: "Available 12:00 AM-6:45 AM",
+        accessibilityLabel: unavailableCardAccessibilityLabel,
+        unavailableAccessibilityPhrase: "unavailable now, available 12:00 AM to 6:45 AM",
+        progressRing: ProgressRingViewData(
+            targetCount: 4,
+            completedCount: 0,
+            fillRatio: 0,
+            showsSegments: true,
+            showsTodayCheckmark: false
+        ),
+        isAvailableNow: false,
+        isCompletedToday: false,
         isTargetMet: false,
         isOverTarget: false
     )
@@ -114,7 +152,9 @@ enum ComponentPreviewFixtures {
         countText: "2/3",
         periodText: "week",
         lastDoneText: "3d ago",
+        availabilityText: nil,
         accessibilityLabel: longNameAccessibilityLabel,
+        unavailableAccessibilityPhrase: nil,
         progressRing: ProgressRingViewData(
             targetCount: 3,
             completedCount: 2,
@@ -122,10 +162,15 @@ enum ComponentPreviewFixtures {
             showsSegments: true,
             showsTodayCheckmark: false
         ),
+        isAvailableNow: true,
         isCompletedToday: false,
         isTargetMet: false,
         isOverTarget: false
     )
+
+    private static let unavailableCardAccessibilityLabel =
+        "Wake Up Early, unavailable now, available 12:00 AM to 6:45 AM, "
+        + "not completed today, 0 of 4 this week, last done 3 days ago"
 
     static let undoBanner = UndoBannerViewData(message: "Completed Morning Yoga")
 }

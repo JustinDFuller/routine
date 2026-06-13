@@ -37,6 +37,51 @@ final class RoutineManagementRoutineCreateTests: RoutineManagementServiceTestCas
         XCTAssertEqual(createdRoutine.updatedAt, now)
     }
 
+    func testCreateRoutineDefaultsToAllDayAvailability() throws {
+        let context = try makeContext()
+        let group = try insertGroup(name: "Health", sortOrder: 0, into: context)
+        let service = RoutineManagementService(context: context)
+
+        let createdID = try service.createRoutine(
+            RoutineDraft(
+                name: "Walk",
+                targetCount: 5,
+                period: .weekly,
+                groupID: group.id,
+                availabilityStartMinute: nil,
+                availabilityEndMinute: nil
+            )
+        )
+
+        let routine = try context.routine(id: createdID)
+        XCTAssertNil(routine.availabilityStartMinute)
+        XCTAssertNil(routine.availabilityEndMinute)
+        XCTAssertNil(routine.availabilityWindow)
+    }
+
+    func testCreateRoutinePersistsConfiguredAvailabilityWindow() throws {
+        let context = try makeContext()
+        let group = try insertGroup(name: "Health", sortOrder: 0, into: context)
+        let service = RoutineManagementService(context: context)
+
+        let createdID = try service.createRoutine(
+            RoutineDraft(
+                name: "Wake up early",
+                targetCount: 4,
+                period: .weekly,
+                groupID: group.id,
+                availabilityStartMinute: 0,
+                availabilityEndMinute: 405
+            )
+        )
+
+        let routine = try context.routine(id: createdID)
+        XCTAssertEqual(routine.availabilityStartMinute, 0)
+        XCTAssertEqual(routine.availabilityEndMinute, 405)
+        XCTAssertEqual(routine.availabilityWindow?.start.minuteOfDay, 0)
+        XCTAssertEqual(routine.availabilityWindow?.end.minuteOfDay, 405)
+    }
+
     func testCreateRoutineValidatesEmptyNameAndWeeklyMonthlyTargetBounds() throws {
         let context = try makeContext()
         let group = try insertGroup(name: "Health", sortOrder: 0, into: context)
@@ -161,6 +206,56 @@ final class RoutineManagementRoutineMutationTests: RoutineManagementServiceTestC
             setup: setup,
             updatedAt: now
         )
+    }
+
+    func testUpdateRoutineCanChangeAvailabilityBetweenConfiguredAndAllDay() throws {
+        let context = try makeContext()
+        let group = try insertGroup(name: "Health", sortOrder: 0, into: context)
+        let routine = try insertRoutine(
+            seed: RoutineTestSeed(
+                name: "Wake up early",
+                targetCount: 4,
+                period: .weekly,
+                availabilityStartMinute: 0,
+                availabilityEndMinute: 405,
+                sortOrder: 0
+            ),
+            group: group,
+            into: context
+        )
+
+        try RoutineManagementService(context: context).updateRoutine(
+            id: routine.id,
+            with: RoutineDraft(
+                name: "Wake up early",
+                targetCount: 4,
+                period: .weekly,
+                groupID: group.id,
+                availabilityStartMinute: 1_380,
+                availabilityEndMinute: 180
+            )
+        )
+
+        var updated = try context.routine(id: routine.id)
+        XCTAssertEqual(updated.availabilityStartMinute, 1_380)
+        XCTAssertEqual(updated.availabilityEndMinute, 180)
+
+        try RoutineManagementService(context: context).updateRoutine(
+            id: routine.id,
+            with: RoutineDraft(
+                name: "Wake up early",
+                targetCount: 4,
+                period: .weekly,
+                groupID: group.id,
+                availabilityStartMinute: nil,
+                availabilityEndMinute: nil
+            )
+        )
+
+        updated = try context.routine(id: routine.id)
+        XCTAssertNil(updated.availabilityStartMinute)
+        XCTAssertNil(updated.availabilityEndMinute)
+        XCTAssertNil(updated.availabilityWindow)
     }
 
     func testDeleteRoutineRemovesRoutineAndCascadesCompletionHistory() throws {

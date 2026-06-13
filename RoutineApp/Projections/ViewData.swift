@@ -22,8 +22,11 @@ struct RoutineCardViewData: Identifiable, Equatable, Sendable {
     let countText: String
     let periodText: String
     let lastDoneText: String
+    let availabilityText: String?
     let accessibilityLabel: String
+    let unavailableAccessibilityPhrase: String?
     let progressRing: ProgressRingViewData
+    let isAvailableNow: Bool
     let isCompletedToday: Bool
     let isTargetMet: Bool
     let isOverTarget: Bool
@@ -101,6 +104,8 @@ struct ManageRoutineRowViewData: Identifiable, Equatable, Sendable {
     let targetCount: Int
     let period: RoutinePeriod
     let groupID: UUID
+    let availabilityStartMinute: Int?
+    let availabilityEndMinute: Int?
     let summaryText: String
 }
 

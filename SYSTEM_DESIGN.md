@@ -303,13 +303,13 @@ Primary screens:
   Owns `NavigationStack`, route destinations, starter data seeding trigger, and app-level service construction.
 
 - `TodayDashboardView`
-  Default launch screen. Shows all grouped routines, handles one-tap completion, opens history directly from routine cards, shows undo banner, owns routine/group management sheets and rearrange modes, and navigates to history.
+  Default launch screen. Shows all grouped routines, handles one-tap completion, keeps unavailable routines visible with muted disabled completion state, opens history directly from routine cards, shows undo banner, owns routine/group management sheets and rearrange modes, and navigates to history.
 
 - `RoutineHistoryView`
   Routine-specific history screen with summary header, current-month calendar-like grid, recent completions, and destructive correction flow.
 
 - `AddEditRoutineView`
-  Native form sheet with draft state for routine name, target count, period, and group assignment.
+  Native form sheet with draft state for routine name, target count, period, group assignment, and optional local-time availability window.
 
 - Group add/edit sheets
   Small native forms for creating, renaming, and deleting groups.
@@ -505,6 +505,8 @@ Run locally and in Ubuntu GitHub Actions.
 Required coverage:
 
 - `RoutineDay` construction, key formatting, ordering, equality, and invalid-input handling if parsing exists.
+- `RoutineTimeOfDay` minute validation and invalid-input handling.
+- `RoutineAvailabilityWindow` validation, same-day containment, cross-midnight containment, and inclusive/exclusive boundaries.
 - Monday-start current-week ranges for each weekday.
 - Week boundaries across month and year changes.
 - Current-month ranges, including February and leap years.
@@ -513,6 +515,7 @@ Required coverage:
 - Completed-today detection.
 - Last-completed-day derivation.
 - Relative and explicit date labels.
+- Local minute-of-day extraction using the configured calendar timezone, including a non-UTC timezone and a DST-adjacent date.
 - Target count validation for weekly and monthly routines.
 - Name trimming and empty-name validation.
 - Group-name uniqueness comparison.
@@ -530,6 +533,9 @@ Required coverage:
 - Starter groups and routines are editable normal data.
 - Completing an incomplete routine inserts exactly one completion.
 - Repeating completion for the same routine/day is idempotent.
+- Completion outside a configured availability window is blocked with a user-safe error.
+- Duplicate completion remains idempotent even when the current time is outside the configured window.
+- Cross-midnight availability completion stores the current local calendar day.
 - Undo today removes only today's completion.
 - Undo today with no completion is safe.
 - Historical completion removal deletes the selected completion and updates projections.
@@ -537,9 +543,11 @@ Required coverage:
 - Deleting an empty group succeeds.
 - Deleting a non-empty group is blocked by the service.
 - Creating and editing routines enforce target ranges and group membership.
+- Creating and editing routines persist all-day versus configured availability correctly and reject invalid equal start/end windows.
 - Moving routines within and across groups updates group IDs and contiguous sort order.
 - Reordering groups normalizes sort order.
 - Dashboard projection includes all routines, including completed and monthly routines.
+- Dashboard projection marks unavailable configured routines, preserves card order, and excludes unavailable incomplete routines from remaining counts.
 - History projection marks today, completed dates, completed today, and recent completions correctly.
 - Stale routine routes resolve to not-found behavior rather than crashes.
 - Persistence save failures are mapped to user-safe errors where failures can be simulated.
@@ -681,6 +689,8 @@ Robustness for this app means the user's routine history stays correct, recovera
 Required resilience behaviors:
 
 - Completion is idempotent for a routine/day.
+- Availability windows are evaluated in the user's current local calendar and timezone at the moment of projection or completion.
+- Cross-midnight availability windows still store completions on the actual local calendar day of the tap.
 - Undo today is safe if the completion has already been removed.
 - Historical removal targets a specific completion ID.
 - Dashboard state derives from the store after saves, not from untrusted cached counts.
@@ -705,7 +715,8 @@ Migration posture:
 - Persist enum raw values as stable strings.
 - Keep IDs stable.
 - Do not persist derived state that would require backfills.
-- Add SwiftData schema migration only when a real model change requires it.
+- Add new optional routine availability minute fields through SwiftData lightweight migration first.
+- Add a custom SwiftData schema migration only if validation shows the optional-field migration is insufficient.
 
 Backup posture:
 

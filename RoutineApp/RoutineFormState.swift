@@ -22,19 +22,25 @@ struct RoutineFormSnapshot: Equatable, Sendable {
     let targetCount: Int
     let period: RoutinePeriod
     let groupID: UUID?
+    let availabilityStartMinute: Int?
+    let availabilityEndMinute: Int?
 
     init(
         routineID: UUID,
         name: String,
         targetCount: Int,
         period: RoutinePeriod,
-        groupID: UUID?
+        groupID: UUID?,
+        availabilityStartMinute: Int?,
+        availabilityEndMinute: Int?
     ) {
         self.routineID = routineID
         self.name = name
         self.targetCount = targetCount
         self.period = period
         self.groupID = groupID
+        self.availabilityStartMinute = availabilityStartMinute
+        self.availabilityEndMinute = availabilityEndMinute
     }
 
     init(
@@ -46,7 +52,9 @@ struct RoutineFormSnapshot: Equatable, Sendable {
             name: row.name,
             targetCount: row.targetCount,
             period: row.period,
-            groupID: availableGroupIDs.contains(row.groupID) ? row.groupID : nil
+            groupID: availableGroupIDs.contains(row.groupID) ? row.groupID : nil,
+            availabilityStartMinute: row.availabilityStartMinute,
+            availabilityEndMinute: row.availabilityEndMinute
         )
     }
 }
@@ -113,6 +121,24 @@ final class RoutineFormState {
         didSet { clearValidationError() }
     }
 
+    var isAvailableAllDay: Bool {
+        didSet {
+            if oldValue && isAvailableAllDay == false {
+                setDefaultAvailabilityIfNeeded()
+            }
+
+            clearValidationError()
+        }
+    }
+
+    var availabilityStartMinute: Int? {
+        didSet { clearValidationError() }
+    }
+
+    var availabilityEndMinute: Int? {
+        didSet { clearValidationError() }
+    }
+
     private(set) var validationError: RoutineFormError?
 
     init(presentation: RoutineFormPresentation) {
@@ -122,11 +148,19 @@ final class RoutineFormState {
             targetCount = 1
             period = .weekly
             groupID = initialGroupID
+            isAvailableAllDay = true
+            availabilityStartMinute = nil
+            availabilityEndMinute = nil
         case .edit(let snapshot):
             name = snapshot.name
             targetCount = snapshot.targetCount
             period = snapshot.period
             groupID = snapshot.groupID
+            isAvailableAllDay =
+                snapshot.availabilityStartMinute == nil
+                || snapshot.availabilityEndMinute == nil
+            availabilityStartMinute = snapshot.availabilityStartMinute
+            availabilityEndMinute = snapshot.availabilityEndMinute
         }
 
         targetCount = clampedTargetCount(targetCount, for: period)
@@ -147,12 +181,24 @@ final class RoutineFormState {
                 throw error
             }
 
+            let availabilityWindow: RoutineAvailabilityWindow? =
+                if isAvailableAllDay {
+                    nil
+                } else {
+                    try validatedAvailabilityWindow(
+                        startMinute: availabilityStartMinute,
+                        endMinute: availabilityEndMinute
+                    )
+                }
+
             validationError = nil
             return RoutineDraft(
                 name: trimmedName,
                 targetCount: targetCount,
                 period: period,
-                groupID: groupID
+                groupID: groupID,
+                availabilityStartMinute: availabilityWindow?.start.minuteOfDay,
+                availabilityEndMinute: availabilityWindow?.end.minuteOfDay
             )
         } catch let error as RoutineValidationError {
             let formError = RoutineFormError.validation(error)
@@ -190,5 +236,15 @@ final class RoutineFormState {
         }
 
         return min(max(value, range.lowerBound), range.upperBound)
+    }
+
+    private func setDefaultAvailabilityIfNeeded() {
+        if availabilityStartMinute == nil {
+            availabilityStartMinute = 9 * 60
+        }
+
+        if availabilityEndMinute == nil {
+            availabilityEndMinute = 17 * 60
+        }
     }
 }

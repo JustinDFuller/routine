@@ -4,6 +4,7 @@ public enum RoutineValidationError: LocalizedError, Equatable, Sendable {
     case emptyName
     case invalidTargetCount(period: RoutinePeriod, min: Int, max: Int)
     case duplicateGroupName
+    case invalidAvailabilityWindow
 
     public var errorDescription: String? {
         switch self {
@@ -18,6 +19,8 @@ public enum RoutineValidationError: LocalizedError, Equatable, Sendable {
             }
         case .duplicateGroupName:
             "A group with that name already exists."
+        case .invalidAvailabilityWindow:
+            "Choose different start and end times, or use all day."
         }
     }
 }
@@ -62,6 +65,28 @@ public func validateUniqueGroupName(
         if normalizedExisting == normalizedCandidate {
             throw RoutineValidationError.duplicateGroupName
         }
+    }
+}
+
+public func validatedAvailabilityWindow(
+    startMinute: Int?,
+    endMinute: Int?
+) throws -> RoutineAvailabilityWindow? {
+    switch (startMinute, endMinute) {
+    case (nil, nil):
+        return nil
+    case (let startMinute?, let endMinute?):
+        guard
+            let start = RoutineTimeOfDay(minuteOfDay: startMinute),
+            let end = RoutineTimeOfDay(minuteOfDay: endMinute),
+            let window = RoutineAvailabilityWindow(start: start, end: end)
+        else {
+            throw RoutineValidationError.invalidAvailabilityWindow
+        }
+
+        return window
+    default:
+        throw RoutineValidationError.invalidAvailabilityWindow
     }
 }
 

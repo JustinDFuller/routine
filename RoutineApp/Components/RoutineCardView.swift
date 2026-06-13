@@ -8,7 +8,15 @@ struct RoutineCardView: View {
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
+    private var isUnavailable: Bool {
+        viewData.isCompletedToday == false && viewData.isAvailableNow == false
+    }
+
     private var ringAccentColor: Color {
+        if isUnavailable {
+            return .routineLabelSecondary
+        }
+
         if viewData.isCompletedToday || viewData.isTargetMet || viewData.isOverTarget {
             return .routineAccentComplete
         }
@@ -17,6 +25,10 @@ struct RoutineCardView: View {
     }
 
     private var primaryAccessibilityHint: String {
+        if isUnavailable {
+            return "Completion is unavailable outside the configured time."
+        }
+
         if viewData.isCompletedToday {
             return "Opens completion history."
         }
@@ -25,11 +37,19 @@ struct RoutineCardView: View {
     }
 
     private var backgroundColor: Color {
-        viewData.isCompletedToday ? .routineSurface : .routineSurfaceElevated
+        if isUnavailable {
+            return .routineSurface
+        }
+
+        return viewData.isCompletedToday ? .routineSurface : .routineSurfaceElevated
     }
 
     private var borderColor: Color {
-        viewData.isCompletedToday
+        if isUnavailable {
+            return Color.routineDivider.opacity(0.45)
+        }
+
+        return viewData.isCompletedToday
             ? Color.routineDivider.opacity(0.35)
             : Color.routineDivider.opacity(0.6)
     }
@@ -50,7 +70,7 @@ struct RoutineCardView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(viewData.name)
                             .font(.headline.weight(.semibold))
-                            .foregroundStyle(Color.routineLabelPrimary)
+                            .foregroundStyle(isUnavailable ? Color.routineLabelSecondary : Color.routineLabelPrimary)
                             .multilineTextAlignment(.leading)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
@@ -67,6 +87,7 @@ struct RoutineCardView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .disabled(isUnavailable)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(viewData.accessibilityLabel)
             .accessibilityHint(primaryAccessibilityHint)
@@ -117,10 +138,29 @@ struct RoutineCardView: View {
                     .allowsHitTesting(false)
             }
         }
+        .overlay {
+            if isUnavailable {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.routineLabelSecondary.opacity(0.04))
+                    .allowsHitTesting(false)
+            }
+        }
     }
 
     @ViewBuilder
     private var metadataContent: some View {
+        if let availabilityText = viewData.availabilityText {
+            VStack(alignment: .leading, spacing: 6) {
+                primaryMetadataContent
+                availabilityLabel(availabilityText)
+            }
+        } else {
+            primaryMetadataContent
+        }
+    }
+
+    @ViewBuilder
+    private var primaryMetadataContent: some View {
         if dynamicTypeSize.isAccessibilitySize {
             VStack(alignment: .leading, spacing: 6) {
                 metadataPills
@@ -165,6 +205,13 @@ struct RoutineCardView: View {
                     .fill(ringAccentColor.opacity(viewData.isCompletedToday ? 0.14 : 0.1))
             )
     }
+
+    private func availabilityLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.caption)
+            .foregroundStyle(isUnavailable ? Color.routineLabelPrimary : Color.routineLabelSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
 }
 
 #Preview("Routine Cards - Dark") {
@@ -175,6 +222,7 @@ struct RoutineCardView: View {
             RoutineCardView(viewData: ComponentPreviewFixtures.targetMetCard, onTap: {}, onEdit: nil, onHistory: {})
             RoutineCardView(viewData: ComponentPreviewFixtures.overTargetCard, onTap: {}, onEdit: nil, onHistory: {})
             RoutineCardView(viewData: ComponentPreviewFixtures.highTargetCard, onTap: {}, onEdit: nil, onHistory: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.unavailableCard, onTap: {}, onEdit: nil, onHistory: {})
             RoutineCardView(viewData: ComponentPreviewFixtures.longNameCard, onTap: {}, onEdit: {}, onHistory: {})
         }
     }
@@ -191,6 +239,7 @@ struct RoutineCardView: View {
                 onEdit: nil,
                 onHistory: {}
             )
+            RoutineCardView(viewData: ComponentPreviewFixtures.unavailableCard, onTap: {}, onEdit: nil, onHistory: {})
             RoutineCardView(viewData: ComponentPreviewFixtures.longNameCard, onTap: {}, onEdit: {}, onHistory: {})
         }
     }
@@ -201,6 +250,7 @@ struct RoutineCardView: View {
     ComponentPreviewCanvas {
         VStack(spacing: 12) {
             RoutineCardView(viewData: ComponentPreviewFixtures.incompleteCard, onTap: {}, onEdit: nil, onHistory: {})
+            RoutineCardView(viewData: ComponentPreviewFixtures.unavailableCard, onTap: {}, onEdit: nil, onHistory: {})
             RoutineCardView(viewData: ComponentPreviewFixtures.longNameCard, onTap: {}, onEdit: {}, onHistory: {})
         }
     }

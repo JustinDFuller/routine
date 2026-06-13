@@ -8,8 +8,9 @@ struct RoutineDraft: Equatable, Sendable {
     var targetCount: Int
     var period: RoutinePeriod
     var groupID: UUID
+    var availabilityStartMinute: Int?
+    var availabilityEndMinute: Int?
 }
-
 enum RoutineManagementError: LocalizedError, Equatable {
     case nonEmptyGroup(UUID)
 
@@ -34,6 +35,10 @@ final class RoutineManagementService {
     func createRoutine(_ draft: RoutineDraft, now: Date = .now) throws -> UUID {
         let name = try trimmedRoutineName(draft.name)
         try validateTargetCount(draft.targetCount, for: draft.period)
+        let availabilityWindow = try validatedAvailabilityWindow(
+            startMinute: draft.availabilityStartMinute,
+            endMinute: draft.availabilityEndMinute
+        )
 
         let group = try context.group(id: draft.groupID)
         let existingRoutines = try routines(inGroupID: group.id)
@@ -41,6 +46,8 @@ final class RoutineManagementService {
             name: name,
             targetCount: draft.targetCount,
             period: draft.period,
+            availabilityStartMinute: availabilityWindow?.start.minuteOfDay,
+            availabilityEndMinute: availabilityWindow?.end.minuteOfDay,
             sortOrder: existingRoutines.count,
             group: group,
             createdAt: now,
@@ -73,6 +80,10 @@ final class RoutineManagementService {
     func updateRoutine(id: UUID, with draft: RoutineDraft, now: Date = .now) throws {
         let name = try trimmedRoutineName(draft.name)
         try validateTargetCount(draft.targetCount, for: draft.period)
+        let availabilityWindow = try validatedAvailabilityWindow(
+            startMinute: draft.availabilityStartMinute,
+            endMinute: draft.availabilityEndMinute
+        )
 
         let routine = try context.routine(id: id)
         let destinationGroup = try context.group(id: draft.groupID)
@@ -82,6 +93,8 @@ final class RoutineManagementService {
         routine.name = name
         routine.targetCount = draft.targetCount
         routine.period = draft.period
+        routine.availabilityStartMinute = availabilityWindow?.start.minuteOfDay
+        routine.availabilityEndMinute = availabilityWindow?.end.minuteOfDay
         routine.updatedAt = now
 
         if sourceGroupID == destinationGroup.id {

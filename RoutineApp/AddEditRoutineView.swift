@@ -3,6 +3,8 @@ import SwiftData
 import SwiftUI
 
 struct AddEditRoutineView: View {
+    private static let pickerCalendar = RoutineCalendar.current
+
     let presentation: RoutineFormPresentation
     let groupChoices: [ManageGroupChoiceViewData]
 
@@ -71,6 +73,33 @@ struct AddEditRoutineView: View {
                             }
                         }
                         .accessibilityIdentifier("routine-form-group-picker")
+                    }
+                }
+
+                Section("Availability") {
+                    Toggle("Available all day", isOn: $formState.isAvailableAllDay)
+                        .accessibilityIdentifier("routine-form-availability-all-day-toggle")
+
+                    if formState.isAvailableAllDay == false {
+                        DatePicker(
+                            "Start",
+                            selection: availabilityDateBinding(
+                                minuteOfDay: $formState.availabilityStartMinute,
+                                fallbackMinute: 9 * 60
+                            ),
+                            displayedComponents: .hourAndMinute
+                        )
+                        .accessibilityIdentifier("routine-form-availability-start-picker")
+
+                        DatePicker(
+                            "End",
+                            selection: availabilityDateBinding(
+                                minuteOfDay: $formState.availabilityEndMinute,
+                                fallbackMinute: 17 * 60
+                            ),
+                            displayedComponents: .hourAndMinute
+                        )
+                        .accessibilityIdentifier("routine-form-availability-end-picker")
                     }
                 }
 
@@ -192,5 +221,39 @@ struct AddEditRoutineView: View {
 
     private func userSafeAlertDetail(for error: Error) -> String? {
         error.localizedDescription
+    }
+
+    private func availabilityDateBinding(
+        minuteOfDay: Binding<Int?>,
+        fallbackMinute: Int
+    ) -> Binding<Date> {
+        Binding(
+            get: {
+                dateForAvailabilityMinute(
+                    minuteOfDay.wrappedValue ?? fallbackMinute
+                )
+            },
+            set: { updatedDate in
+                minuteOfDay.wrappedValue = Self.pickerCalendar.minuteOfDay(containing: updatedDate)
+            }
+        )
+    }
+
+    private func dateForAvailabilityMinute(_ minuteOfDay: Int) -> Date {
+        let resolvedMinuteOfDay = RoutineTimeOfDay(minuteOfDay: minuteOfDay)?.minuteOfDay ?? 0
+        var components = DateComponents()
+        components.calendar = Self.pickerCalendar.calendar
+        components.timeZone = Self.pickerCalendar.calendar.timeZone
+        components.year = 2001
+        components.month = 1
+        components.day = 1
+        components.hour = resolvedMinuteOfDay / 60
+        components.minute = resolvedMinuteOfDay % 60
+
+        guard let date = Self.pickerCalendar.calendar.date(from: components) else {
+            preconditionFailure("Unable to construct availability picker date for minute \(resolvedMinuteOfDay).")
+        }
+
+        return date
     }
 }

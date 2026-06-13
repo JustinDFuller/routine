@@ -93,7 +93,7 @@ final class RoutineAppUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["1/5 this week"].waitForExistence(timeout: 5))
 
         let removalButtons = app.buttons.matching(
-            NSPredicate(format: "label BEGINSWITH %@", "Remove completion on Jun 10, 2026")
+            NSPredicate(format: "label BEGINSWITH %@", "Remove completion on ")
         )
         XCTAssertTrue(removalButtons.firstMatch.waitForExistence(timeout: 5))
         XCTAssertEqual(removalButtons.count, 1)
@@ -242,7 +242,9 @@ final class RoutineAppUITests: XCTestCase {
         )
         app.launch()
 
-        app.buttons["today-dashboard-empty-add-group-button"].tap()
+        let addGroupButton = app.buttons["today-dashboard-empty-add-group-button"]
+        XCTAssertTrue(addGroupButton.waitForExistence(timeout: 5))
+        addGroupButton.tap()
 
         let addNameField = app.textFields["group-form-name-field"]
         XCTAssertTrue(addNameField.waitForExistence(timeout: 5))

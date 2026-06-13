@@ -36,6 +36,8 @@ final class Routine {
     var name: String
     var targetCount: Int
     var periodRawValue: String
+    var availabilityStartMinute: Int?
+    var availabilityEndMinute: Int?
     var groupID: UUID
     var sortOrder: Int
     var createdAt: Date
@@ -51,11 +53,20 @@ final class Routine {
         set { periodRawValue = newValue.rawValue }
     }
 
+    var availabilityWindow: RoutineAvailabilityWindow? {
+        try? validatedAvailabilityWindow(
+            startMinute: availabilityStartMinute,
+            endMinute: availabilityEndMinute
+        )
+    }
+
     init(
         id: UUID = UUID(),
         name: String,
         targetCount: Int,
         period: RoutinePeriod,
+        availabilityStartMinute: Int? = nil,
+        availabilityEndMinute: Int? = nil,
         sortOrder: Int,
         group: RoutineGroup,
         createdAt: Date = .now,
@@ -66,6 +77,8 @@ final class Routine {
         self.name = name
         self.targetCount = targetCount
         self.periodRawValue = period.rawValue
+        self.availabilityStartMinute = availabilityStartMinute
+        self.availabilityEndMinute = availabilityEndMinute
         self.groupID = group.id
         self.sortOrder = sortOrder
         self.group = group
