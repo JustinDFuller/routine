@@ -211,14 +211,14 @@ The app should communicate status primarily through visual indicators.
 
 Preferred direction for MVP:
 
-- Segmented rings as the main progress indicator
+- Continuous rings as the main progress indicator
 - A complete/incomplete control with a strong state change
 - Clear done-today styling differences
 - Supportive use of text for counts and last-done dates
 
 Rationale:
 
-- Segmented rings make weekly and monthly target progress legible at a glance.
+- Continuous rings make weekly and monthly target progress legible at a glance.
 - A separate calendar/history view can carry the denser temporal context that a timeline strip would otherwise need to show inline.
 - This keeps the dashboard visually clear while still letting the user inspect history when needed.
 

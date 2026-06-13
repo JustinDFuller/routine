@@ -503,7 +503,7 @@ struct ProgressCalculator {
 
 Rules:
 
-- Filled progress segments equal current-period completion count, capped visually at target count.
+- Filled ring progress equals current-period completion count, capped visually at target count.
 - Count text shows actual count over target, such as `6/5`.
 - The center checkmark appears only when the routine is completed today.
 - A target-met routine remains actionable if it has not been completed today.
@@ -879,15 +879,13 @@ struct ProgressRingViewData: Equatable, Sendable {
     let targetCount: Int
     let completedCount: Int
     let fillRatio: Double
-    let showsSegments: Bool
     let showsTodayCheckmark: Bool
 }
 ```
 
 Rules:
 
-- `showsSegments` is true for target counts `1...8`.
-- For target counts above `8`, use a continuous or lightly ticked ring.
+- Use one continuous ring for every target count.
 - All-day routines omit availability text to avoid clutter.
 - Configured routines show a concise availability label, such as `Available until 6:45 AM` when currently available and `Available 12:00 AM-6:45 AM` when currently unavailable.
 - Incomplete unavailable routines remain visible in their normal group and order but present disabled completion state.
@@ -1020,7 +1018,7 @@ Purpose:
 
 Anatomy:
 
-- Leading segmented progress ring.
+- Leading continuous progress ring.
 - Center name and metadata line.
 - Trailing ellipsis action button.
 
@@ -1037,7 +1035,7 @@ Accessibility:
 - Provide a separate accessible label for the trailing actions button.
 - Do not rely on color alone; use checkmark, fill, opacity, and text.
 
-### SegmentedProgressRingView
+### ProgressRingView
 
 Purpose:
 
@@ -1052,8 +1050,7 @@ Inputs:
 
 Behavior:
 
-- Targets `1...8`: render one visible segment per target.
-- Targets above `8`: render a continuous or lightly ticked ring.
+- Render a base track plus one continuous trimmed progress stroke.
 - Filled count is capped at target for drawing.
 - Text count outside the ring shows actual overage.
 - Center checkmark appears only when completed today.

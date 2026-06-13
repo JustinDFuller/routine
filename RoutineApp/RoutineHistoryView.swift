@@ -251,12 +251,11 @@ struct RoutineHistoryView: View {
     }
 
     private func summaryRing(for viewData: RoutineHistoryViewData) -> some View {
-        SegmentedProgressRingView(
+        ProgressRingView(
             viewData: ProgressRingViewData(
                 targetCount: viewData.progress.targetCount,
                 completedCount: viewData.progress.completedCount,
                 fillRatio: viewData.progress.fillRatio,
-                showsSegments: (1...8).contains(viewData.progress.targetCount),
                 showsTodayCheckmark: viewData.progress.isCompletedToday
             ),
             size: 72,

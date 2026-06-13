@@ -48,7 +48,7 @@ struct IconPalette {
     let backgroundBottom: RGBA
     let backgroundGlow: RGBA
     let baseRing: RGBA
-    let phaseColors: [RGBA]
+    let progressSweep: RGBA
     let check: RGBA
     let ringShadow: RGBA
     let checkShadow: RGBA
@@ -86,12 +86,8 @@ let ringLineWidth: CGFloat = 112
 
 // In the rendered PNG, -90 is 12 o'clock, 0 is 3 o'clock, 90 is 6 o'clock,
 // and increasing degrees move clockwise.
-let phaseAngles: [(start: CGFloat, end: CGFloat)] = [
-    (-90, -52.5),
-    (-42.5, -5),
-    (5, 42.5),
-    (52.5, 90)
-]
+let progressSweepStartDegrees: CGFloat = -94
+let progressSweepEndDegrees: CGFloat = 122
 
 let iconVariants = [
     IconVariant(
@@ -101,12 +97,7 @@ let iconVariants = [
             backgroundBottom: RGBA(hex: 0x171513),
             backgroundGlow: RGBA(hex: 0x463B31, alpha: 0.28),
             baseRing: RGBA(hex: 0x3A403B),
-            phaseColors: [
-                RGBA(hex: 0x95BEA5),
-                RGBA(hex: 0xB6DCC0),
-                RGBA(hex: 0xA5CFB1),
-                RGBA(hex: 0x51534D)
-            ],
+            progressSweep: RGBA(hex: 0xAED2B8),
             check: RGBA(hex: 0xF5DEB8),
             ringShadow: RGBA(hex: 0x090807, alpha: 0.34),
             checkShadow: RGBA(hex: 0x0E0B09, alpha: 0.24)
@@ -119,12 +110,7 @@ let iconVariants = [
             backgroundBottom: RGBA(hex: 0x0B0C0B),
             backgroundGlow: RGBA(hex: 0x2C2822, alpha: 0.24),
             baseRing: RGBA(hex: 0x303632),
-            phaseColors: [
-                RGBA(hex: 0x9FC9AE),
-                RGBA(hex: 0xBDE8C7),
-                RGBA(hex: 0xAED9B9),
-                RGBA(hex: 0x3E4240)
-            ],
+            progressSweep: RGBA(hex: 0xB7E1C2),
             check: RGBA(hex: 0xFFE7BF),
             ringShadow: RGBA(hex: 0x000000, alpha: 0.42),
             checkShadow: RGBA(hex: 0x000000, alpha: 0.28)
@@ -137,12 +123,7 @@ let iconVariants = [
             backgroundBottom: RGBA(hex: 0x1C1915),
             backgroundGlow: RGBA(hex: 0x4A3E2D, alpha: 0.26),
             baseRing: RGBA(hex: 0x464737),
-            phaseColors: [
-                RGBA(hex: 0xAEB58F),
-                RGBA(hex: 0xD0D5AE),
-                RGBA(hex: 0xBEC79E),
-                RGBA(hex: 0x5E5B4A)
-            ],
+            progressSweep: RGBA(hex: 0xC5CB9F),
             check: RGBA(hex: 0xF8E8C4),
             ringShadow: RGBA(hex: 0x080604, alpha: 0.34),
             checkShadow: RGBA(hex: 0x0A0805, alpha: 0.24)
@@ -215,16 +196,21 @@ func drawRing(
     context.strokeEllipse(in: circleRect)
     context.restoreGState()
 
-    for (index, phase) in phaseAngles.enumerated() {
-        context.saveGState()
-        context.setStrokeColor(palette.phaseColors[index].cgColor)
-        context.setLineWidth(lineWidth)
-        context.setLineCap(.round)
-        context.setLineJoin(.round)
-        context.addPath(makeArcPath(center: center, radius: radius, startDegrees: phase.start, endDegrees: phase.end))
-        context.strokePath()
-        context.restoreGState()
-    }
+    context.saveGState()
+    context.setStrokeColor(palette.progressSweep.cgColor)
+    context.setLineWidth(lineWidth)
+    context.setLineCap(.round)
+    context.setLineJoin(.round)
+    context.addPath(
+        makeArcPath(
+            center: center,
+            radius: radius,
+            startDegrees: progressSweepStartDegrees,
+            endDegrees: progressSweepEndDegrees
+        )
+    )
+    context.strokePath()
+    context.restoreGState()
 }
 
 func drawCheckmark(context: CGContext, center: CGPoint, palette: IconPalette) {
