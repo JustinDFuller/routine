@@ -23,6 +23,12 @@ extension TodayDashboardView {
             Button("Rearrange Routines") {
                 enterRearrangeRoutinesMode()
             }
+
+            Divider()
+
+            Button("Settings") {
+                openSettings()
+            }
         } label: {
             Image(systemName: "gearshape")
                 .font(.title3.weight(.semibold))

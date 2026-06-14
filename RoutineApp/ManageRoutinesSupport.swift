@@ -64,6 +64,7 @@ struct ManageAlertPresentation: Identifiable, Equatable {
 enum ManageSheetPresentation: Identifiable, Equatable {
     case routine(RoutineFormPresentation)
     case group(GroupFormPresentation)
+    case settings
 
     var id: String {
         switch self {
@@ -71,6 +72,8 @@ enum ManageSheetPresentation: Identifiable, Equatable {
             "routine-\(presentation.id)"
         case .group(let presentation):
             "group-\(presentation.id)"
+        case .settings:
+            "settings"
         }
     }
 }

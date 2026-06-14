@@ -4,8 +4,8 @@ import XCTest
 @testable import RoutineCore
 
 final class RoutineCalendarTests: XCTestCase {
-    func testCurrentWeekRangeStartsOnMondayForEachWeekday() throws {
-        let calendar = testRoutineCalendar()
+    func testCurrentWeekRangeStartsOnConfiguredMondayForEachWeekday() throws {
+        let calendar = testRoutineCalendar(firstWeekday: 2)
         let expectedStart = try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 3))
         let expectedEnd = try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 9))
 
@@ -25,8 +25,50 @@ final class RoutineCalendarTests: XCTestCase {
         }
     }
 
+    func testCurrentWeekRangeStartsOnConfiguredSundayForEachWeekday() throws {
+        let calendar = testRoutineCalendar(firstWeekday: 1)
+        let expectedStart = try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 2))
+        let expectedEnd = try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 8))
+
+        var inputs: [RoutineDay] = []
+        inputs.append(try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 2)))
+        inputs.append(try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 3)))
+        inputs.append(try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 4)))
+        inputs.append(try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 5)))
+        inputs.append(try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 6)))
+        inputs.append(try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 7)))
+        inputs.append(try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 8)))
+
+        for input in inputs {
+            let range = calendar.currentWeekRange(containing: input)
+            XCTAssertEqual(range.lowerBound, expectedStart, "Unexpected week start for \(input.key)")
+            XCTAssertEqual(range.upperBound, expectedEnd, "Unexpected week end for \(input.key)")
+        }
+    }
+
+    func testCurrentWeekRangeStartsOnConfiguredSaturdayForEachWeekday() throws {
+        let calendar = testRoutineCalendar(firstWeekday: 7)
+        let expectedStart = try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 1))
+        let expectedEnd = try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 7))
+
+        var inputs: [RoutineDay] = []
+        inputs.append(try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 1)))
+        inputs.append(try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 2)))
+        inputs.append(try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 3)))
+        inputs.append(try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 4)))
+        inputs.append(try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 5)))
+        inputs.append(try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 6)))
+        inputs.append(try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 7)))
+
+        for input in inputs {
+            let range = calendar.currentWeekRange(containing: input)
+            XCTAssertEqual(range.lowerBound, expectedStart, "Unexpected week start for \(input.key)")
+            XCTAssertEqual(range.upperBound, expectedEnd, "Unexpected week end for \(input.key)")
+        }
+    }
+
     func testCurrentWeekRangeCrossesMonthBoundary() throws {
-        let calendar = testRoutineCalendar()
+        let calendar = testRoutineCalendar(firstWeekday: 2)
         let input = try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 1))
         let expectedStart = try XCTUnwrap(RoutineDay(year: 2024, month: 5, day: 27))
         let expectedEnd = try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 2))
@@ -102,11 +144,11 @@ final class RoutineCalendarTests: XCTestCase {
         XCTAssertEqual(calendar.today(now: instant), try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 2)))
     }
 
-    private func testRoutineCalendar() -> RoutineCalendar {
+    private func testRoutineCalendar(firstWeekday: Int = 2) -> RoutineCalendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.locale = Locale(identifier: "en_US_POSIX")
         calendar.timeZone = TimeZone(identifier: "America/New_York") ?? .gmt
-        calendar.firstWeekday = 2
+        calendar.firstWeekday = firstWeekday
         return RoutineCalendar(calendar: calendar)
     }
 

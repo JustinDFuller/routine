@@ -109,6 +109,7 @@ slugs = [
     "delete-group-confirmation",
     "rearrange-groups",
     "rearrange-routines",
+    "settings-week-start",
 ]
 
 attachments = []
@@ -130,7 +131,7 @@ for index, slug in enumerate(slugs, start=1):
             }
         )
 
-        if mode != "missing-file" or counter != 34:
+        if mode != "missing-file" or counter != 36:
             payload = f"png-{index:02d}-{slug}-{appearance}".encode("utf-8")
             if mode == "identical-appearance-content" and slug == "dashboard-overview":
                 payload = b"png-01-dashboard-overview-shared"
@@ -605,9 +606,9 @@ valid_canonical_root="$screenshot_assets_dir/canonical"
 create_fake_screenshot_export "$valid_export_root" valid
 mkdir -p "$valid_canonical_root"
 print -r -- "stale" >"$valid_canonical_root/stale.png"
-run_screenshot_assets_and_capture promote --export-root "$valid_export_root" --canonical-root "$valid_canonical_root" --expected-count 34
+run_screenshot_assets_and_capture promote --export-root "$valid_export_root" --canonical-root "$valid_canonical_root" --expected-count 36
 assert_equals "$?" "0"
-assert_equals "$(find "$valid_canonical_root" -maxdepth 1 -type f -name '*.png' | wc -l | tr -d ' ')" "34"
+assert_equals "$(find "$valid_canonical_root" -maxdepth 1 -type f -name '*.png' | wc -l | tr -d ' ')" "36"
 assert_equals "$(find "$valid_canonical_root" -maxdepth 1 -type f -name 'stale.png' | wc -l | tr -d ' ')" "0"
 canonical_manifest="$(<"$valid_canonical_root/manifest.json")"
 assert_line_before "$canonical_manifest" "\"file\": \"01-dashboard-overview-dark.png\"" "\"file\": \"01-dashboard-overview-light.png\""
@@ -617,7 +618,7 @@ duplicate_export_root="$screenshot_assets_dir/duplicate-export"
 duplicate_canonical_root="$screenshot_assets_dir/duplicate-canonical"
 create_fake_screenshot_export "$duplicate_export_root" duplicate
 set +e
-run_screenshot_assets_and_capture promote --export-root "$duplicate_export_root" --canonical-root "$duplicate_canonical_root" --expected-count 34
+run_screenshot_assets_and_capture promote --export-root "$duplicate_export_root" --canonical-root "$duplicate_canonical_root" --expected-count 36
 duplicate_exit_code=$?
 set -e
 assert_equals "$duplicate_exit_code" "1"
@@ -627,7 +628,7 @@ missing_file_export_root="$screenshot_assets_dir/missing-file-export"
 missing_file_canonical_root="$screenshot_assets_dir/missing-file-canonical"
 create_fake_screenshot_export "$missing_file_export_root" missing-file
 set +e
-run_screenshot_assets_and_capture promote --export-root "$missing_file_export_root" --canonical-root "$missing_file_canonical_root" --expected-count 34
+run_screenshot_assets_and_capture promote --export-root "$missing_file_export_root" --canonical-root "$missing_file_canonical_root" --expected-count 36
 missing_file_exit_code=$?
 set -e
 assert_equals "$missing_file_exit_code" "1"
@@ -637,7 +638,7 @@ malformed_export_root="$screenshot_assets_dir/malformed-export"
 malformed_canonical_root="$screenshot_assets_dir/malformed-canonical"
 create_fake_screenshot_export "$malformed_export_root" malformed-name
 set +e
-run_screenshot_assets_and_capture promote --export-root "$malformed_export_root" --canonical-root "$malformed_canonical_root" --expected-count 34
+run_screenshot_assets_and_capture promote --export-root "$malformed_export_root" --canonical-root "$malformed_canonical_root" --expected-count 36
 malformed_exit_code=$?
 set -e
 assert_equals "$malformed_exit_code" "1"
@@ -647,7 +648,7 @@ missing_appearance_export_root="$screenshot_assets_dir/missing-appearance-export
 missing_appearance_canonical_root="$screenshot_assets_dir/missing-appearance-canonical"
 create_fake_screenshot_export "$missing_appearance_export_root" missing-appearance
 set +e
-run_screenshot_assets_and_capture promote --export-root "$missing_appearance_export_root" --canonical-root "$missing_appearance_canonical_root" --expected-count 34
+run_screenshot_assets_and_capture promote --export-root "$missing_appearance_export_root" --canonical-root "$missing_appearance_canonical_root" --expected-count 36
 missing_appearance_exit_code=$?
 set -e
 assert_equals "$missing_appearance_exit_code" "1"
@@ -657,7 +658,7 @@ identical_appearance_export_root="$screenshot_assets_dir/identical-appearance-ex
 identical_appearance_canonical_root="$screenshot_assets_dir/identical-appearance-canonical"
 create_fake_screenshot_export "$identical_appearance_export_root" identical-appearance-content
 set +e
-run_screenshot_assets_and_capture promote --export-root "$identical_appearance_export_root" --canonical-root "$identical_appearance_canonical_root" --expected-count 34
+run_screenshot_assets_and_capture promote --export-root "$identical_appearance_export_root" --canonical-root "$identical_appearance_canonical_root" --expected-count 36
 identical_appearance_exit_code=$?
 set -e
 assert_equals "$identical_appearance_exit_code" "1"
@@ -847,6 +848,7 @@ slugs = [
     "delete-group-confirmation",
     "rearrange-groups",
     "rearrange-routines",
+    "settings-week-start",
 ]
 
 counter = 0
@@ -915,11 +917,11 @@ run_capture_screenshots_and_capture() {
 run_capture_screenshots_and_capture
 assert_equals "$?" "0"
 capture_output="$REPLY"
-assert_contains "$capture_output" "Captured 34 screenshots on iPhone 17."
+assert_contains "$capture_output" "Captured 36 screenshots on iPhone 17."
 assert_contains "$capture_output" "Canonical output: $capture_screenshots_dir/canonical"
 assert_equals "$(<"$capture_generate_log")" "generate"
 promote_invocation="$(<"$capture_promote_log")"
 assert_contains "$promote_invocation" "promote --export-root $capture_screenshots_dir/raw/"
-assert_contains "$promote_invocation" "--canonical-root $capture_screenshots_dir/canonical --expected-count 34"
+assert_contains "$promote_invocation" "--canonical-root $capture_screenshots_dir/canonical --expected-count 36"
 
 echo "Scripts/build-ios.sh, Scripts/test-ios.sh, Scripts/validate.sh, Scripts/run-ios.sh, Scripts/capture-screenshots.sh, and Scripts/screenshot-assets.py script tests passed."

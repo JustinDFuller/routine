@@ -1,4 +1,5 @@
 import OSLog
+import RoutineCore
 import SwiftData
 import SwiftUI
 
@@ -74,12 +75,15 @@ private struct ForcedBootstrapFailure: Error {}
 struct AppBootstrapRootView: View {
     let state: AppBootstrapState
 
+    @AppStorage(RoutineSettingsKeys.weekStartWeekday) private var weekStartRaw = Weekday.sunday.rawValue
+
     var body: some View {
         switch state {
         case .ready(let modelContainer, let runtime):
             RootView(debugLaunchConfiguration: .current)
                 .modelContainer(modelContainer)
                 .environment(\.routineRuntimeConfiguration, runtime)
+                .environment(\.routineCalendar, RoutineCalendar.current(weekStart: weekStartWeekday))
                 .preferredColorScheme(runtime.forcedColorScheme?.swiftUIColorScheme)
                 .transaction { transaction in
                     guard runtime.disablesAnimations else {
@@ -92,6 +96,10 @@ struct AppBootstrapRootView: View {
         case .failed:
             AppBootstrapFailureView()
         }
+    }
+
+    private var weekStartWeekday: Weekday {
+        Weekday(rawValue: weekStartRaw) ?? .sunday
     }
 }
 

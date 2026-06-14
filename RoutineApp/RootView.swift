@@ -1,10 +1,12 @@
 import OSLog
+import RoutineCore
 import SwiftData
 import SwiftUI
 
 struct RootView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.routineRuntimeConfiguration) private var runtime
+    @Environment(\.routineCalendar) private var routineCalendar
 
     @State private var path: [AppRoute] = []
     @State private var hasAppliedDebugLaunchRoute = false
@@ -84,7 +86,7 @@ struct RootView: View {
             )
         }
 
-        _ = try RoutineTrackingService(context: modelContext).completeToday(
+        _ = try RoutineTrackingService(context: modelContext, routineCalendar: routineCalendar).completeToday(
             routineID: routine.id,
             now: runtime.now
         )

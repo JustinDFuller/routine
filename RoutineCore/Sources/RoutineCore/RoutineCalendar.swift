@@ -4,10 +4,14 @@ public struct RoutineCalendar: Sendable {
     public let calendar: Calendar
 
     public static var current: RoutineCalendar {
+        current(weekStart: .sunday)
+    }
+
+    public static func current(weekStart: Weekday) -> RoutineCalendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.locale = .current
         calendar.timeZone = .current
-        calendar.firstWeekday = 2
+        calendar.firstWeekday = weekStart.rawValue
         return RoutineCalendar(calendar: calendar)
     }
 
@@ -57,10 +61,10 @@ public struct RoutineCalendar: Sendable {
     public func currentWeekRange(containing day: RoutineDay) -> ClosedRange<RoutineDay> {
         let date = date(for: day)
         let weekday = calendar.component(.weekday, from: date)
-        let daysFromMonday = (weekday + 5) % 7
+        let offset = (weekday - calendar.firstWeekday + 7) % 7
 
         guard
-            let startDate = calendar.date(byAdding: .day, value: -daysFromMonday, to: date),
+            let startDate = calendar.date(byAdding: .day, value: -offset, to: date),
             let endDate = calendar.date(byAdding: .day, value: 6, to: startDate)
         else {
             preconditionFailure("Unable to compute current week range for \(day.key)")
