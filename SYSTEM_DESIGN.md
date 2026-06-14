@@ -240,18 +240,18 @@ Rules:
 
 - Use a Gregorian calendar.
 - Use the user's current locale and timezone for deriving today.
-- Force weeks to start on Monday.
+- Default week start to Sunday; honor `calendar.firstWeekday` so the user can configure any start day.
 - Represent local dates as `RoutineDay` values, not raw `Date` values.
 - Persist completion day identity as a stable `YYYY-MM-DD` day key.
 - Use day keys, not timestamps, for daily uniqueness and progress membership.
 - Use completion timestamps only for audit context and stable secondary sorting.
 - Do not rewrite historical day keys if the user later changes timezone.
-- Calculate the Monday-start week containing a day directly rather than depending on locale-specific week-of-year behavior.
+- Calculate the week containing a day using `calendar.firstWeekday` directly rather than depending on locale-specific week-of-year behavior.
 - Monthly progress is the first through last local day of the month.
 
 Testing date behavior is mandatory. Include fixed-date tests for:
 
-- Monday, Sunday, and week-boundary calculations.
+- Configured week-start day and week-boundary calculations for both Sunday-start and Monday-start configurations.
 - Month starts and ends.
 - Leap years.
 - Daylight saving time transitions where Foundation behavior can affect local dates.
@@ -507,7 +507,7 @@ Required coverage:
 - `RoutineDay` construction, key formatting, ordering, equality, and invalid-input handling if parsing exists.
 - `RoutineTimeOfDay` minute validation and invalid-input handling.
 - `RoutineAvailabilityWindow` validation, same-day containment, cross-midnight containment, and inclusive/exclusive boundaries.
-- Monday-start current-week ranges for each weekday.
+- Current-week ranges for each weekday for both Sunday-start (default) and Monday-start configurations.
 - Week boundaries across month and year changes.
 - Current-month ranges, including February and leap years.
 - Progress counting for weekly and monthly periods.
@@ -924,7 +924,7 @@ The system design is satisfied when an implementation can demonstrate:
 - Historical completions can be removed after confirmation.
 - The Today Dashboard owns routine management through home-based menus, sheets, and rearrange modes.
 - Groups support add, rename, reorder, and empty-group deletion from dashboard-owned flows.
-- Current week progress uses Monday-start weeks.
+- Current week progress uses user-configured calendar weeks (Sunday-start by default).
 - Current month progress uses calendar months.
 - Data survives app relaunch.
 - Formatting and lint commands are documented and runnable locally.

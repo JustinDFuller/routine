@@ -26,7 +26,7 @@ final class DashboardProjectionBuilderTests: ProjectionBuilderTestCase {
         XCTAssertEqual(viewData.sections[4].routines.map(\.name), ["Loose Task"])
     }
 
-    func testBuildUsesMondayStartWeekProgressSectionRemainingCountAndLabels() throws {
+    func testBuildUsesSundayStartWeekProgressSectionRemainingCountAndLabels() throws {
         let context = try makeContext()
         let calendar = makeCalendar()
         let now = makeDate(year: 2026, month: 6, day: 10, hour: 9, minute: 0, calendar: calendar.calendar)
@@ -130,10 +130,10 @@ final class DashboardProjectionBuilderTests: ProjectionBuilderTestCase {
             cardsByName["Yesterday"]?.accessibilityLabel,
             "Yesterday, not completed today, 1 of 1 this week, last done yesterday"
         )
-        XCTAssertEqual(cardsByName["Recent"]?.lastDoneText, "3d ago")
+        XCTAssertEqual(cardsByName["Recent"]?.lastDoneText, "4d ago")
         XCTAssertEqual(
             cardsByName["Recent"]?.accessibilityLabel,
-            "Recent, not completed today, 0 of 1 this week, last done 3 days ago"
+            "Recent, not completed today, 0 of 1 this week, last done 4 days ago"
         )
         XCTAssertEqual(cardsByName["CurrentYear"]?.lastDoneText, "Jan 2")
         XCTAssertEqual(cardsByName["PriorYear"]?.lastDoneText, "Jun 2, 2025")
@@ -265,6 +265,7 @@ extension DashboardProjectionBuilderTests {
             into: context
         )
 
+        // Jun 10 (today, Wed) and Jun 8 (Mon) are in the Sunday-start week (Jun 7–13)
         insertCompletion(
             routine: walk,
             day: try makeDay(year: 2026, month: 6, day: 8),
@@ -277,12 +278,14 @@ extension DashboardProjectionBuilderTests {
             completedAt: now,
             into: context
         )
+        // Jun 6 (Sat) is in the prior week (May 31–Jun 6) — should not count
         insertCompletion(
             routine: walk,
-            day: try makeDay(year: 2026, month: 6, day: 7),
-            completedAt: makeDate(year: 2026, month: 6, day: 7, hour: 8, calendar: calendar.calendar),
+            day: try makeDay(year: 2026, month: 6, day: 6),
+            completedAt: makeDate(year: 2026, month: 6, day: 6, hour: 8, calendar: calendar.calendar),
             into: context
         )
+        // Jun 9 (Tue, yesterday) is in the current week — should count for Read
         insertCompletion(
             routine: read,
             day: try makeDay(year: 2026, month: 6, day: 9),
@@ -412,10 +415,11 @@ extension DashboardProjectionBuilderTests {
             completedAt: makeDate(year: 2026, month: 6, day: 9, calendar: calendar.calendar),
             into: context
         )
+        // Jun 6 (Sat) is outside the Sunday-start week (Jun 7–13) — shows as "4d ago"
         insertCompletion(
             routine: routines.recent,
-            day: try makeDay(year: 2026, month: 6, day: 7),
-            completedAt: makeDate(year: 2026, month: 6, day: 7, calendar: calendar.calendar),
+            day: try makeDay(year: 2026, month: 6, day: 6),
+            completedAt: makeDate(year: 2026, month: 6, day: 6, calendar: calendar.calendar),
             into: context
         )
         insertCompletion(

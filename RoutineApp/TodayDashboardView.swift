@@ -1,3 +1,4 @@
+import RoutineCore
 import SwiftData
 import SwiftUI
 
@@ -27,14 +28,21 @@ struct TodayDashboardView: View {
     )
     var completions: [RoutineCompletion]
 
+    @AppStorage(AppUserSettings.weekStartDayKey) var weekStartDayRaw: Int = WeekStartDay.sunday.rawValue
+
     @State var mode: DashboardMode = .tracking
     @State var sheetPresentation: ManageSheetPresentation?
     @State var undoBanner: UndoBannerPresentation?
     @State var undoDismissTask: Task<Void, Never>?
     @State var alertPresentation: DashboardAlertPresentation?
+    @State var isShowingSettings = false
+
+    var routineCalendar: RoutineCalendar {
+        AppUserSettings.routineCalendar()
+    }
 
     var viewData: TodayDashboardViewData {
-        DashboardProjectionBuilder(context: modelContext).build(
+        DashboardProjectionBuilder(context: modelContext, routineCalendar: routineCalendar).build(
             groups: groups,
             routines: routines,
             completions: completions,
@@ -90,8 +98,18 @@ struct TodayDashboardView: View {
             }
         }
         .navigationTitle(navigationTitle)
-        .toolbar(mode.isRearranging ? .visible : .hidden, for: .navigationBar)
+        .toolbar(.visible, for: .navigationBar)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                if mode.isRearranging == false {
+                    Button {
+                        isShowingSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                    .accessibilityIdentifier("today-dashboard-settings-button")
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 if mode.isRearranging {
                     Button("Done") {
@@ -99,6 +117,11 @@ struct TodayDashboardView: View {
                     }
                     .accessibilityIdentifier("today-dashboard-rearrange-done-button")
                 }
+            }
+        }
+        .sheet(isPresented: $isShowingSettings) {
+            NavigationStack {
+                AppSettingsView()
             }
         }
         .sheet(item: $sheetPresentation) { presentation in

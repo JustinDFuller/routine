@@ -4,14 +4,15 @@ import XCTest
 @testable import RoutineCore
 
 final class ProgressCalculatorTests: XCTestCase {
-    func testWeeklyProgressCountsOnlyCurrentMondayStartWeek() throws {
+    func testWeeklyProgressCountsOnlyCurrentSundayStartWeek() throws {
         let calculator = ProgressCalculator(routineCalendar: testRoutineCalendar())
+        // today = 2025-06-04 (Wednesday); Sunday-start week = Sun Jun 1 … Sat Jun 7
         let today = try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 4))
         var completionDays: [RoutineDay] = []
-        completionDays.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 2)))
-        completionDays.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 4)))
-        completionDays.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 8)))
-        completionDays.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 9)))
+        completionDays.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 1)))  // Sun — in week
+        completionDays.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 4)))  // Wed — in week
+        completionDays.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 8)))  // Sun next week — out
+        completionDays.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 9)))  // Mon next week — out
 
         let completions = calculator.completionsInCurrentPeriod(
             period: .weekly,
@@ -20,9 +21,8 @@ final class ProgressCalculatorTests: XCTestCase {
         )
 
         var expectedCompletions: [RoutineDay] = []
-        expectedCompletions.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 2)))
+        expectedCompletions.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 1)))
         expectedCompletions.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 4)))
-        expectedCompletions.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 8)))
 
         XCTAssertEqual(completions, expectedCompletions)
     }
@@ -141,7 +141,7 @@ final class ProgressCalculatorTests: XCTestCase {
         var calendar = Calendar(identifier: .gregorian)
         calendar.locale = Locale(identifier: "en_US_POSIX")
         calendar.timeZone = TimeZone(identifier: "America/New_York") ?? .gmt
-        calendar.firstWeekday = 2
+        calendar.firstWeekday = 1
         return RoutineCalendar(calendar: calendar)
     }
 }

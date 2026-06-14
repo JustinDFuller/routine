@@ -37,8 +37,10 @@ struct RoutineHistoryView: View {
         )
     }
 
+    @AppStorage(AppUserSettings.weekStartDayKey) private var weekStartDayRaw: Int = WeekStartDay.sunday.rawValue
+
     private var projection: RoutineHistoryProjection {
-        HistoryProjectionBuilder(context: modelContext).build(
+        HistoryProjectionBuilder(context: modelContext, routineCalendar: AppUserSettings.routineCalendar()).build(
             routineID: routineID,
             routines: routines,
             completions: completions,
@@ -294,7 +296,9 @@ struct RoutineHistoryView: View {
 private struct HistoryMonthGridView: View {
     let monthDays: [HistoryCalendarDay]
 
-    private let routineCalendar = RoutineCalendar.current
+    @AppStorage(AppUserSettings.weekStartDayKey) private var weekStartDayRaw: Int = WeekStartDay.sunday.rawValue
+
+    private var routineCalendar: RoutineCalendar { AppUserSettings.routineCalendar() }
 
     private var monthTitle: String {
         guard let firstDay = monthDays.first else {

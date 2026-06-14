@@ -264,4 +264,4 @@ These are intentionally deferred, not part of the MVP:
 - The app is iPhone-first.
 - Dark mode is the primary presentation target.
 - The local calendar day determines whether something counts as done today.
-- The calendar week starts on Monday.
+- The calendar week starts on Sunday by default and is user-configurable via Settings.

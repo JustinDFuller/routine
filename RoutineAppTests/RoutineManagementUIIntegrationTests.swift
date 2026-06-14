@@ -302,7 +302,7 @@ extension RoutineManagementUIIntegrationTests {
         }
 
         calendar.timeZone = timeZone
-        calendar.firstWeekday = 2
+        calendar.firstWeekday = 1
         return RoutineCalendar(calendar: calendar)
     }
 

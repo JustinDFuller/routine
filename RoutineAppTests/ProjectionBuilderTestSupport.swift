@@ -37,7 +37,7 @@ class ProjectionBuilderTestCase: XCTestCase {
         }
 
         calendar.timeZone = timeZone
-        calendar.firstWeekday = 2
+        calendar.firstWeekday = 1
         return RoutineCalendar(calendar: calendar)
     }
 

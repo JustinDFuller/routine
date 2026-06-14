@@ -34,7 +34,7 @@ The technical design should preserve the product principles:
 The system should optimize for:
 
 - Correct daily uniqueness: a routine can be completed at most once per local calendar day.
-- Correct period progress: weekly routines count Monday-start calendar weeks; monthly routines count calendar months.
+- Correct period progress: weekly routines count user-configured calendar weeks (Sunday-start by default); monthly routines count calendar months.
 - Safe persistence: user data survives app restarts and common app lifecycle interruptions.
 - Simple local architecture: no sync, accounts, analytics, reminders, widgets, or background scheduling.
 - Extensibility: future features can add richer scheduling, widgets, or sync without rewriting the core domain model.
@@ -412,7 +412,7 @@ struct RoutineCalendar: Sendable {
         var calendar = Calendar(identifier: .gregorian)
         calendar.locale = .current
         calendar.timeZone = .current
-        calendar.firstWeekday = 2
+        calendar.firstWeekday = 1
         return RoutineCalendar(calendar: calendar)
     }
 
@@ -432,9 +432,9 @@ Rules:
 
 - `today` uses the user's current local calendar and timezone.
 - `minuteOfDay(containing:)` uses the same configured Gregorian calendar, locale, and timezone as `today`.
-- Calendar weeks start on Monday.
-- Weekly progress includes Monday 00:00 through the start of the following Monday.
-- Weekly range calculation should find the Monday containing the current day directly, not depend on locale-specific week-of-year numbering.
+- Calendar weeks start on Sunday by default and are user-configurable via Settings.
+- Weekly progress includes the configured week-start day 00:00 through the end of that 7-day window.
+- Weekly range calculation uses `calendar.firstWeekday` to find the week-start day directly, not locale-specific week-of-year numbering.
 - Monthly progress includes the first local day of the month through the last local day of the month.
 - Comparisons use `RoutineDay` and `dayKey`, not raw `Date` timestamps.
 - Changing timezone later does not rewrite historical completion day keys.
@@ -1316,7 +1316,7 @@ The data design is satisfied when an implementation can meet these scenarios:
 - One tap completes an incomplete routine for today.
 - Repeated taps never create duplicate completions for the same routine/day.
 - Undo removes today's completion and restores incomplete-today state.
-- Current week progress counts Monday-start calendar weeks.
+- Current week progress counts user-configured calendar weeks (Sunday-start by default).
 - Current month progress counts calendar months.
 - Last-done labels derive from completion history.
 - History shows routine summary, current-month completion marks, and recent completions.
