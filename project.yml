@@ -39,7 +39,8 @@ targets:
           - UIInterfaceOrientationPortrait
     settings:
       base:
-        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIconV2
+        ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOL_EXTENSIONS: NO
         PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routine
         PRODUCT_NAME: Routine
         TARGETED_DEVICE_FAMILY: 1
