@@ -4,271 +4,287 @@
     "slug": "dashboard-overview",
     "appearance": "dark",
     "file": "01-dashboard-overview-dark.png",
-    "sourceFile": "F701A3C7-2A65-4C11-B253-5B64C447ABAF.png",
-    "sourceSuggestedName": "01-dashboard-overview-dark_0_E3B5A8D1-3748-4DC8-B5E0-40F005527A0C.png"
+    "sourceFile": "59F86997-BCE0-4D48-8F52-87A4D754484F.png",
+    "sourceSuggestedName": "01-dashboard-overview-dark_0_1D9F6CF7-7F0A-4DCF-9860-1A184D995C16.png"
   },
   {
     "index": 1,
     "slug": "dashboard-overview",
     "appearance": "light",
     "file": "01-dashboard-overview-light.png",
-    "sourceFile": "0FA82798-9F4E-4471-8278-1586E92EE66B.png",
-    "sourceSuggestedName": "01-dashboard-overview-light_0_F83257D6-DA92-428A-91F1-A13EE4BA7F59.png"
+    "sourceFile": "78C815B1-3C4C-4F3A-AAAC-04B92651728D.png",
+    "sourceSuggestedName": "01-dashboard-overview-light_0_F36C1EF6-A08E-4D62-BC27-59F159B45D76.png"
   },
   {
     "index": 2,
     "slug": "dashboard-lower-progress",
     "appearance": "dark",
     "file": "02-dashboard-lower-progress-dark.png",
-    "sourceFile": "32702FB9-01DD-4F3E-A414-02417AAC8435.png",
-    "sourceSuggestedName": "02-dashboard-lower-progress-dark_0_C38D9DB7-AB9A-4D15-BE5A-34944269AE82.png"
+    "sourceFile": "42F97EB4-98B0-4784-9A11-5EA878C5C1B2.png",
+    "sourceSuggestedName": "02-dashboard-lower-progress-dark_0_18950AF1-6889-44DF-9484-4DCDA8C80B3A.png"
   },
   {
     "index": 2,
     "slug": "dashboard-lower-progress",
     "appearance": "light",
     "file": "02-dashboard-lower-progress-light.png",
-    "sourceFile": "7448A1E5-5FAD-4555-8F29-BF4A62F3EEDF.png",
-    "sourceSuggestedName": "02-dashboard-lower-progress-light_0_55CFDC8B-74DB-4DFD-BADB-559002FA298A.png"
+    "sourceFile": "34E6EDF4-171F-4C28-9572-64597679255A.png",
+    "sourceSuggestedName": "02-dashboard-lower-progress-light_0_6F18D653-953F-470D-8EF8-8BFD06E2A04E.png"
   },
   {
     "index": 3,
     "slug": "completion-undo-banner",
     "appearance": "dark",
     "file": "03-completion-undo-banner-dark.png",
-    "sourceFile": "40486C62-4068-4536-BFC5-CF8815C126D9.png",
-    "sourceSuggestedName": "03-completion-undo-banner-dark_0_629D7964-8F57-48D0-94D8-5240C14B03A2.png"
+    "sourceFile": "26007D87-F28C-474B-94BA-F961FDC99CB4.png",
+    "sourceSuggestedName": "03-completion-undo-banner-dark_0_4F4D33FE-8A1A-47A3-BB03-C4CD445110F6.png"
   },
   {
     "index": 3,
     "slug": "completion-undo-banner",
     "appearance": "light",
     "file": "03-completion-undo-banner-light.png",
-    "sourceFile": "8A8D3695-0AB9-44E8-B2EB-526E693A6ABB.png",
-    "sourceSuggestedName": "03-completion-undo-banner-light_0_11C4798A-C178-4861-9B4D-75A459939DA8.png"
+    "sourceFile": "8B4DD9A9-F164-4810-ACA5-D4452555F27D.png",
+    "sourceSuggestedName": "03-completion-undo-banner-light_0_D1F3F2CA-A5E7-401F-8A54-3EF275E10B6F.png"
   },
   {
     "index": 4,
     "slug": "history-rich",
     "appearance": "dark",
     "file": "04-history-rich-dark.png",
-    "sourceFile": "3595A075-3527-49D5-86BB-E78E9F5FEA83.png",
-    "sourceSuggestedName": "04-history-rich-dark_0_1E75A8C7-ACE0-4AAD-80FA-A21D54C562B8.png"
+    "sourceFile": "6E9963A1-D5CA-4830-A32B-5DA75E1BB13B.png",
+    "sourceSuggestedName": "04-history-rich-dark_0_C3A1657E-2ECB-4A12-BC2B-67BCE3CABF43.png"
   },
   {
     "index": 4,
     "slug": "history-rich",
     "appearance": "light",
     "file": "04-history-rich-light.png",
-    "sourceFile": "B0BD97F8-9D77-4397-8257-CE0E0DA27D1F.png",
-    "sourceSuggestedName": "04-history-rich-light_0_CAEC23E4-0342-4D25-9161-F39A6A3F8ABD.png"
+    "sourceFile": "5627F094-1403-43C4-A831-D64593B35346.png",
+    "sourceSuggestedName": "04-history-rich-light_0_0DA802D8-6B07-46B2-BCB1-F64F8E2C733F.png"
   },
   {
     "index": 5,
     "slug": "history-remove-confirmation",
     "appearance": "dark",
     "file": "05-history-remove-confirmation-dark.png",
-    "sourceFile": "D04F14A3-9F0D-4354-AA0B-F612F6E2539E.png",
-    "sourceSuggestedName": "05-history-remove-confirmation-dark_0_9916136E-49A3-46D9-B7A2-14D856E96A88.png"
+    "sourceFile": "7B708D3A-83DB-4A55-94BF-E7769D87E059.png",
+    "sourceSuggestedName": "05-history-remove-confirmation-dark_0_5A7A2F72-9400-4E9C-801D-BE8CD879A174.png"
   },
   {
     "index": 5,
     "slug": "history-remove-confirmation",
     "appearance": "light",
     "file": "05-history-remove-confirmation-light.png",
-    "sourceFile": "D6255FE5-CEA7-402E-8C3A-1F53EDC9F093.png",
-    "sourceSuggestedName": "05-history-remove-confirmation-light_0_8E9246E5-FF15-4426-80AE-0F13CFE5DC68.png"
+    "sourceFile": "C46A3BFF-1AA5-43C0-82BA-D8F5CA62D6FE.png",
+    "sourceSuggestedName": "05-history-remove-confirmation-light_0_B5B52E5F-6982-4992-938C-C2AA578E9A87.png"
   },
   {
     "index": 6,
     "slug": "history-after-removal",
     "appearance": "dark",
     "file": "06-history-after-removal-dark.png",
-    "sourceFile": "7CDC711F-060B-4411-B045-D030D6329B51.png",
-    "sourceSuggestedName": "06-history-after-removal-dark_0_95E3645A-394C-42EA-9B51-F74BBA3EE666.png"
+    "sourceFile": "403C17B6-FBCF-492B-BE32-D32C05429CE9.png",
+    "sourceSuggestedName": "06-history-after-removal-dark_0_CF1BE054-01F5-455E-AB7F-7342BD06A38A.png"
   },
   {
     "index": 6,
     "slug": "history-after-removal",
     "appearance": "light",
     "file": "06-history-after-removal-light.png",
-    "sourceFile": "C61EB08B-AB03-4982-A989-7B4DF1476098.png",
-    "sourceSuggestedName": "06-history-after-removal-light_0_97E46FC8-5231-4276-AD46-048852DDA1B5.png"
+    "sourceFile": "7A19B812-2B5D-4FB9-AE11-5141C3DB99B7.png",
+    "sourceSuggestedName": "06-history-after-removal-light_0_13A9F030-DC84-42B6-A876-6F26C3A82CB1.png"
   },
   {
     "index": 7,
     "slug": "management-menu",
     "appearance": "dark",
     "file": "07-management-menu-dark.png",
-    "sourceFile": "AD0627DF-292C-4103-9AB8-E529CCAC05AA.png",
-    "sourceSuggestedName": "07-management-menu-dark_0_08A5827D-C9E3-4C36-8994-0CC3B5C79672.png"
+    "sourceFile": "F9C4363E-4605-429A-A082-784AD078F789.png",
+    "sourceSuggestedName": "07-management-menu-dark_0_E16F9F05-733D-49FE-90C8-19C5997F9030.png"
   },
   {
     "index": 7,
     "slug": "management-menu",
     "appearance": "light",
     "file": "07-management-menu-light.png",
-    "sourceFile": "E499BB8E-0AF5-417F-8B03-A323363862A4.png",
-    "sourceSuggestedName": "07-management-menu-light_0_FA0E4E02-9337-478E-BBC9-F44BDBE5346B.png"
+    "sourceFile": "E0B47DF3-E201-4218-A87A-A63D7B4E3D9D.png",
+    "sourceSuggestedName": "07-management-menu-light_0_F0FA25C2-75BB-4F01-948F-72EC38387E74.png"
   },
   {
     "index": 8,
     "slug": "add-routine-form-default",
     "appearance": "dark",
     "file": "08-add-routine-form-default-dark.png",
-    "sourceFile": "A7DC6645-551A-4D2A-BB58-03F8D7E1A54A.png",
-    "sourceSuggestedName": "08-add-routine-form-default-dark_0_4E5952F1-8C15-4A07-A456-90ED1CA0A3E4.png"
+    "sourceFile": "7A7E45E6-7346-4DFA-9D67-C7E3BFBB9779.png",
+    "sourceSuggestedName": "08-add-routine-form-default-dark_0_4FE4AA98-2D9C-4894-B23E-80880C4FAF73.png"
   },
   {
     "index": 8,
     "slug": "add-routine-form-default",
     "appearance": "light",
     "file": "08-add-routine-form-default-light.png",
-    "sourceFile": "87B0B668-860B-446A-901F-C2BA3C84D1A7.png",
-    "sourceSuggestedName": "08-add-routine-form-default-light_0_9E762004-477C-4029-AF5E-639FBA4057C2.png"
+    "sourceFile": "02F293A9-56F0-476A-9F50-97A238C0ED28.png",
+    "sourceSuggestedName": "08-add-routine-form-default-light_0_B7DF493F-6503-447F-B827-16FB9374A069.png"
   },
   {
     "index": 9,
     "slug": "add-routine-form-configured",
     "appearance": "dark",
     "file": "09-add-routine-form-configured-dark.png",
-    "sourceFile": "0270E2F5-421A-4E47-9993-3A1230211CF3.png",
-    "sourceSuggestedName": "09-add-routine-form-configured-dark_0_69C4FD74-4782-4EA2-AABD-FA3875589A50.png"
+    "sourceFile": "2521C7B5-B73E-47EA-9F05-5217844242F7.png",
+    "sourceSuggestedName": "09-add-routine-form-configured-dark_0_47FE9C0A-E94A-48BA-AF41-BB1B40F4051B.png"
   },
   {
     "index": 9,
     "slug": "add-routine-form-configured",
     "appearance": "light",
     "file": "09-add-routine-form-configured-light.png",
-    "sourceFile": "2E99C0B0-65F4-4F5B-A8FA-2885FC18F58C.png",
-    "sourceSuggestedName": "09-add-routine-form-configured-light_0_2030444B-E24E-4D08-9850-F37532FB42DC.png"
+    "sourceFile": "110A1F68-0D98-41DA-88CE-BDFD581E19CE.png",
+    "sourceSuggestedName": "09-add-routine-form-configured-light_0_D89C33A4-E482-421F-B5D0-E5C8A443B469.png"
   },
   {
     "index": 10,
     "slug": "dashboard-after-add-routine",
     "appearance": "dark",
     "file": "10-dashboard-after-add-routine-dark.png",
-    "sourceFile": "A219C435-053E-4AAB-945A-50956C13FC51.png",
-    "sourceSuggestedName": "10-dashboard-after-add-routine-dark_0_D2221AC2-FE8D-4C12-A1AB-8B61452781CC.png"
+    "sourceFile": "21C98208-D5C9-440A-B2B1-95A61D0A3910.png",
+    "sourceSuggestedName": "10-dashboard-after-add-routine-dark_0_D5660868-EE2C-427B-B712-457582763283.png"
   },
   {
     "index": 10,
     "slug": "dashboard-after-add-routine",
     "appearance": "light",
     "file": "10-dashboard-after-add-routine-light.png",
-    "sourceFile": "A2E717FD-A1CD-46F1-B750-EEEA197ECDAF.png",
-    "sourceSuggestedName": "10-dashboard-after-add-routine-light_0_C2318334-27D2-40BC-8B54-FAA836A73749.png"
+    "sourceFile": "AB354613-1838-4B2F-8632-6C468BCCDDB2.png",
+    "sourceSuggestedName": "10-dashboard-after-add-routine-light_0_AEB9993A-2EBC-461A-AFCF-D5E05A46C2DD.png"
   },
   {
     "index": 11,
     "slug": "dashboard-edit-mode",
     "appearance": "dark",
     "file": "11-dashboard-edit-mode-dark.png",
-    "sourceFile": "83BDD57D-02A4-4CB2-9407-29F3D1CE7AE3.png",
-    "sourceSuggestedName": "11-dashboard-edit-mode-dark_0_C5BEB44A-48F0-44DB-AC67-15346514B7B3.png"
+    "sourceFile": "49CD74D2-3BA5-4446-9B19-6AF1C42D9DB0.png",
+    "sourceSuggestedName": "11-dashboard-edit-mode-dark_0_77CE33A5-EA89-4C89-8C23-36851D1BBE83.png"
   },
   {
     "index": 11,
     "slug": "dashboard-edit-mode",
     "appearance": "light",
     "file": "11-dashboard-edit-mode-light.png",
-    "sourceFile": "108199B1-AEE5-47F0-8DE4-97C883293A38.png",
-    "sourceSuggestedName": "11-dashboard-edit-mode-light_0_A997D2B0-B052-4F3F-9D93-E25FDD7F8787.png"
+    "sourceFile": "975693A6-BE5E-4389-9B02-AD5688E7ECB2.png",
+    "sourceSuggestedName": "11-dashboard-edit-mode-light_0_2E1519DA-D2EE-481B-9A33-A96B7919A39B.png"
   },
   {
     "index": 12,
     "slug": "add-group-form",
     "appearance": "dark",
     "file": "12-add-group-form-dark.png",
-    "sourceFile": "5F389C52-262F-4691-8A72-88A92AF90116.png",
-    "sourceSuggestedName": "12-add-group-form-dark_0_5D3E4B62-FCFE-40BF-AB64-FE3E97C3A7CD.png"
+    "sourceFile": "1D16C67C-74A2-400F-951A-8D6429F3604E.png",
+    "sourceSuggestedName": "12-add-group-form-dark_0_FE0AF7F3-DDDF-4B03-BB08-107A2DCACC50.png"
   },
   {
     "index": 12,
     "slug": "add-group-form",
     "appearance": "light",
     "file": "12-add-group-form-light.png",
-    "sourceFile": "A1F28D68-4F1E-4557-9F5C-8FC1A64DC26D.png",
-    "sourceSuggestedName": "12-add-group-form-light_0_0718CA0E-BEE3-4021-85D2-F7B5812D522C.png"
+    "sourceFile": "D6B5CF26-A0E9-4ED4-880A-68F23D61FFB4.png",
+    "sourceSuggestedName": "12-add-group-form-light_0_6002CB53-C7C1-4BEA-B814-C18C241319E7.png"
   },
   {
     "index": 13,
     "slug": "dashboard-after-add-group",
     "appearance": "dark",
     "file": "13-dashboard-after-add-group-dark.png",
-    "sourceFile": "3C5ECC3F-71F9-4057-93D8-C6E15D0FA8D6.png",
-    "sourceSuggestedName": "13-dashboard-after-add-group-dark_0_F85E8E5F-8FA5-49B1-841D-704AD58BD57F.png"
+    "sourceFile": "428ADF56-98CF-4999-9312-4CCD443E7A94.png",
+    "sourceSuggestedName": "13-dashboard-after-add-group-dark_0_25AF7505-61D4-4939-B071-B98E99B84724.png"
   },
   {
     "index": 13,
     "slug": "dashboard-after-add-group",
     "appearance": "light",
     "file": "13-dashboard-after-add-group-light.png",
-    "sourceFile": "6105150F-E5A4-418E-80AF-0EFFEFA74A07.png",
-    "sourceSuggestedName": "13-dashboard-after-add-group-light_0_F6F28CF1-8B34-4A7F-AD3A-D19ABA6C278D.png"
+    "sourceFile": "F3C66846-CF4B-4E4F-B9E3-4593581F6963.png",
+    "sourceSuggestedName": "13-dashboard-after-add-group-light_0_2B4BEA84-3E2A-4E30-B2A1-EE49931C1090.png"
   },
   {
     "index": 14,
     "slug": "edit-group-form",
     "appearance": "dark",
     "file": "14-edit-group-form-dark.png",
-    "sourceFile": "0208054F-4662-4712-BF68-D071D49C7AD9.png",
-    "sourceSuggestedName": "14-edit-group-form-dark_0_AE91D8D6-6367-40C3-B4B0-52D172470833.png"
+    "sourceFile": "43FA47CC-B4F2-431E-B577-D2D04C041614.png",
+    "sourceSuggestedName": "14-edit-group-form-dark_0_7E48920C-4AAB-4FA6-BB12-C88CE983A0B6.png"
   },
   {
     "index": 14,
     "slug": "edit-group-form",
     "appearance": "light",
     "file": "14-edit-group-form-light.png",
-    "sourceFile": "85842410-B63C-44C4-9119-14F798C8EB86.png",
-    "sourceSuggestedName": "14-edit-group-form-light_0_A744F063-B83E-4F88-A32A-D989B304CBC0.png"
+    "sourceFile": "B014647D-D71F-472E-B2C2-DBC784905DEF.png",
+    "sourceSuggestedName": "14-edit-group-form-light_0_30F57091-92B8-428F-8E12-88C6D64752EB.png"
   },
   {
     "index": 15,
     "slug": "delete-group-confirmation",
     "appearance": "dark",
     "file": "15-delete-group-confirmation-dark.png",
-    "sourceFile": "533E0E0D-FDF4-4104-A07B-290C39B088D7.png",
-    "sourceSuggestedName": "15-delete-group-confirmation-dark_0_669A2F28-624D-4EDB-8105-BF4906DCC756.png"
+    "sourceFile": "32A3DFC7-88F7-47C2-A20F-6E3226B42D93.png",
+    "sourceSuggestedName": "15-delete-group-confirmation-dark_0_1B79E9AC-D27C-4404-BF90-3F12C731D2BD.png"
   },
   {
     "index": 15,
     "slug": "delete-group-confirmation",
     "appearance": "light",
     "file": "15-delete-group-confirmation-light.png",
-    "sourceFile": "4C5FBB04-7F3B-49D8-8A36-B5FC05F67EEE.png",
-    "sourceSuggestedName": "15-delete-group-confirmation-light_0_FEA141BF-F45B-45AC-8E77-735C581A8AC7.png"
+    "sourceFile": "58D229A5-29B1-4134-9687-821A31E64F71.png",
+    "sourceSuggestedName": "15-delete-group-confirmation-light_0_5C7DA456-A119-48C5-9038-D3DC78D6A01E.png"
   },
   {
     "index": 16,
     "slug": "rearrange-groups",
     "appearance": "dark",
     "file": "16-rearrange-groups-dark.png",
-    "sourceFile": "EB8E2FED-925F-48FF-90F0-9DE5CFB7B1D7.png",
-    "sourceSuggestedName": "16-rearrange-groups-dark_0_FC89BBCB-CA6F-4FB6-90E2-539EC37A75C2.png"
+    "sourceFile": "065492A0-E222-487E-8AE8-824D6455A8BE.png",
+    "sourceSuggestedName": "16-rearrange-groups-dark_0_39DFACC7-CF5D-4148-A17E-1A6F8A25DE1A.png"
   },
   {
     "index": 16,
     "slug": "rearrange-groups",
     "appearance": "light",
     "file": "16-rearrange-groups-light.png",
-    "sourceFile": "A6BBC066-53B5-44EF-AFA7-C484A75FF3CD.png",
-    "sourceSuggestedName": "16-rearrange-groups-light_0_6D8196DF-0044-4DB1-ADCB-7BB3D99A69D6.png"
+    "sourceFile": "671CAA0B-8C1B-4081-881F-84E13A859699.png",
+    "sourceSuggestedName": "16-rearrange-groups-light_0_98AA59EF-E8B8-4852-9E63-50C4DB018FE9.png"
   },
   {
     "index": 17,
     "slug": "rearrange-routines",
     "appearance": "dark",
     "file": "17-rearrange-routines-dark.png",
-    "sourceFile": "674E93BF-14C1-4BF2-9B1E-D0FA804312D6.png",
-    "sourceSuggestedName": "17-rearrange-routines-dark_0_AC449F49-7026-4DE2-B578-7195BFB62DCA.png"
+    "sourceFile": "DAF5E5BC-ECB4-4075-AFFC-0DD31B377147.png",
+    "sourceSuggestedName": "17-rearrange-routines-dark_0_0FFB32B8-0342-4699-B4D1-E2690DF4DD99.png"
   },
   {
     "index": 17,
     "slug": "rearrange-routines",
     "appearance": "light",
     "file": "17-rearrange-routines-light.png",
-    "sourceFile": "F7385C37-1070-45CE-B33B-DE1C66609CBC.png",
-    "sourceSuggestedName": "17-rearrange-routines-light_0_E4F0047E-5421-4B38-AD2B-885057AB8797.png"
+    "sourceFile": "8BD6472D-04C2-47C8-90F1-8A2F5AE51FF6.png",
+    "sourceSuggestedName": "17-rearrange-routines-light_0_45E67309-293A-458E-BD37-B9F6E718C8AF.png"
+  },
+  {
+    "index": 18,
+    "slug": "settings-week-start",
+    "appearance": "dark",
+    "file": "18-settings-week-start-dark.png",
+    "sourceFile": "CE911878-65AB-4E59-89F6-84FB5CF6B2BB.png",
+    "sourceSuggestedName": "18-settings-week-start-dark_0_E2E8387C-9194-4EB0-96A1-B9942B239757.png"
+  },
+  {
+    "index": 18,
+    "slug": "settings-week-start",
+    "appearance": "light",
+    "file": "18-settings-week-start-light.png",
+    "sourceFile": "FFEDFAC8-F561-4E80-8EF5-87775CD6E4D3.png",
+    "sourceSuggestedName": "18-settings-week-start-light_0_4C0C385B-227D-47A9-8524-F69DC3B93CBB.png"
   }
 ]

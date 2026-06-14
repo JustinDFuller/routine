@@ -16,6 +16,8 @@ enum AppBootstrap {
     static let launchConfiguration = RoutineDebugLaunchConfiguration.current
 
     static func initialState() -> AppBootstrapState {
+        resetSettingsForInMemoryStoreIfNeeded(launchConfiguration: launchConfiguration)
+
         do {
             let modelContainer = try persistentContainer(launchConfiguration: launchConfiguration)
             let storeMode = launchConfiguration.storeMode.logValue
@@ -56,6 +58,20 @@ enum AppBootstrap {
         }
 
         return modelContainer
+    }
+
+    /// In-memory launches back UI tests and screenshot fixtures, which expect a
+    /// deterministic Sunday week start regardless of settings persisted by earlier
+    /// runs in the same simulator's UserDefaults.
+    static func resetSettingsForInMemoryStoreIfNeeded(
+        launchConfiguration: RoutineDebugLaunchConfiguration,
+        userDefaults: UserDefaults = .standard
+    ) {
+        guard launchConfiguration.storeMode == .inMemory else {
+            return
+        }
+
+        userDefaults.removeObject(forKey: RoutineSettingsKeys.weekStartWeekday)
     }
 }
 
@@ -99,7 +115,7 @@ struct AppBootstrapRootView: View {
     }
 
     private var weekStartWeekday: Weekday {
-        Weekday(rawValue: weekStartRaw) ?? .sunday
+        Weekday(storageValue: weekStartRaw)
     }
 }
 

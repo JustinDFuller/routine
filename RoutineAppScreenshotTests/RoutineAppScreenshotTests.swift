@@ -2,7 +2,7 @@ import XCTest
 
 @MainActor
 final class RoutineAppScreenshotTests: XCTestCase {
-    private var captureIndex = 0
+    var captureIndex = 0
     private let screenshotAppearances = ScreenshotAppearance.allCases
 
     func testCaptureFullAppScreenshotsAcrossForcedAppearances() {
@@ -259,7 +259,7 @@ final class RoutineAppScreenshotTests: XCTestCase {
         XCTAssertTrue(dashboardTitle(in: app).waitForExistence(timeout: 5))
 
         openManagementMenu(in: app)
-        app.buttons["Settings"].tap()
+        app.buttons["Week Starts On"].tap()
 
         let weekStartPicker = app.buttons["settings-week-start-picker"]
         XCTAssertTrue(weekStartPicker.waitForExistence(timeout: 5))

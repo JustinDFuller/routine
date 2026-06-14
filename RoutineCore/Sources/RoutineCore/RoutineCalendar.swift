@@ -60,8 +60,7 @@ public struct RoutineCalendar: Sendable {
 
     public func currentWeekRange(containing day: RoutineDay) -> ClosedRange<RoutineDay> {
         let date = date(for: day)
-        let weekday = calendar.component(.weekday, from: date)
-        let offset = (weekday - calendar.firstWeekday + 7) % 7
+        let offset = weekdayOffset(for: day)
 
         guard
             let startDate = calendar.date(byAdding: .day, value: -offset, to: date),
@@ -71,6 +70,17 @@ public struct RoutineCalendar: Sendable {
         }
 
         return self.day(containing: startDate)...self.day(containing: endDate)
+    }
+
+    public func weekdayOffset(for day: RoutineDay) -> Int {
+        let weekday = calendar.component(.weekday, from: date(for: day))
+        return (weekday - calendar.firstWeekday + 7) % 7
+    }
+
+    public var orderedWeekdaySymbols: [String] {
+        let startIndex = calendar.firstWeekday - 1
+        let orderedWeekdays = Array(Weekday.allCases[startIndex...] + Weekday.allCases[..<startIndex])
+        return orderedWeekdays.map(\.shortSymbol)
     }
 
     public func currentMonthRange(containing day: RoutineDay) -> ClosedRange<RoutineDay> {

@@ -137,6 +137,39 @@ final class RoutineCalendarTests: XCTestCase {
         XCTAssertEqual(calendar.day(containing: afterJump), expectedDay)
     }
 
+    func testWeekdayOffsetIsZeroOnConfiguredWeekStartDay() throws {
+        let sunday = try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 2))
+        let monday = try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 3))
+        let saturday = try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 1))
+
+        let sundayStart = testRoutineCalendar(firstWeekday: 1)
+        XCTAssertEqual(sundayStart.weekdayOffset(for: sunday), 0)
+        XCTAssertEqual(sundayStart.weekdayOffset(for: monday), 1)
+
+        let mondayStart = testRoutineCalendar(firstWeekday: 2)
+        XCTAssertEqual(mondayStart.weekdayOffset(for: monday), 0)
+        XCTAssertEqual(mondayStart.weekdayOffset(for: sunday), 6)
+
+        let saturdayStart = testRoutineCalendar(firstWeekday: 7)
+        XCTAssertEqual(saturdayStart.weekdayOffset(for: saturday), 0)
+        XCTAssertEqual(saturdayStart.weekdayOffset(for: sunday), 1)
+    }
+
+    func testOrderedWeekdaySymbolsStartsOnConfiguredWeekStartDay() {
+        XCTAssertEqual(
+            testRoutineCalendar(firstWeekday: 1).orderedWeekdaySymbols,
+            ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        )
+        XCTAssertEqual(
+            testRoutineCalendar(firstWeekday: 2).orderedWeekdaySymbols,
+            ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        )
+        XCTAssertEqual(
+            testRoutineCalendar(firstWeekday: 7).orderedWeekdaySymbols,
+            ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"]
+        )
+    }
+
     func testTodayUsesConfiguredCalendarAndTimezone() throws {
         let calendar = testRoutineCalendar()
         let instant = try XCTUnwrap(iso8601Date("2024-06-03T03:30:00Z"))

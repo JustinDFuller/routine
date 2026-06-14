@@ -315,14 +315,11 @@ private struct HistoryMonthGridView: View {
             return 0
         }
 
-        let weekday = routineCalendar.calendar.component(.weekday, from: date(for: firstDay.day))
-        return (weekday - routineCalendar.calendar.firstWeekday + 7) % 7
+        return routineCalendar.weekdayOffset(for: firstDay.day)
     }
 
     private var weekdaySymbols: [String] {
-        let startIndex = routineCalendar.calendar.firstWeekday - 1
-        let orderedWeekdays = Array(Weekday.allCases[startIndex...] + Weekday.allCases[..<startIndex])
-        return orderedWeekdays.map(\.shortSymbol)
+        routineCalendar.orderedWeekdaySymbols
     }
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 7)
@@ -340,6 +337,9 @@ private struct HistoryMonthGridView: View {
                         .foregroundStyle(Color.routineLabelSecondary)
                         .frame(maxWidth: .infinity)
                 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityIdentifier("routine-history-weekday-header")
+                .accessibilityLabel(weekdaySymbols.joined(separator: " "))
 
                 ForEach(0..<leadingPlaceholderCount, id: \.self) { _ in
                     Color.clear

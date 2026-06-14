@@ -11,6 +11,10 @@ public enum Weekday: Int, Codable, CaseIterable, Identifiable, Sendable {
         rawValue
     }
 
+    public init(storageValue: Int) {
+        self = Weekday(rawValue: storageValue) ?? .sunday
+    }
+
     public var displayName: String {
         switch self {
         case .sunday:

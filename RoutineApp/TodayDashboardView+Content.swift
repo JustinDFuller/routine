@@ -24,9 +24,7 @@ extension TodayDashboardView {
                 enterRearrangeRoutinesMode()
             }
 
-            Divider()
-
-            Button("Settings") {
+            Button("Week Starts On") {
                 openSettings()
             }
         } label: {

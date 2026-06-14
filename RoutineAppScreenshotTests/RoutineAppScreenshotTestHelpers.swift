@@ -1,12 +1,12 @@
 import XCTest
 
 extension RoutineAppScreenshotTests {
-    fileprivate enum ScreenshotAppearance: String, CaseIterable {
+    enum ScreenshotAppearance: String, CaseIterable {
         case dark
         case light
     }
 
-    fileprivate func makeApp(for appearance: ScreenshotAppearance) -> XCUIApplication {
+    func makeApp(for appearance: ScreenshotAppearance) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments.append(contentsOf: [
             "-routine-empty-in-memory-store",
@@ -21,7 +21,7 @@ extension RoutineAppScreenshotTests {
         return app
     }
 
-    fileprivate func captureScreenshot(
+    func captureScreenshot(
         _ slug: String,
         appearance: ScreenshotAppearance,
         anchor: XCUIElement
@@ -36,7 +36,7 @@ extension RoutineAppScreenshotTests {
         add(attachment)
     }
 
-    fileprivate func saveConfiguredRoutine(
+    func saveConfiguredRoutine(
         in app: XCUIApplication,
         routineNameField: XCUIElement,
         appearance: ScreenshotAppearance
@@ -67,37 +67,37 @@ extension RoutineAppScreenshotTests {
         saveButton.tap()
     }
 
-    fileprivate func screenshotName(
+    func screenshotName(
         for slug: String,
         appearance: String
     ) -> String {
         String(format: "%02d-%@-%@", captureIndex, slug, appearance)
     }
 
-    fileprivate func managementMenu(in app: XCUIApplication) -> XCUIElement {
+    func managementMenu(in app: XCUIApplication) -> XCUIElement {
         identifiedElement(identifier: "today-dashboard-management-menu", in: app)
     }
 
-    fileprivate func dashboardTitle(in app: XCUIApplication) -> XCUIElement {
+    func dashboardTitle(in app: XCUIApplication) -> XCUIElement {
         app.staticTexts["today-dashboard-title"]
     }
 
-    fileprivate func backButton(in app: XCUIApplication) -> XCUIElement {
+    func backButton(in app: XCUIApplication) -> XCUIElement {
         app.navigationBars.buttons.firstMatch
     }
 
-    fileprivate func openManagementMenu(in app: XCUIApplication) {
+    func openManagementMenu(in app: XCUIApplication) {
         let menu = managementMenu(in: app)
         XCTAssertTrue(waitForHittable(menu, timeout: 5))
         menu.tap()
     }
 
-    fileprivate func enterEditMode(in app: XCUIApplication) {
+    func enterEditMode(in app: XCUIApplication) {
         openManagementMenu(in: app)
         app.buttons["Edit"].tap()
     }
 
-    fileprivate func routineCardButton(
+    func routineCardButton(
         identifier: String,
         statePrefix: String,
         in app: XCUIApplication
@@ -109,7 +109,7 @@ extension RoutineAppScreenshotTests {
         return element
     }
 
-    fileprivate func identifiedElement(
+    func identifiedElement(
         identifier: String,
         in app: XCUIApplication
     ) -> XCUIElement {
@@ -118,7 +118,7 @@ extension RoutineAppScreenshotTests {
             .firstMatch
     }
 
-    fileprivate func scrollToDashboardTop(
+    func scrollToDashboardTop(
         in app: XCUIApplication,
         maxScrolls: Int = 8
     ) {
@@ -135,7 +135,7 @@ extension RoutineAppScreenshotTests {
         XCTAssertTrue(waitForHittable(topElement, timeout: 5))
     }
 
-    fileprivate func scrollToElement(
+    func scrollToElement(
         _ element: XCUIElement,
         in app: XCUIApplication,
         maxScrolls: Int = 8
@@ -151,7 +151,7 @@ extension RoutineAppScreenshotTests {
         XCTAssertTrue(element.waitForExistence(timeout: 5))
     }
 
-    fileprivate func clearAndTypeText(
+    func clearAndTypeText(
         _ text: String,
         into element: XCUIElement
     ) {
@@ -166,7 +166,7 @@ extension RoutineAppScreenshotTests {
         element.typeText(deleteString + text)
     }
 
-    fileprivate func dismissKeyboardIfPresent(in app: XCUIApplication) {
+    func dismissKeyboardIfPresent(in app: XCUIApplication) {
         guard app.keyboards.firstMatch.exists else {
             return
         }
@@ -179,7 +179,7 @@ extension RoutineAppScreenshotTests {
         app.navigationBars.firstMatch.tap()
     }
 
-    fileprivate func deleteConfirmationButton(
+    func deleteConfirmationButton(
         title: String,
         containerTitle: String,
         in app: XCUIApplication
@@ -197,7 +197,7 @@ extension RoutineAppScreenshotTests {
         return app.buttons[title]
     }
 
-    fileprivate func waitForUndoBanner(
+    func waitForUndoBanner(
         in app: XCUIApplication,
         timeout: TimeInterval
     ) {
@@ -216,7 +216,7 @@ extension RoutineAppScreenshotTests {
         } while Date() < deadline
     }
 
-    fileprivate func tapUndoBanner(in app: XCUIApplication) {
+    func tapUndoBanner(in app: XCUIApplication) {
         let identifiedButton = app.buttons["today-dashboard-undo-button"]
         if waitForHittable(identifiedButton, timeout: 0.5) {
             identifiedButton.tap()
@@ -242,7 +242,7 @@ extension RoutineAppScreenshotTests {
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.85, dy: 0.82)).tap()
     }
 
-    fileprivate func waitForHittable(
+    func waitForHittable(
         _ element: XCUIElement,
         timeout: TimeInterval
     ) -> Bool {

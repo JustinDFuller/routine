@@ -39,4 +39,16 @@ final class WeekdayTests: XCTestCase {
             [.sunday, .monday, .tuesday, .wednesday, .thursday, .friday, .saturday]
         )
     }
+
+    func testInitFromStorageValueDecodesValidRawValues() {
+        XCTAssertEqual(Weekday(storageValue: 1), .sunday)
+        XCTAssertEqual(Weekday(storageValue: 2), .monday)
+        XCTAssertEqual(Weekday(storageValue: 7), .saturday)
+    }
+
+    func testInitFromStorageValueFallsBackToSundayForOutOfRangeValues() {
+        XCTAssertEqual(Weekday(storageValue: 0), .sunday)
+        XCTAssertEqual(Weekday(storageValue: 8), .sunday)
+        XCTAssertEqual(Weekday(storageValue: -1), .sunday)
+    }
 }

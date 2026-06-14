@@ -140,6 +140,19 @@ final class RoutineAppUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["0/5 this week"].waitForExistence(timeout: 5))
     }
 
+    func testChangingWeekStartReordersHistoryWeekdayHeader() {
+        let app = makeApp()
+        app.launch()
+
+        // UserDefaults persists across launches in the same simulator, so normalize
+        // to Sunday before asserting the default ordering.
+        setWeekStart("Sunday", in: app)
+        assertHistoryWeekdayHeaderPrefix("Sun", in: app)
+
+        setWeekStart("Monday", in: app)
+        assertHistoryWeekdayHeaderPrefix("Mon", in: app)
+    }
+
     func testDashboardManagementMenuCanAddRoutineAndReturnsToToday() {
         let app = makeApp()
         app.launch()
@@ -393,6 +406,36 @@ extension RoutineAppUITests {
     fileprivate func enterEditMode(in app: XCUIApplication) {
         openManagementMenu(in: app)
         app.buttons["Edit"].tap()
+    }
+
+    fileprivate func setWeekStart(_ weekdayName: String, in app: XCUIApplication) {
+        openManagementMenu(in: app)
+        app.buttons["Week Starts On"].tap()
+
+        let picker = identifiedElement("settings-week-start-picker", in: app)
+        XCTAssertTrue(picker.waitForExistence(timeout: 5))
+        picker.tap()
+
+        let labelPredicate = NSPredicate(format: "label == %@", weekdayName)
+        let option = app.descendants(matching: .any).matching(labelPredicate).firstMatch
+        XCTAssertTrue(option.waitForExistence(timeout: 5))
+        option.tap()
+
+        app.buttons["settings-done-button"].tap()
+    }
+
+    fileprivate func assertHistoryWeekdayHeaderPrefix(_ prefix: String, in app: XCUIApplication) {
+        let historyButton = app.buttons["routine-card-history-morning-yoga"]
+        XCTAssertTrue(historyButton.waitForExistence(timeout: 5))
+        historyButton.tap()
+
+        XCTAssertTrue(app.navigationBars["History"].waitForExistence(timeout: 5))
+        let header = identifiedElement("routine-history-weekday-header", in: app)
+        XCTAssertTrue(header.waitForExistence(timeout: 5))
+        XCTAssertTrue(header.label.hasPrefix(prefix), header.label)
+
+        app.navigationBars["History"].buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(dashboardTitle(in: app).waitForExistence(timeout: 5))
     }
 
     fileprivate func routineCardButton(

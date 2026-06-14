@@ -22,7 +22,7 @@ struct SettingsView: View {
             }
             .scrollContentBackground(.hidden)
             .background(Color.routineCanvas.ignoresSafeArea())
-            .navigationTitle("Settings")
+            .navigationTitle("Week Starts On")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -38,7 +38,7 @@ struct SettingsView: View {
 
     private var weekStart: Binding<Weekday> {
         Binding(
-            get: { Weekday(rawValue: weekStartRaw) ?? .sunday },
+            get: { Weekday(storageValue: weekStartRaw) },
             set: { weekStartRaw = $0.rawValue }
         )
     }
