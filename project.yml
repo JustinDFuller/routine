@@ -47,6 +47,11 @@ targets:
         SWIFT_STRICT_CONCURRENCY: targeted
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: ""
+    entitlements:
+      path: RoutineApp/Routine.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.justinfuller.routine
     dependencies:
       - package: RoutineCore
         product: RoutineCore
