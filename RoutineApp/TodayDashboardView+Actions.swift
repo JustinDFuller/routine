@@ -34,6 +34,10 @@ extension TodayDashboardView {
         sheetPresentation = .group(.add)
     }
 
+    func openSettings() {
+        sheetPresentation = .settings
+    }
+
     func openEditRoutine(routineID: UUID) {
         guard let row = managementRow(for: routineID) else {
             presentAlert(.routineNotFound)
@@ -149,7 +153,10 @@ extension TodayDashboardView {
         }
 
         do {
-            let result = try RoutineTrackingService(context: modelContext).completeToday(
+            let result = try RoutineTrackingService(
+                context: modelContext,
+                routineCalendar: routineCalendar
+            ).completeToday(
                 routineID: routine.id,
                 now: runtime.now
             )
@@ -169,7 +176,10 @@ extension TodayDashboardView {
 
     func undoCompletion(routineID: UUID) {
         do {
-            let result = try RoutineTrackingService(context: modelContext).undoToday(
+            let result = try RoutineTrackingService(
+                context: modelContext,
+                routineCalendar: routineCalendar
+            ).undoToday(
                 routineID: routineID,
                 now: runtime.now
             )

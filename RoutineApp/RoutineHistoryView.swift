@@ -10,6 +10,7 @@ struct RoutineHistoryView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.routineRuntimeConfiguration) private var runtime
+    @Environment(\.routineCalendar) private var routineCalendar
 
     @Query private var routines: [Routine]
     @Query private var completions: [RoutineCompletion]
@@ -38,7 +39,7 @@ struct RoutineHistoryView: View {
     }
 
     private var projection: RoutineHistoryProjection {
-        HistoryProjectionBuilder(context: modelContext).build(
+        HistoryProjectionBuilder(context: modelContext, routineCalendar: routineCalendar).build(
             routineID: routineID,
             routines: routines,
             completions: completions,
@@ -98,7 +99,7 @@ struct RoutineHistoryView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     summaryHeader(viewData)
-                    HistoryMonthGridView(monthDays: viewData.monthDays)
+                    HistoryMonthGridView(monthDays: viewData.monthDays, routineCalendar: routineCalendar)
                     recentCompletionsSection(viewData)
                 }
                 .padding(.horizontal, 16)
@@ -244,7 +245,8 @@ struct RoutineHistoryView: View {
         pendingRemoval = nil
 
         do {
-            try RoutineTrackingService(context: modelContext).removeCompletion(completionID: item.id)
+            try RoutineTrackingService(context: modelContext, routineCalendar: routineCalendar)
+                .removeCompletion(completionID: item.id)
         } catch {
             removalAlert = HistoryRemovalAlert(message: error.localizedDescription)
         }
@@ -293,8 +295,7 @@ struct RoutineHistoryView: View {
 
 private struct HistoryMonthGridView: View {
     let monthDays: [HistoryCalendarDay]
-
-    private let routineCalendar = RoutineCalendar.current
+    let routineCalendar: RoutineCalendar
 
     private var monthTitle: String {
         guard let firstDay = monthDays.first else {
@@ -314,12 +315,14 @@ private struct HistoryMonthGridView: View {
             return 0
         }
 
-        let weekday = routineCalendar.calendar.component(.weekday, from: date(for: firstDay.day))
-        return (weekday + 5) % 7
+        return routineCalendar.weekdayOffset(for: firstDay.day)
+    }
+
+    private var weekdaySymbols: [String] {
+        routineCalendar.orderedWeekdaySymbols
     }
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 7)
-    private let weekdaySymbols = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -334,6 +337,9 @@ private struct HistoryMonthGridView: View {
                         .foregroundStyle(Color.routineLabelSecondary)
                         .frame(maxWidth: .infinity)
                 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityIdentifier("routine-history-weekday-header")
+                .accessibilityLabel(weekdaySymbols.joined(separator: " "))
 
                 ForEach(0..<leadingPlaceholderCount, id: \.self) { _ in
                     Color.clear

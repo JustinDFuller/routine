@@ -1,4 +1,5 @@
 import OSLog
+import RoutineCore
 import SwiftData
 import SwiftUI
 
@@ -15,6 +16,8 @@ enum AppBootstrap {
     static let launchConfiguration = RoutineDebugLaunchConfiguration.current
 
     static func initialState() -> AppBootstrapState {
+        resetSettingsForInMemoryStoreIfNeeded(launchConfiguration: launchConfiguration)
+
         do {
             let modelContainer = try persistentContainer(launchConfiguration: launchConfiguration)
             let storeMode = launchConfiguration.storeMode.logValue
@@ -56,6 +59,20 @@ enum AppBootstrap {
 
         return modelContainer
     }
+
+    /// In-memory launches back UI tests and screenshot fixtures, which expect a
+    /// deterministic Sunday week start regardless of settings persisted by earlier
+    /// runs in the same simulator's UserDefaults.
+    static func resetSettingsForInMemoryStoreIfNeeded(
+        launchConfiguration: RoutineDebugLaunchConfiguration,
+        userDefaults: UserDefaults = .standard
+    ) {
+        guard launchConfiguration.storeMode == .inMemory else {
+            return
+        }
+
+        userDefaults.removeObject(forKey: RoutineSettingsKeys.weekStartWeekday)
+    }
 }
 
 extension RoutineDebugLaunchConfiguration.StoreMode {
@@ -74,12 +91,15 @@ private struct ForcedBootstrapFailure: Error {}
 struct AppBootstrapRootView: View {
     let state: AppBootstrapState
 
+    @AppStorage(RoutineSettingsKeys.weekStartWeekday) private var weekStartRaw = Weekday.sunday.rawValue
+
     var body: some View {
         switch state {
         case .ready(let modelContainer, let runtime):
             RootView(debugLaunchConfiguration: .current)
                 .modelContainer(modelContainer)
                 .environment(\.routineRuntimeConfiguration, runtime)
+                .environment(\.routineCalendar, RoutineCalendar.current(weekStart: weekStartWeekday))
                 .preferredColorScheme(runtime.forcedColorScheme?.swiftUIColorScheme)
                 .transaction { transaction in
                     guard runtime.disablesAnimations else {
@@ -92,6 +112,10 @@ struct AppBootstrapRootView: View {
         case .failed:
             AppBootstrapFailureView()
         }
+    }
+
+    private var weekStartWeekday: Weekday {
+        Weekday(storageValue: weekStartRaw)
     }
 }
 

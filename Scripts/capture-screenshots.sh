@@ -132,7 +132,7 @@ routine_xcodebuild_with_optional_quiet \
     --filter "*.png"
 
 png_count="$(find "$output_root" -type f -name '*.png' | wc -l | tr -d ' ')"
-expected_png_count=34
+expected_png_count=36
 
 if [[ "$png_count" != "$expected_png_count" ]]; then
     echo "error: expected ${expected_png_count} screenshots, found ${png_count} in ${output_root}." >&2

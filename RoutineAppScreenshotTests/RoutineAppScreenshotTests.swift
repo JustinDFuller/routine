@@ -2,7 +2,7 @@ import XCTest
 
 @MainActor
 final class RoutineAppScreenshotTests: XCTestCase {
-    private var captureIndex = 0
+    var captureIndex = 0
     private let screenshotAppearances = ScreenshotAppearance.allCases
 
     func testCaptureFullAppScreenshotsAcrossForcedAppearances() {
@@ -18,7 +18,8 @@ final class RoutineAppScreenshotTests: XCTestCase {
             captureRoutineFormScreenshots(in: app, appearance: appearance)
             captureGroupManagementScreenshots(in: app, appearance: appearance)
             captureRearrangeScreenshots(in: app, appearance: appearance)
-            XCTAssertEqual(captureIndex, 17)
+            captureSettingsScreenshots(in: app, appearance: appearance)
+            XCTAssertEqual(captureIndex, 18)
             app.terminate()
         }
     }
@@ -248,5 +249,27 @@ final class RoutineAppScreenshotTests: XCTestCase {
             appearance: appearance,
             anchor: rearrangeDoneButton
         )
+        rearrangeDoneButton.tap()
+    }
+
+    private func captureSettingsScreenshots(
+        in app: XCUIApplication,
+        appearance: ScreenshotAppearance
+    ) {
+        XCTAssertTrue(dashboardTitle(in: app).waitForExistence(timeout: 5))
+
+        openManagementMenu(in: app)
+        app.buttons["Week Starts On"].tap()
+
+        let weekStartPicker = app.buttons["settings-week-start-picker"]
+        XCTAssertTrue(weekStartPicker.waitForExistence(timeout: 5))
+        captureScreenshot(
+            "settings-week-start",
+            appearance: appearance,
+            anchor: weekStartPicker
+        )
+
+        app.buttons["settings-done-button"].tap()
+        XCTAssertTrue(dashboardTitle(in: app).waitForExistence(timeout: 5))
     }
 }

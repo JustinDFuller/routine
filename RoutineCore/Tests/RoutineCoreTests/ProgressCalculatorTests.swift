@@ -4,8 +4,8 @@ import XCTest
 @testable import RoutineCore
 
 final class ProgressCalculatorTests: XCTestCase {
-    func testWeeklyProgressCountsOnlyCurrentMondayStartWeek() throws {
-        let calculator = ProgressCalculator(routineCalendar: testRoutineCalendar())
+    func testWeeklyProgressCountsOnlyCurrentConfiguredMondayStartWeek() throws {
+        let calculator = ProgressCalculator(routineCalendar: testRoutineCalendar(firstWeekday: 2))
         let today = try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 4))
         var completionDays: [RoutineDay] = []
         completionDays.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 2)))
@@ -23,6 +23,28 @@ final class ProgressCalculatorTests: XCTestCase {
         expectedCompletions.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 2)))
         expectedCompletions.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 4)))
         expectedCompletions.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 8)))
+
+        XCTAssertEqual(completions, expectedCompletions)
+    }
+
+    func testWeeklyProgressCountsOnlyCurrentConfiguredSundayStartWeek() throws {
+        let calculator = ProgressCalculator(routineCalendar: testRoutineCalendar(firstWeekday: 1))
+        let today = try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 4))
+        var completionDays: [RoutineDay] = []
+        completionDays.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 2)))
+        completionDays.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 4)))
+        completionDays.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 8)))
+        completionDays.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 9)))
+
+        let completions = calculator.completionsInCurrentPeriod(
+            period: .weekly,
+            completionDays: completionDays,
+            today: today
+        )
+
+        var expectedCompletions: [RoutineDay] = []
+        expectedCompletions.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 2)))
+        expectedCompletions.append(try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 4)))
 
         XCTAssertEqual(completions, expectedCompletions)
     }
@@ -137,11 +159,11 @@ final class ProgressCalculatorTests: XCTestCase {
         )
     }
 
-    private func testRoutineCalendar() -> RoutineCalendar {
+    private func testRoutineCalendar(firstWeekday: Int = 2) -> RoutineCalendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.locale = Locale(identifier: "en_US_POSIX")
         calendar.timeZone = TimeZone(identifier: "America/New_York") ?? .gmt
-        calendar.firstWeekday = 2
+        calendar.firstWeekday = firstWeekday
         return RoutineCalendar(calendar: calendar)
     }
 }

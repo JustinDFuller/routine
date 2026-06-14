@@ -11,7 +11,7 @@ from pathlib import Path
 
 BEGIN_MARKER = "<!-- BEGIN GENERATED SCREENSHOTS -->"
 END_MARKER = "<!-- END GENERATED SCREENSHOTS -->"
-EXPECTED_INDEXES = range(1, 18)
+EXPECTED_INDEXES = range(1, 19)
 CANONICAL_NAME_PATTERN = re.compile(
     r"^(?P<index>\d{2})-(?P<slug>[a-z0-9]+(?:-[a-z0-9]+)*)-(?P<appearance>dark|light)\.png$"
 )

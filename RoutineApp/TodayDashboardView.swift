@@ -1,3 +1,4 @@
+import RoutineCore
 import SwiftData
 import SwiftUI
 
@@ -7,6 +8,7 @@ struct TodayDashboardView: View {
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.modelContext) var modelContext
     @Environment(\.routineRuntimeConfiguration) var runtime
+    @Environment(\.routineCalendar) var routineCalendar
 
     @Query(
         sort: [SortDescriptor(\RoutineGroup.sortOrder), SortDescriptor(\RoutineGroup.name)]
@@ -34,7 +36,7 @@ struct TodayDashboardView: View {
     @State var alertPresentation: DashboardAlertPresentation?
 
     var viewData: TodayDashboardViewData {
-        DashboardProjectionBuilder(context: modelContext).build(
+        DashboardProjectionBuilder(context: modelContext, routineCalendar: routineCalendar).build(
             groups: groups,
             routines: routines,
             completions: completions,
@@ -43,7 +45,10 @@ struct TodayDashboardView: View {
     }
 
     var managementViewData: ManageRoutinesViewData {
-        ManageProjectionBuilder(context: modelContext).build(groups: groups, routines: routines)
+        ManageProjectionBuilder(context: modelContext, routineCalendar: routineCalendar).build(
+            groups: groups,
+            routines: routines
+        )
     }
 
     var editableGroupIDs: Set<UUID> {
@@ -113,6 +118,8 @@ struct TodayDashboardView: View {
                     presentation: groupPresentation,
                     existingNames: managementViewData.groupChoices.map(\.name)
                 )
+            case .settings:
+                SettingsView()
             }
         }
         .safeAreaInset(edge: .bottom) {
