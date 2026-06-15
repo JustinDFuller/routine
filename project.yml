@@ -18,6 +18,8 @@ targets:
     deploymentTarget: "17.0"
     sources:
       - path: RoutineApp
+      # shared widget files, exposed to RoutineAppTests via @testable import:
+      - path: RoutineWidget/NextRoutineSelector.swift
     info:
       path: RoutineApp/Info.plist
       properties:
@@ -30,6 +32,10 @@ targets:
         CFBundlePackageType: APPL
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleURLTypes:
+          - CFBundleURLName: $(PRODUCT_BUNDLE_IDENTIFIER)
+            CFBundleURLSchemes:
+              - routine
         LSRequiresIPhoneOS: true
         UIRequiresFullScreen: true
         UIApplicationSceneManifest:
@@ -47,9 +53,15 @@ targets:
         SWIFT_STRICT_CONCURRENCY: targeted
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: ""
+    entitlements:
+      path: RoutineApp/Routine.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.justinfuller.routine
     dependencies:
       - package: RoutineCore
         product: RoutineCore
+      - target: RoutineWidget
     scheme:
       gatherCoverageData: false
       testTargets:
@@ -96,6 +108,41 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routine.screenshottests
     dependencies:
       - target: RoutineApp
+
+  RoutineWidget:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: RoutineWidget
+      # shared app files (target membership):
+      - path: RoutineApp/Persistence/RoutineModels.swift
+      - path: RoutineApp/Persistence/RoutineModelContainer.swift
+      - path: RoutineApp/Persistence/ModelContext+RoutinePersistence.swift
+      - path: RoutineApp/Persistence/PersistenceError.swift
+      - path: RoutineApp/Diagnostics/AppDiagnostics.swift
+      - path: RoutineApp/RoutineAvailabilityText.swift
+      - path: RoutineApp/Services/RoutineTrackingService.swift
+      - path: RoutineApp/Components/RoutineColor+Palette.swift
+      - path: RoutineApp/RoutineColors.xcassets
+    settings:
+      base:
+        ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOL_EXTENSIONS: NO
+        PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routine.widget
+        PRODUCT_NAME: RoutineWidget
+        INFOPLIST_FILE: RoutineWidget/Info.plist
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
+        TARGETED_DEVICE_FAMILY: 1
+        SWIFT_STRICT_CONCURRENCY: targeted
+    entitlements:
+      path: RoutineWidget/RoutineWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.justinfuller.routine
+    dependencies:
+      - package: RoutineCore
+        product: RoutineCore
 schemes:
   RoutineApp:
     build:

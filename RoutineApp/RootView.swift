@@ -55,6 +55,13 @@ struct RootView: View {
         } message: {
             Text("You can still use Routine.")
         }
+        .onOpenURL { url in
+            guard url.host == "today" else {
+                return
+            }
+
+            path = []
+        }
     }
 
     @ViewBuilder
