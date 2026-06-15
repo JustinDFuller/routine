@@ -18,6 +18,8 @@ targets:
     deploymentTarget: "17.0"
     sources:
       - path: RoutineApp
+      # shared widget files, exposed to RoutineAppTests via @testable import:
+      - path: RoutineWidget/NextRoutineSelector.swift
     info:
       path: RoutineApp/Info.plist
       properties:
