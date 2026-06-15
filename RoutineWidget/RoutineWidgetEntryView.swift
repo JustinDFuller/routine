@@ -70,6 +70,11 @@ private struct ReadyRoutineView: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.routineLabelSecondary)
             }
+
+            Spacer(minLength: 0)
+
+            DoneButton(routineID: snapshot.routineID, accentColor: accentColor)
+                .frame(maxWidth: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
@@ -100,6 +105,8 @@ private struct ReadyRoutineView: View {
             }
 
             Spacer(minLength: 0)
+
+            DoneButton(routineID: snapshot.routineID, accentColor: accentColor)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
@@ -114,6 +121,27 @@ private struct ReadyRoutineView: View {
                 Capsule(style: .continuous)
                     .fill(accentColor.opacity(0.1))
             )
+    }
+}
+
+private struct DoneButton: View {
+    let routineID: UUID
+    let accentColor: Color
+
+    var body: some View {
+        Button(intent: CompleteRoutineIntent(routineID: routineID)) {
+            Text("Done")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.routineCanvas)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(accentColor)
+                )
+        }
+        .buttonStyle(.plain)
     }
 }
 
