@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Today Dashboard" description="Routine's signature Today screen — grouped routine cards with one-tap completion rings" -->
+<helmet>
+  <script src="./ds-base.js"></script>
+  <style>
+    html, body { margin: 0; background: #d9d4c9; }
+  </style>
+</helmet>
+<x-import
+  component="DashboardScreen"
+  from="./DashboardScreen.jsx"
+  date-label="{{ dateLabel }}"
+  groups="{{ groups }}"
+  hint-size="100%,100vh"
+  style="display:block; min-height:100vh;"
+></x-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      dateLabel: "Wednesday, Jun 10",
+      groups: [
+        {
+          name: "Today Focus",
+          routines: [
+            { name: "Morning yoga", count: "2/5", period: "week", lastDone: "Yesterday", completed: 2, target: 5, state: "incomplete" },
+            { name: "Walk the dog", count: "3/5", period: "week", lastDone: "Today", completed: 3, target: 5, state: "complete" },
+            { name: "Wake up early", count: "1/4", period: "week", availability: "Available 12:00 AM–6:45 AM", completed: 1, target: 4, state: "unavailable" },
+          ],
+        },
+        {
+          name: "Monthly Maintenance",
+          routines: [
+            { name: "Clean air purifiers", count: "1/1", period: "month", lastDone: "Today", completed: 1, target: 1, state: "complete" },
+            { name: "Whiten teeth", count: "0/1", period: "month", lastDone: "May 18", completed: 0, target: 1, state: "incomplete" },
+          ],
+        },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

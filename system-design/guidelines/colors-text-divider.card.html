@@ -1,0 +1,46 @@
+<!-- @dsCard group="Colors" viewport="700x200" name="Text & divider" subtitle="Label primary / secondary and the hairline divider" -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      html,body{margin:0}
+      body{background:#efeae0;font-family:var(--font-system);padding:24px;color:#24231f}
+      .grid{display:flex;gap:14px}
+      .col{flex:1;display:flex;flex-direction:column;gap:8px}
+      .pair{display:flex;border-radius:12px;overflow:hidden;height:64px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+      .pair > div{flex:1;display:flex;align-items:flex-end;padding:8px;font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}
+      .name{font-size:13px;font-weight:600}
+      .role{font-size:11px;color:#6d675e}
+    </style>
+  </head>
+  <body>
+    <div class="grid">
+      <div class="col">
+        <span class="name">Label · Primary</span>
+        <div class="pair">
+          <div style="background:#24231f;color:#fff">#24231F</div>
+          <div style="background:#f3f0e8;color:#24231f">#F3F0E8</div>
+        </div>
+        <span class="role">Names &amp; high-importance text</span>
+      </div>
+      <div class="col">
+        <span class="name">Label · Secondary</span>
+        <div class="pair">
+          <div style="background:#6d675e;color:#fff">#6D675E</div>
+          <div style="background:#b7b0a4;color:#24231f">#B7B0A4</div>
+        </div>
+        <span class="role">Counts · metadata · helper</span>
+      </div>
+      <div class="col">
+        <span class="name">Divider</span>
+        <div class="pair">
+          <div style="background:#d8d2c7;color:#24231f">#D8D2C7</div>
+          <div style="background:#3a3832;color:#fff">#3A3832</div>
+        </div>
+        <span class="role">Hairlines · never high-contrast</span>
+      </div>
+    </div>
+  </body>
+</html>

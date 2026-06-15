@@ -1,0 +1,59 @@
+/* ───────────────────────────────────────────────────────────────
+   Routine · Spacing, radii, rings, elevation
+   Comfortable for one-handed thumb use, never compressed for density.
+   Values match the SwiftUI layout constants in RoutineApp.
+   ─────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Spacing scale (pt ≈ px) */
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 10px;
+  --space-6: 12px;
+  --space-7: 14px;   /* routine-card internal padding */
+  --space-8: 16px;   /* horizontal page padding */
+  --space-10: 20px;
+  --space-12: 24px;  /* vertical space between sections */
+  --space-16: 32px;
+
+  /* Named layout defaults */
+  --page-padding-x: 16px;
+  --section-gap: 24px;
+  --card-padding: 14px;
+  --card-gap: 12px;          /* gap between stacked cards */
+  --pill-gap: 8px;
+
+  /* Corner radii */
+  --radius-card: 16px;       /* routine cards, history summary + month grid */
+  --radius-sheet: 18px;      /* undo banner, transient overlays */
+  --radius-row: 14px;        /* completion-history rows */
+  --radius-control: 12px;    /* steppers, segmented controls, form groups */
+  --radius-pill-sm: 10px;    /* metadata pill (rectangular variant) */
+  --radius-pill: 999px;      /* capsules */
+
+  /* Progress rings */
+  --ring-size-dashboard: 34px;
+  --ring-stroke-dashboard: 4.5px;
+  --ring-size-summary: 72px;
+  --ring-stroke-summary: 7px;
+
+  /* Interactive targets */
+  --tap-min: 44px;
+
+  /* Borders */
+  --border-width: 1px;
+  --border-width-emphasis: 2px;   /* today's calendar-day ring */
+
+  /* Elevation — Routine is mostly flat (border-defined). The single
+     real shadow is the transient undo banner. */
+  --shadow-banner: 0 4px 10px rgba(0, 0, 0, 0.12);
+  --shadow-menu: 0 12px 32px rgba(0, 0, 0, 0.28);
+
+  /* Motion — confirm state, never entertain */
+  --motion-complete: 160ms;       /* @kind other */ /* ring fill / check transition (120–180ms) */
+  --motion-banner: 200ms;         /* @kind other */ /* undo banner slide/fade (180–220ms) */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);  /* @kind other */
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);  /* @kind other */
+}

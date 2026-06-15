@@ -1,0 +1,32 @@
+<!-- @dsCard group="Spacing" viewport="700x210" name="Elevation & motion" subtitle="Mostly flat (border-defined) — one real shadow, calm motion" -->
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      html,body{margin:0}
+      body{background:var(--bg-canvas);font-family:var(--font-system);padding:24px;color:var(--text-primary)}
+      .wrap{display:flex;gap:40px;align-items:center}
+      .cell{display:flex;flex-direction:column;gap:10px}
+      .cap{font-size:12px;color:var(--text-secondary)}
+      .cap b{color:var(--text-primary);font-weight:600}
+      .flat{width:200px;height:70px;border-radius:16px;background:var(--surface-card);box-shadow:inset 0 0 0 1px var(--card-border-incomplete);display:grid;place-items:center;font-size:12px;color:var(--text-secondary)}
+      .banner{width:230px;height:64px;border-radius:18px;background:var(--surface-sheet);box-shadow:var(--shadow-banner);border:1px solid var(--border-hairline-soft);display:grid;place-items:center;font-size:12px;color:var(--text-secondary)}
+      .mot{font-size:12px;color:var(--text-secondary);line-height:1.7}
+      .mot b{color:var(--text-primary);font-weight:600}
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="cell"><div class="flat">card · border only</div><span class="cap"><b>Flat</b> — hairline, no shadow</span></div>
+      <div class="cell"><div class="banner">undo banner</div><span class="cap"><b>0 4 10</b> rgba(0,0,0,.12)</span></div>
+      <div class="cell mot">
+        <b>Motion</b> — confirm, never entertain<br>
+        Completion fill / check &nbsp;<b>160ms</b><br>
+        Undo banner slide / fade &nbsp;<b>200ms</b><br>
+        No bounce · no confetti · no pulses
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,39 @@
+<!-- @dsCard group="Type" viewport="700x300" name="Body & labels" subtitle="Headline · Body · Subheadline · Footnote · Caption" -->
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      html,body{margin:0}
+      body{background:var(--bg-canvas);font-family:var(--font-system);padding:26px;color:var(--text-primary)}
+      .row{display:flex;align-items:baseline;gap:16px;padding:9px 0;border-bottom:1px solid var(--border-hairline)}
+      .row:last-child{border-bottom:none}
+      .meta{flex-shrink:0;width:150px;font-size:12px;color:var(--text-secondary)}
+      .meta b{display:block;color:var(--text-primary);font-size:13px;font-weight:600}
+      .sec{color:var(--text-secondary)}
+    </style>
+  </head>
+  <body>
+    <div class="row">
+      <span class="meta"><b>Headline</b>17 / 600</span>
+      <span style="font-size:17px;line-height:22px;font-weight:600">Morning yoga</span>
+    </div>
+    <div class="row">
+      <span class="meta"><b>Body</b>17 / 400</span>
+      <span style="font-size:17px;line-height:22px">Add your first routine to start tracking.</span>
+    </div>
+    <div class="row">
+      <span class="meta"><b>Subheadline</b>15 / 600</span>
+      <span class="sec" style="font-size:15px;line-height:20px;font-weight:600">Today Focus</span>
+    </div>
+    <div class="row">
+      <span class="meta"><b>Footnote</b>13 / 400</span>
+      <span class="sec" style="font-size:13px;line-height:18px">5 per week</span>
+    </div>
+    <div class="row">
+      <span class="meta"><b>Caption</b>12 / 400</span>
+      <span class="sec" style="font-size:12px;line-height:16px">Last done yesterday</span>
+    </div>
+  </body>
+</html>

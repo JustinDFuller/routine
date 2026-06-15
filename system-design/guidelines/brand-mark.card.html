@@ -1,0 +1,32 @@
+<!-- @dsCard group="Brand" viewport="700x250" name="Brand mark" subtitle="A partial progress ring + checkmark — calm, grounded, never gamified" -->
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      html,body{margin:0}
+      body{background:var(--bg-canvas);font-family:var(--font-system);padding:30px;color:var(--text-primary)}
+      .row{display:flex;gap:34px;align-items:center}
+      .mark{width:120px;height:120px;border-radius:27px;background:radial-gradient(120% 120% at 50% 0%, #2a2722, #141210);display:grid;place-items:center;flex-shrink:0;box-shadow:0 8px 22px rgba(0,0,0,.35)}
+      .txt{max-width:380px}
+      .txt h3{margin:0 0 8px;font-size:18px;font-weight:600}
+      .txt p{margin:0;font-size:13px;line-height:1.7;color:var(--text-secondary)}
+    </style>
+  </head>
+  <body>
+    <div class="row">
+      <div class="mark">
+        <svg width="78" height="78" viewBox="0 0 78 78">
+          <circle cx="39" cy="39" r="31" fill="none" stroke="#41463f" stroke-width="11"/>
+          <circle cx="39" cy="39" r="31" fill="none" stroke="#a9cf94" stroke-width="11" stroke-linecap="round" stroke-dasharray="146 49" transform="rotate(50 39 39)"/>
+          <path d="M28 40l8 8 16-17" fill="none" stroke="#f2dcb4" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="txt">
+        <h3>The progress ring is the brand</h3>
+        <p>The identity is the product's own motif: one continuous sage-green ring, partially filled, with a warm-cream checkmark. No mascots, badges, flames, or streak imagery — the mark stays dark, grounded, warm, and quietly precise.</p>
+      </div>
+    </div>
+  </body>
+</html>

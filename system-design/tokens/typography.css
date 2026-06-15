@@ -1,0 +1,44 @@
+/* ───────────────────────────────────────────────────────────────
+   Routine · Typography
+   The app uses San Francisco + Dynamic Type — no custom typeface.
+   On the web we mirror that with the system font stack so the brand
+   renders in SF on Apple devices and a near-neutral sans elsewhere.
+   Sizes are the iOS text styles at the default (Large) Dynamic Type
+   setting. Routine prefers sentence case and short, functional text.
+   ─────────────────────────────────────────────────────────────── */
+
+:root {
+  /* SF / system stack — this IS the brand typeface.
+     San Francisco is referenced via the -apple-system / BlinkMacSystemFont /
+     system-ui keywords (no font file needed — they resolve to SF Pro Text &
+     SF Pro Display on Apple devices). We intentionally do NOT name "SF Pro Text"
+     as an explicit family: that would imply a bundled webfont we don't ship. */
+  --font-system:
+    -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  /* rounded variant — used only for the completion checkmark glyph */
+  --font-rounded:
+    ui-rounded, -apple-system, system-ui, sans-serif;
+
+  /* Weights */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* Type roles — size / line-height pairs (iOS text styles @ Large) */
+  --text-largetitle: 34px;   --leading-largetitle: 41px;  /* screen title (max) */
+  --text-title: 28px;        --leading-title: 34px;       /* "Today" dashboard title */
+  --text-title3: 20px;       --leading-title3: 25px;      /* history routine name, empty-state */
+  --text-headline: 17px;     --leading-headline: 22px;    /* routine name, section titles in history */
+  --text-body: 17px;         --leading-body: 22px;        /* form rows, dates, prose */
+  --text-callout: 16px;      --leading-callout: 21px;
+  --text-subheadline: 15px;  --leading-subheadline: 20px; /* date label, section headers, undo msg */
+  --text-footnote: 13px;     --leading-footnote: 18px;
+  --text-caption: 12px;      --leading-caption: 16px;     /* metadata pills, last-done, weekday symbols */
+  --text-caption2: 11px;     --leading-caption2: 13px;
+
+  /* Tracking — SF sets its own; keep near-zero, never decorative */
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+}
