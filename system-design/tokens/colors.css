@@ -1,0 +1,93 @@
+/* ───────────────────────────────────────────────────────────────
+   Routine · Color roles
+   Sourced verbatim from RoutineApp/RoutineColors.xcassets (sRGB).
+   Role-based, not a numbered scale. Dark mode is the primary target;
+   :root carries the light (default) appearance, [data-theme="dark"]
+   carries dark. Each role also has a high-contrast accessibility value
+   documented inline for reference.
+   ─────────────────────────────────────────────────────────────── */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces — warm cream base, layered upward */
+  --routine-canvas: #f6f3ec;            /* full-screen background */
+  --routine-surface: #fffcf5;           /* default card / grouped content */
+  --routine-surface-elevated: #ffffff;  /* sheets, overlays, active cards */
+
+  /* Text */
+  --routine-label-primary: #24231f;     /* names, high-importance text */
+  --routine-label-secondary: #6d675e;   /* counts, metadata, helper text */
+
+  /* Accents */
+  --routine-accent-complete: #4f7a34;   /* completion / progress (warm green) */
+  --routine-accent-active: #2f6472;     /* selection, focus, nav emphasis (teal) */
+  --routine-accent-destructive: #c9342d;/* delete / remove (iOS red) */
+
+  /* Structure */
+  --routine-divider: #d8d2c7;           /* subtle separators, hairline borders */
+
+  /* high-contrast light reference:
+     canvas #ffffff · surface #ffffff · elevated #fcfaf6
+     label-primary #12110f · label-secondary #3f3a33
+     complete #315f1f · active #174e5f · destructive #a51e18 · divider #a79e90 */
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --routine-canvas: #141412;
+  --routine-surface: #20201d;
+  --routine-surface-elevated: #2b2a26;
+
+  --routine-label-primary: #f3f0e8;
+  --routine-label-secondary: #b7b0a4;
+
+  --routine-accent-complete: #a7c77d;
+  --routine-accent-active: #8ea7b8;
+  --routine-accent-destructive: #ff6b6b;
+
+  --routine-divider: #3a3832;
+
+  /* high-contrast dark reference:
+     canvas #000000 · surface #141412 · elevated #20201d
+     label-primary #ffffff · label-secondary #e2ddd4
+     complete #c6e89b · active #b5d3e4 · destructive #ff8a8a · divider #5f665f */
+}
+
+/* ── Semantic aliases — prefer these in product code ────────────── */
+:root,
+[data-theme="dark"] {
+  --bg-canvas: var(--routine-canvas);
+  --surface-card: var(--routine-surface);
+  --surface-sheet: var(--routine-surface-elevated);
+
+  --text-primary: var(--routine-label-primary);
+  --text-secondary: var(--routine-label-secondary);
+
+  --accent-complete: var(--routine-accent-complete);
+  --accent-active: var(--routine-accent-active);
+  --accent-destructive: var(--routine-accent-destructive);
+
+  --border-hairline: var(--routine-divider);
+
+  /* ── Derived tints — exact opacities lifted from the SwiftUI views ── */
+  /* progress-ring track */
+  --ring-track: color-mix(in srgb, var(--routine-divider) 50%, transparent);
+  /* card borders by state */
+  --card-border-incomplete: color-mix(in srgb, var(--routine-divider) 60%, transparent);
+  --card-border-complete: color-mix(in srgb, var(--routine-divider) 35%, transparent);
+  --card-border-unavailable: color-mix(in srgb, var(--routine-divider) 45%, transparent);
+  /* card wash overlays */
+  --card-wash-complete: color-mix(in srgb, var(--routine-accent-complete) 8%, transparent);
+  --card-wash-unavailable: color-mix(in srgb, var(--routine-label-secondary) 4%, transparent);
+  /* metadata pill fills (tinted by ring accent) */
+  --pill-fill-incomplete: color-mix(in srgb, currentColor 10%, transparent);
+  --pill-fill-complete: color-mix(in srgb, currentColor 14%, transparent);
+  /* undo / active button tint */
+  --tint-active-soft: color-mix(in srgb, var(--routine-accent-active) 12%, transparent);
+  /* hairline at 50% — used on sheets, banner, history cards */
+  --border-hairline-soft: color-mix(in srgb, var(--routine-divider) 50%, transparent);
+  /* completed calendar day fill */
+  --calendar-day-complete: color-mix(in srgb, var(--routine-accent-complete) 22%, transparent);
+}
