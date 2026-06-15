@@ -2,6 +2,7 @@ import Foundation
 import OSLog
 import RoutineCore
 import SwiftData
+import WidgetKit
 
 struct RoutineDraft: Equatable, Sendable {
     var name: String
@@ -482,6 +483,7 @@ extension RoutineManagementService {
 
     fileprivate func logMutationSucceeded(operation: String, details: String) {
         Self.logger.debug("\(operation, privacy: .public) saved. \(details, privacy: .public)")
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     fileprivate func logMutationFailed(operation: String, details: String, error: Error) {

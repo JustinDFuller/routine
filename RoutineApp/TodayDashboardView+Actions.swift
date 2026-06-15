@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 import SwiftUI
+import WidgetKit
 
 extension TodayDashboardView {
     func toggleManagementControls() {
@@ -157,6 +158,7 @@ extension TodayDashboardView {
                 return
             }
 
+            WidgetCenter.shared.reloadAllTimelines()
             RoutineHaptics.signalCompletion()
             showUndoBanner(
                 routineID: result.routineID,
@@ -179,6 +181,7 @@ extension TodayDashboardView {
                 return
             }
 
+            WidgetCenter.shared.reloadAllTimelines()
             RoutineHaptics.signalUndo()
         } catch {
             presentUpdateError(error)

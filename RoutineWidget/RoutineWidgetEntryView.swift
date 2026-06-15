@@ -11,6 +11,7 @@ struct RoutineWidgetEntryView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .padding()
             .containerBackground(Color.routineCanvas, for: .widget)
+            .widgetURL(URL(string: "routine://today"))
     }
 
     @ViewBuilder
