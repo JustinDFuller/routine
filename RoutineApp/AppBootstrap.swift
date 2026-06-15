@@ -41,13 +41,14 @@ enum AppBootstrap {
             throw ForcedBootstrapFailure()
         }
 
-        let modelContainer =
-            switch launchConfiguration.storeMode {
-            case .persistent:
-                try RoutineModelContainer.persistent()
-            case .inMemory:
-                try RoutineModelContainer.inMemory()
-            }
+        let modelContainer: ModelContainer
+        switch launchConfiguration.storeMode {
+        case .persistent:
+            RoutineModelContainer.migrateLegacyStoreIfNeeded()
+            modelContainer = try RoutineModelContainer.persistent()
+        case .inMemory:
+            modelContainer = try RoutineModelContainer.inMemory()
+        }
 
         if launchConfiguration.resetsStore {
             let context = ModelContext(modelContainer)
