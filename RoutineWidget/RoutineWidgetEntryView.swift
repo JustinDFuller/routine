@@ -9,7 +9,7 @@ struct RoutineWidgetEntryView: View {
     var body: some View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .padding()
+            .padding(14)
             .containerBackground(Color.routineCanvas, for: .widget)
             .widgetURL(URL(string: "routine://today"))
     }
@@ -53,24 +53,24 @@ private struct ReadyRoutineView: View {
     }
 
     private var smallLayout: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             WidgetProgressRing(
                 fillRatio: snapshot.fillRatio,
                 showsCheckmark: snapshot.isComplete,
                 accentColor: accentColor
             )
-            .frame(width: 36, height: 36)
+            .frame(width: 34, height: 34)
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(snapshot.name)
                     .font(.headline.weight(.semibold))
                     .foregroundStyle(Color.routineLabelPrimary)
                     .lineLimit(2)
+                    .minimumScaleFactor(0.85)
 
-                Text(snapshot.countText)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Color.routineLabelSecondary)
+                metadataPill(text: snapshot.countText)
             }
+            .layoutPriority(1)
 
             Spacer(minLength: 0)
 
@@ -94,6 +94,7 @@ private struct ReadyRoutineView: View {
                     .font(.headline.weight(.semibold))
                     .foregroundStyle(Color.routineLabelPrimary)
                     .lineLimit(2)
+                    .minimumScaleFactor(0.85)
 
                 HStack(spacing: 8) {
                     metadataPill(text: snapshot.countText)
@@ -116,11 +117,13 @@ private struct ReadyRoutineView: View {
         Text(text)
             .font(.caption.weight(.semibold))
             .foregroundStyle(Color.routineLabelPrimary)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(
                 Capsule(style: .continuous)
-                    .fill(accentColor.opacity(0.1))
+                    .fill(accentColor.opacity(0.12))
             )
     }
 }
@@ -135,7 +138,7 @@ private struct DoneButton: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Color.routineCanvas)
                 .padding(.horizontal, 14)
-                .padding(.vertical, 6)
+                .padding(.vertical, 5)
                 .frame(maxWidth: .infinity)
                 .background(
                     Capsule(style: .continuous)
