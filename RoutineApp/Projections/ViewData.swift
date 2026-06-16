@@ -79,6 +79,7 @@ struct HistoryCalendarDay: Identifiable, Equatable, Sendable {
     let isInDisplayedMonth: Bool
     let isToday: Bool
     let isCompleted: Bool
+    let isFuture: Bool
 }
 
 struct CompletionListItem: Identifiable, Equatable, Sendable {

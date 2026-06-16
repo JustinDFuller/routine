@@ -155,7 +155,8 @@ extension HistoryProjectionBuilder {
                 label: String(day.day),
                 isInDisplayedMonth: true,
                 isToday: day == today,
-                isCompleted: completedDays.contains(day)
+                isCompleted: completedDays.contains(day),
+                isFuture: day > today
             )
         }
     }
