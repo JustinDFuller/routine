@@ -189,17 +189,17 @@ final class DashboardProjectionBuilderTests: ProjectionBuilderTestCase {
             isOverTarget: false
         )
         let activeA = ComponentPreviewFixtures.incompleteCard
-        let activeB = ComponentPreviewFixtures.targetMetCard
+        let goalMet = ComponentPreviewFixtures.targetMetCard
 
         let section = RoutineSectionViewData(
             id: UUID(),
             name: "Test",
-            remainingCount: 2,
-            routines: [completedA, activeA, completedB, activeB]
+            remainingCount: 1,
+            routines: [completedA, activeA, completedB, goalMet]
         )
 
-        XCTAssertEqual(section.activeRoutines.map(\.id), [activeA.id, activeB.id])
-        XCTAssertEqual(section.completedRoutines.map(\.id), [completedA.id, completedB.id])
+        XCTAssertEqual(section.activeRoutines.map(\.id), [activeA.id])
+        XCTAssertEqual(section.collapsedRoutines.map(\.id), [completedA.id, completedB.id, goalMet.id])
     }
 
     func testBuildMapsFetchFailuresToPersistenceError() throws {

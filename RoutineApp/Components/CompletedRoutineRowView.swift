@@ -7,9 +7,15 @@ struct CompletedRoutineRowView: View {
     var body: some View {
         Button(action: onExpand) {
             HStack(spacing: 12) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(Color.routineAccentComplete)
+                if viewData.isCompletedToday {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(Color.routineAccentComplete)
+                } else {
+                    Image(systemName: "checkmark.circle")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(Color.routineLabelSecondary)
+                }
 
                 Text(viewData.name)
                     .font(.subheadline.weight(.semibold))
@@ -18,7 +24,7 @@ struct CompletedRoutineRowView: View {
 
                 Spacer(minLength: 0)
 
-                Text(viewData.countText)
+                Text(viewData.isCompletedToday ? viewData.countText : "Goal met")
                     .font(.caption)
                     .foregroundStyle(Color.routineLabelSecondary)
 
@@ -43,7 +49,9 @@ struct CompletedRoutineRowView: View {
         .accessibilityLabel(viewData.accessibilityLabel)
         .accessibilityHint("Expands the full routine card.")
         .accessibilityIdentifier(
-            "routine-completed-row-\(viewData.name.routineAccessibilityIdentifierComponent)"
+            viewData.isCompletedToday
+                ? "routine-completed-row-\(viewData.name.routineAccessibilityIdentifierComponent)"
+                : "routine-goal-met-row-\(viewData.name.routineAccessibilityIdentifierComponent)"
         )
     }
 }
@@ -58,6 +66,20 @@ struct CompletedRoutineRowView: View {
 #Preview("Completed Row - Light") {
     ComponentPreviewCanvas {
         CompletedRoutineRowView(viewData: ComponentPreviewFixtures.completedTodayCard, onExpand: {})
+    }
+    .preferredColorScheme(.light)
+}
+
+#Preview("Goal Met Row - Dark") {
+    ComponentPreviewCanvas {
+        CompletedRoutineRowView(viewData: ComponentPreviewFixtures.targetMetCard, onExpand: {})
+    }
+    .preferredColorScheme(.dark)
+}
+
+#Preview("Goal Met Row - Light") {
+    ComponentPreviewCanvas {
+        CompletedRoutineRowView(viewData: ComponentPreviewFixtures.targetMetCard, onExpand: {})
     }
     .preferredColorScheme(.light)
 }

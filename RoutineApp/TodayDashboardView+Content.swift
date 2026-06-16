@@ -130,9 +130,9 @@ extension TodayDashboardView {
             }
         }
 
-        if section.completedRoutines.isEmpty == false {
+        if section.collapsedRoutines.isEmpty == false {
             VStack(spacing: 8) {
-                ForEach(section.completedRoutines) { routine in
+                ForEach(section.collapsedRoutines) { routine in
                     if expandedCompletedRoutineIDs.contains(routine.id) {
                         routineCardView(for: routine)
                     } else {
