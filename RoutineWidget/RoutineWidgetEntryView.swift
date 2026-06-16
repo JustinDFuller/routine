@@ -53,24 +53,30 @@ private struct ReadyRoutineView: View {
     }
 
     private var smallLayout: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            WidgetProgressRing(
-                fillRatio: snapshot.fillRatio,
-                showsCheckmark: snapshot.isComplete,
-                accentColor: accentColor
-            )
-            .frame(width: 34, height: 34)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 8) {
+                WidgetProgressRing(
+                    fillRatio: snapshot.fillRatio,
+                    showsCheckmark: snapshot.isComplete,
+                    accentColor: accentColor,
+                    centerText: snapshot.countText
+                )
+                .frame(width: 40, height: 40)
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text(snapshot.name)
-                    .font(.headline.weight(.semibold))
-                    .foregroundStyle(Color.routineLabelPrimary)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.85)
+                Spacer(minLength: 0)
 
-                metadataPill(text: snapshot.countText)
+                Text(snapshot.periodText)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Color.routineLabelSecondary)
+                    .lineLimit(1)
             }
-            .layoutPriority(1)
+
+            Text(snapshot.name)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.routineLabelPrimary)
+                .lineLimit(3)
+                .minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             Spacer(minLength: 0)
 
@@ -179,6 +185,7 @@ private struct WidgetProgressRing: View {
     let fillRatio: Double
     let showsCheckmark: Bool
     let accentColor: Color
+    var centerText: String? = nil
 
     private var strokeStyle: StrokeStyle {
         StrokeStyle(lineWidth: 4.5, lineCap: .round)
@@ -198,6 +205,13 @@ private struct WidgetProgressRing: View {
                 Image(systemName: "checkmark")
                     .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.routineLabelPrimary)
+            } else if let centerText {
+                Text(centerText)
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color.routineLabelPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .padding(.horizontal, 2)
             }
         }
     }
