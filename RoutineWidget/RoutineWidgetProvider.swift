@@ -54,7 +54,7 @@ extension NextRoutineSnapshot {
         routineID: UUID(),
         name: "Morning walk",
         countText: "2/5",
-        periodText: "this week",
+        periodText: "Week",
         lastDoneText: "Yesterday",
         fillRatio: 0.4,
         isComplete: false
