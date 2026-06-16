@@ -223,6 +223,35 @@ final class HistoryProjectionBuilderTests: ProjectionBuilderTestCase {
         XCTAssertFalse(incompleteDay.isToday)
     }
 
+    func testBuildMarksFutureDaysAndLeavesPastAndTodayUnmarked() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let group = insertGroup(name: "Calendar", sortOrder: 0, into: context)
+        let routine = insertRoutine(
+            seed: RoutineTestSeed(name: "Meditate", targetCount: 5, period: .weekly, sortOrder: 0),
+            group: group,
+            into: context
+        )
+        let now = makeDate(year: 2026, month: 6, day: 10, hour: 9, minute: 0, calendar: calendar.calendar)
+
+        let projection = try HistoryProjectionBuilder(context: context, routineCalendar: calendar).build(
+            routineID: routine.id,
+            now: now
+        )
+        let viewData = try foundViewData(from: projection)
+        let june9 = try makeDay(year: 2026, month: 6, day: 9)
+        let june10 = try makeDay(year: 2026, month: 6, day: 10)
+        let june11 = try makeDay(year: 2026, month: 6, day: 11)
+
+        let pastDay = try XCTUnwrap(viewData.monthDays.first { $0.day == june9 })
+        let todayDay = try XCTUnwrap(viewData.monthDays.first { $0.day == june10 })
+        let futureDay = try XCTUnwrap(viewData.monthDays.first { $0.day == june11 })
+
+        XCTAssertFalse(pastDay.isFuture)
+        XCTAssertFalse(todayDay.isFuture)
+        XCTAssertTrue(futureDay.isFuture)
+    }
+
     func testBuildSortsRecentCompletionsAndIgnoresInvalidDayKeys() throws {
         let context = try makeContext()
         let calendar = makeCalendar()
