@@ -79,10 +79,6 @@ extension TodayDashboardView {
             VStack(alignment: .leading, spacing: 24) {
                 dashboardHeader
 
-                Text(viewData.dateLabel)
-                    .font(.subheadline)
-                    .foregroundStyle(Color.routineLabelSecondary)
-
                 if showsSectionContent {
                     sectionsContent
                 } else {
