@@ -6,7 +6,7 @@ import WidgetKit
 extension TodayDashboardView {
     func expand(_ routineID: UUID) {
         withAnimation(bannerAnimation) {
-            expandedCompletedRoutineIDs.insert(routineID)
+            _ = expandedCompletedRoutineIDs.insert(routineID)
         }
     }
 
