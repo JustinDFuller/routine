@@ -69,7 +69,6 @@ final class DashboardProjectionBuilder {
 
         return TodayDashboardViewData(
             title: "Today",
-            dateLabel: dashboardDateLabel(for: now),
             sections: sections,
             isEmpty: routines.isEmpty
         )
@@ -302,15 +301,6 @@ extension DashboardProjectionBuilder {
 
         let unit = dayCount == 1 ? "day" : "days"
         return "\(dayCount) \(unit) ago"
-    }
-
-    fileprivate func dashboardDateLabel(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = routineCalendar.calendar
-        formatter.timeZone = routineCalendar.calendar.timeZone
-        formatter.locale = routineCalendar.calendar.locale ?? Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "EEEE, MMM d"
-        return formatter.string(from: date)
     }
 }
 

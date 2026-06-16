@@ -3,7 +3,6 @@ import RoutineCore
 
 struct TodayDashboardViewData: Equatable, Sendable {
     let title: String
-    let dateLabel: String
     let sections: [RoutineSectionViewData]
     let isEmpty: Bool
 }
