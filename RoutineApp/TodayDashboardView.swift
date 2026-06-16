@@ -6,6 +6,7 @@ struct TodayDashboardView: View {
     @Binding var path: [AppRoute]
 
     @Environment(\.accessibilityReduceMotion) var reduceMotion
+    @Environment(\.scenePhase) var scenePhase
     @Environment(\.modelContext) var modelContext
     @Environment(\.routineRuntimeConfiguration) var runtime
     @Environment(\.routineCalendar) var routineCalendar
@@ -149,6 +150,11 @@ struct TodayDashboardView: View {
         .accessibilityIdentifier("today-dashboard-root")
         .onDisappear {
             undoDismissTask?.cancel()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                handlePendingWidgetCompletion()
+            }
         }
     }
 

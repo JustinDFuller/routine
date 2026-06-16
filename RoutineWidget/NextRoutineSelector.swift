@@ -133,9 +133,9 @@ extension NextRoutineSelector {
     fileprivate static func periodText(for period: RoutinePeriod) -> String {
         switch period {
         case .weekly:
-            "this week"
+            "Week"
         case .monthly:
-            "this month"
+            "Month"
         }
     }
 

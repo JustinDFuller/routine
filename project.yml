@@ -20,6 +20,7 @@ targets:
       - path: RoutineApp
       # shared widget files, exposed to RoutineAppTests via @testable import:
       - path: RoutineWidget/NextRoutineSelector.swift
+      - path: RoutineWidget/CompleteRoutineIntent.swift
     info:
       path: RoutineApp/Info.plist
       properties:

@@ -198,7 +198,7 @@ final class NextRoutineSelectorTests: ProjectionBuilderTestCase {
         XCTAssertEqual(snapshot.routineID, walk.id)
         XCTAssertEqual(snapshot.name, "Walk")
         XCTAssertEqual(snapshot.countText, "1/5")
-        XCTAssertEqual(snapshot.periodText, "this week")
+        XCTAssertEqual(snapshot.periodText, "Week")
         XCTAssertEqual(snapshot.lastDoneText, "2d ago")
         XCTAssertEqual(snapshot.fillRatio, 0.2, accuracy: 0.0001)
         XCTAssertFalse(snapshot.isComplete)
@@ -223,7 +223,7 @@ final class NextRoutineSelectorTests: ProjectionBuilderTestCase {
             return XCTFail("Expected a ready routine, got \(selection)")
         }
 
-        XCTAssertEqual(snapshot.periodText, "this month")
+        XCTAssertEqual(snapshot.periodText, "Month")
         XCTAssertEqual(snapshot.lastDoneText, "Never")
     }
 
