@@ -168,6 +168,40 @@ final class DashboardProjectionBuilderTests: ProjectionBuilderTestCase {
         XCTAssertEqual(nineCard.progressRing.fillRatio, 1)
     }
 
+    func testRoutineSectionViewDataPartitionsSplitsAndPreservesOrder() {
+        let completedA = ComponentPreviewFixtures.completedTodayCard
+        let completedB = RoutineCardViewData(
+            id: UUID(uuidString: "AAAAAAAA-0000-0000-0000-000000000001") ?? UUID(),
+            name: "Second Completed",
+            period: .weekly,
+            countText: "1/2",
+            periodText: "week",
+            lastDoneText: "Today",
+            availabilityText: nil,
+            accessibilityLabel: "Second Completed, completed today, 1 of 2 this week, last done Today",
+            unavailableAccessibilityPhrase: nil,
+            progressRing: ProgressRingViewData(
+                targetCount: 2, completedCount: 1, fillRatio: 0.5, showsTodayCheckmark: true
+            ),
+            isAvailableNow: true,
+            isCompletedToday: true,
+            isTargetMet: false,
+            isOverTarget: false
+        )
+        let activeA = ComponentPreviewFixtures.incompleteCard
+        let activeB = ComponentPreviewFixtures.targetMetCard
+
+        let section = RoutineSectionViewData(
+            id: UUID(),
+            name: "Test",
+            remainingCount: 2,
+            routines: [completedA, activeA, completedB, activeB]
+        )
+
+        XCTAssertEqual(section.activeRoutines.map(\.id), [activeA.id, activeB.id])
+        XCTAssertEqual(section.completedRoutines.map(\.id), [completedA.id, completedB.id])
+    }
+
     func testBuildMapsFetchFailuresToPersistenceError() throws {
         let context = try makeContext()
         let originalFetch = RoutinePersistenceFetchExecutor.fetchGroups

@@ -93,7 +93,8 @@ enum RoutineModelContainer {
             return storeURL
         }
 
-        return storeURL
+        return
+            storeURL
             .deletingLastPathComponent()
             .appendingPathComponent(storeURL.lastPathComponent + suffix)
     }

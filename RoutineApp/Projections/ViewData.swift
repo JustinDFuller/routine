@@ -13,6 +13,9 @@ struct RoutineSectionViewData: Identifiable, Equatable, Sendable {
     let name: String
     let remainingCount: Int
     let routines: [RoutineCardViewData]
+
+    var activeRoutines: [RoutineCardViewData] { routines.filter { $0.isCompletedToday == false } }
+    var completedRoutines: [RoutineCardViewData] { routines.filter(\.isCompletedToday) }
 }
 
 struct RoutineCardViewData: Identifiable, Equatable, Sendable {

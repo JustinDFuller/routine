@@ -61,9 +61,9 @@ enum AppBootstrap {
         return modelContainer
     }
 
-    /// In-memory launches back UI tests and screenshot fixtures, which expect a
-    /// deterministic Sunday week start regardless of settings persisted by earlier
-    /// runs in the same simulator's UserDefaults.
+    /// In-memory launches back UI tests and screenshot fixtures, which expect
+    /// deterministic settings regardless of values persisted by earlier runs in
+    /// the same simulator's UserDefaults.
     static func resetSettingsForInMemoryStoreIfNeeded(
         launchConfiguration: RoutineDebugLaunchConfiguration,
         userDefaults: UserDefaults = .standard
@@ -73,6 +73,10 @@ enum AppBootstrap {
         }
 
         userDefaults.removeObject(forKey: RoutineSettingsKeys.weekStartWeekday)
+        userDefaults.set(
+            launchConfiguration.collapseCompletedEnabled,
+            forKey: RoutineSettingsKeys.collapseCompletedToday
+        )
     }
 }
 
