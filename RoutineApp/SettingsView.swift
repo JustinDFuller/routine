@@ -5,6 +5,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
 
     @AppStorage(RoutineSettingsKeys.weekStartWeekday) private var weekStartRaw = Weekday.sunday.rawValue
+    @AppStorage(RoutineSettingsKeys.collapseCompletedToday) private var collapseCompletedToday = true
 
     var body: some View {
         NavigationStack {
@@ -19,10 +20,20 @@ struct SettingsView: View {
                 } footer: {
                     Text("Controls when your weekly routine progress resets.")
                 }
+
+                Section {
+                    Toggle("Collapse completed routines", isOn: $collapseCompletedToday)
+                        .accessibilityIdentifier("settings-collapse-completed-toggle")
+                } footer: {
+                    Text(
+                        "Completed routines collapse into compact rows so you can focus on what's left. "
+                            + "Tap one to expand it."
+                    )
+                }
             }
             .scrollContentBackground(.hidden)
             .background(Color.routineCanvas.ignoresSafeArea())
-            .navigationTitle("Week Starts On")
+            .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

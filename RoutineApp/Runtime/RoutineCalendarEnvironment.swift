@@ -3,6 +3,7 @@ import SwiftUI
 
 enum RoutineSettingsKeys {
     static let weekStartWeekday = "settings.weekStartWeekday"
+    static let collapseCompletedToday = "settings.collapseCompletedToday"
 }
 
 private struct RoutineCalendarKey: EnvironmentKey {

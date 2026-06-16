@@ -118,6 +118,20 @@ final class RoutineDebugLaunchConfigurationTests: ProjectionBuilderTestCase {
         XCTAssertNil(unknownValueConfiguration.runtime.forcedColorScheme)
     }
 
+    func testCollapseCompletedEnabledFlagParsesCorrectly() {
+        let withFlag = RoutineDebugLaunchConfiguration(
+            arguments: ["Routine", "-routine-use-in-memory-store", "-routine-collapse-completed-enabled"],
+            calendar: makeCalendar().calendar
+        )
+        let withoutFlag = RoutineDebugLaunchConfiguration(
+            arguments: ["Routine", "-routine-use-in-memory-store"],
+            calendar: makeCalendar().calendar
+        )
+
+        XCTAssertTrue(withFlag.collapseCompletedEnabled)
+        XCTAssertFalse(withoutFlag.collapseCompletedEnabled)
+    }
+
     func testMalformedOrMissingFixedDateFallsBackSafely() {
         let missingDateValue = RoutineDebugLaunchConfiguration(
             arguments: ["Routine", "-routine-fixed-date"],

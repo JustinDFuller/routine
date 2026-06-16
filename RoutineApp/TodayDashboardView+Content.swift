@@ -24,9 +24,10 @@ extension TodayDashboardView {
                 enterRearrangeRoutinesMode()
             }
 
-            Button("Week Starts On") {
+            Button("Settings") {
                 openSettings()
             }
+            .accessibilityIdentifier("today-dashboard-settings-button")
         } label: {
             Image(systemName: "gearshape")
                 .font(.title3.weight(.semibold))
@@ -101,33 +102,60 @@ extension TodayDashboardView {
                 VStack(alignment: .leading, spacing: 10) {
                     sectionHeader(section)
 
-                    VStack(spacing: 12) {
-                        if section.routines.isEmpty {
-                            Text("No routines")
-                                .font(.subheadline)
-                                .foregroundStyle(Color.routineLabelSecondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 8)
-                        } else {
+                    if section.routines.isEmpty {
+                        Text("No routines")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.routineLabelSecondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 8)
+                    } else if collapsesCompleted {
+                        collapsedSectionContent(section)
+                    } else {
+                        VStack(spacing: 12) {
                             ForEach(section.routines) { routine in
-                                RoutineCardView(
-                                    viewData: routine,
-                                    onTap: {
-                                        handlePrimaryTap(for: routine)
-                                    },
-                                    onEdit: routineEditAction(for: routine.id),
-                                    onHistory: mode == .tracking
-                                        ? {
-                                            openHistory(for: routine.id)
-                                        }
-                                        : nil
-                                )
+                                routineCardView(for: routine)
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private func collapsedSectionContent(_ section: RoutineSectionViewData) -> some View {
+        VStack(spacing: 12) {
+            ForEach(section.activeRoutines) { routine in
+                routineCardView(for: routine)
+            }
+        }
+
+        if section.collapsedRoutines.isEmpty == false {
+            VStack(spacing: 8) {
+                ForEach(section.collapsedRoutines) { routine in
+                    if expandedCompletedRoutineIDs.contains(routine.id) {
+                        routineCardView(for: routine)
+                    } else {
+                        CompletedRoutineRowView(viewData: routine, onExpand: { expand(routine.id) })
+                    }
+                }
+            }
+        }
+    }
+
+    private func routineCardView(for routine: RoutineCardViewData) -> some View {
+        RoutineCardView(
+            viewData: routine,
+            onTap: {
+                handlePrimaryTap(for: routine)
+            },
+            onEdit: routineEditAction(for: routine.id),
+            onHistory: mode == .tracking
+                ? {
+                    openHistory(for: routine.id)
+                }
+                : nil
+        )
     }
 
     var showsSectionContent: Bool {

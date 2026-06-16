@@ -157,7 +157,7 @@ extension DashboardProjectionBuilder {
         return RoutineSectionViewData(
             id: id,
             name: name,
-            remainingCount: cards.filter { $0.isCompletedToday == false && $0.isAvailableNow }.count,
+            remainingCount: cards.filter { $0.isCompletedToday == false && $0.isTargetMet == false && $0.isAvailableNow }.count,
             routines: cards
         )
     }

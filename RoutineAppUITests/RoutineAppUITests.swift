@@ -368,6 +368,32 @@ final class RoutineAppUITests: XCTestCase {
 }
 
 extension RoutineAppUITests {
+    func testCompletedRoutineCollapsesToMiniRowAndExpandsOnTap() {
+        let app = makeApp(
+            additionalLaunchArguments: ["-routine-collapse-completed-enabled"]
+        )
+        app.launch()
+
+        let incompleteCard = identifiedElement("routine-card-primary-morning-yoga", in: app)
+        XCTAssertTrue(incompleteCard.waitForExistence(timeout: 5))
+        incompleteCard.tap()
+
+        let miniRow = identifiedElement("routine-completed-row-morning-yoga", in: app)
+        XCTAssertTrue(miniRow.waitForExistence(timeout: 5))
+
+        XCTAssertFalse(
+            identifiedElement("routine-card-history-morning-yoga", in: app).waitForExistence(timeout: 2)
+        )
+
+        miniRow.tap()
+
+        XCTAssertTrue(
+            identifiedElement("routine-card-history-morning-yoga", in: app).waitForExistence(timeout: 5)
+        )
+    }
+}
+
+extension RoutineAppUITests {
     fileprivate func makeApp(
         seeded: Bool = true,
         additionalLaunchArguments: [String] = []
@@ -410,7 +436,7 @@ extension RoutineAppUITests {
 
     fileprivate func setWeekStart(_ weekdayName: String, in app: XCUIApplication) {
         openManagementMenu(in: app)
-        app.buttons["Week Starts On"].tap()
+        app.buttons["today-dashboard-settings-button"].tap()
 
         let picker = identifiedElement("settings-week-start-picker", in: app)
         XCTAssertTrue(picker.waitForExistence(timeout: 5))

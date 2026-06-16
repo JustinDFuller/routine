@@ -82,7 +82,8 @@ final class LegacyStoreMigrationTests: XCTestCase {
             return storeURL
         }
 
-        return storeURL
+        return
+            storeURL
             .deletingLastPathComponent()
             .appendingPathComponent(storeURL.lastPathComponent + suffix)
     }

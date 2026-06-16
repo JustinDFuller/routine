@@ -4,6 +4,12 @@ import SwiftUI
 import WidgetKit
 
 extension TodayDashboardView {
+    func expand(_ routineID: UUID) {
+        withAnimation(bannerAnimation) {
+            _ = expandedCompletedRoutineIDs.insert(routineID)
+        }
+    }
+
     func toggleManagementControls() {
         mode = mode == .managementControls ? .tracking : .managementControls
     }

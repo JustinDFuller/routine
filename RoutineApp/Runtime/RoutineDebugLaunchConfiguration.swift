@@ -18,19 +18,22 @@ struct RoutineDebugLaunchConfiguration: Equatable, Sendable {
     let forcesBootstrapFailure: Bool
     let runtime: RoutineRuntimeConfiguration
     let launchRoute: LaunchRoute?
+    let collapseCompletedEnabled: Bool
 
     init(
         storeMode: StoreMode = .persistent,
         resetsStore: Bool = false,
         forcesBootstrapFailure: Bool = false,
         runtime: RoutineRuntimeConfiguration = RoutineRuntimeConfiguration(),
-        launchRoute: LaunchRoute? = nil
+        launchRoute: LaunchRoute? = nil,
+        collapseCompletedEnabled: Bool = false
     ) {
         self.storeMode = storeMode
         self.resetsStore = resetsStore
         self.forcesBootstrapFailure = forcesBootstrapFailure
         self.runtime = runtime
         self.launchRoute = launchRoute
+        self.collapseCompletedEnabled = collapseCompletedEnabled
     }
 
     init(arguments: [String], calendar: Calendar = .current) {
@@ -53,7 +56,8 @@ struct RoutineDebugLaunchConfiguration: Equatable, Sendable {
                     screenshotFixture: Self.screenshotFixture(in: arguments),
                     forcedColorScheme: Self.forcedColorScheme(in: arguments)
                 ),
-                launchRoute: Self.launchRoute(in: arguments)
+                launchRoute: Self.launchRoute(in: arguments),
+                collapseCompletedEnabled: arguments.contains("-routine-collapse-completed-enabled")
             )
         #else
             self.init()
