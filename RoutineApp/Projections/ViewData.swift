@@ -69,8 +69,16 @@ struct RoutineHistoryViewData: Equatable, Sendable {
     let frequencySummary: String
     let progress: RoutineProgress
     let lastDoneText: String
-    let monthDays: [HistoryCalendarDay]
+    let weeks: [HistoryCalendarWeek]
     let recentCompletions: [CompletionListItem]
+}
+
+struct HistoryCalendarWeek: Identifiable, Equatable, Sendable {
+    let id: Int
+    let days: [HistoryCalendarDay]
+    let leadingPlaceholders: Int
+    let trailingPlaceholders: Int
+    let isGoalMet: Bool
 }
 
 struct HistoryCalendarDay: Identifiable, Equatable, Sendable {

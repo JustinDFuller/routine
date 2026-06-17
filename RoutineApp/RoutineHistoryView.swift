@@ -99,7 +99,7 @@ struct RoutineHistoryView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     summaryHeader(viewData)
-                    HistoryMonthGridView(monthDays: viewData.monthDays, routineCalendar: routineCalendar)
+                    HistoryMonthGridView(weeks: viewData.weeks, routineCalendar: routineCalendar)
                     recentCompletionsSection(viewData)
                 }
                 .padding(.horizontal, 16)
@@ -290,132 +290,6 @@ struct RoutineHistoryView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-private struct HistoryMonthGridView: View {
-    let monthDays: [HistoryCalendarDay]
-    let routineCalendar: RoutineCalendar
-
-    private var monthTitle: String {
-        guard let firstDay = monthDays.first else {
-            return "This month"
-        }
-
-        let formatter = DateFormatter()
-        formatter.calendar = routineCalendar.calendar
-        formatter.timeZone = routineCalendar.calendar.timeZone
-        formatter.locale = routineCalendar.calendar.locale ?? Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: date(for: firstDay.day))
-    }
-
-    private var leadingPlaceholderCount: Int {
-        guard let firstDay = monthDays.first else {
-            return 0
-        }
-
-        return routineCalendar.weekdayOffset(for: firstDay.day)
-    }
-
-    private var weekdaySymbols: [String] {
-        routineCalendar.orderedWeekdaySymbols
-    }
-
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 7)
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(monthTitle)
-                .font(.headline.weight(.semibold))
-                .foregroundStyle(Color.routineLabelPrimary)
-
-            LazyVGrid(columns: columns, spacing: 10) {
-                ForEach(weekdaySymbols, id: \.self) { symbol in
-                    Text(symbol)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color.routineLabelSecondary)
-                        .frame(maxWidth: .infinity)
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityIdentifier("routine-history-weekday-header")
-                .accessibilityLabel(weekdaySymbols.joined(separator: " "))
-
-                ForEach(0..<leadingPlaceholderCount, id: \.self) { _ in
-                    Color.clear
-                        .frame(height: 36)
-                        .accessibilityHidden(true)
-                }
-
-                ForEach(monthDays) { day in
-                    dayCell(day)
-                }
-            }
-        }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.routineSurface)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.routineDivider.opacity(0.5), lineWidth: 1)
-        )
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("routine-history-month-grid")
-    }
-
-    private func dayCell(_ day: HistoryCalendarDay) -> some View {
-        ZStack {
-            Circle()
-                .fill(day.isCompleted ? Color.routineAccentComplete.opacity(0.22) : .clear)
-
-            Circle()
-                .stroke(
-                    day.isToday ? Color.routineAccentActive : Color.clear,
-                    lineWidth: day.isToday ? 2 : 0
-                )
-
-            Text(day.label)
-                .font(.subheadline.weight(day.isToday ? .semibold : .regular))
-                .foregroundStyle(day.isCompleted ? Color.routineLabelPrimary : Color.routineLabelSecondary)
-        }
-        .frame(height: 36)
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityLabel(for: day))
-    }
-
-    private func accessibilityLabel(for day: HistoryCalendarDay) -> String {
-        let dateText = explicitDateLabel(for: day.day)
-        let todayText = day.isToday ? "today" : "not today"
-        let completionText = day.isCompleted ? "completed" : "not completed"
-        return "\(dateText), \(todayText), \(completionText)"
-    }
-
-    private func explicitDateLabel(for day: RoutineDay) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = routineCalendar.calendar
-        formatter.timeZone = routineCalendar.calendar.timeZone
-        formatter.locale = routineCalendar.calendar.locale ?? Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "MMM d, yyyy"
-        return formatter.string(from: date(for: day))
-    }
-
-    private func date(for day: RoutineDay) -> Date {
-        var components = DateComponents()
-        components.calendar = routineCalendar.calendar
-        components.timeZone = routineCalendar.calendar.timeZone
-        components.year = day.year
-        components.month = day.month
-        components.day = day.day
-        components.hour = 12
-
-        guard let date = routineCalendar.calendar.date(from: components) else {
-            preconditionFailure("Unable to construct date for month grid.")
-        }
-
-        return date
     }
 }
 
