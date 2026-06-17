@@ -46,7 +46,7 @@ public struct CheckInContext: Sendable {
 private typealias RoutineProgressPair = (routine: CheckInRoutineSnapshot, progress: RoutineProgress)
 
 public struct CheckInContentBuilder: Sendable {
-    public static let celebrationTitle = "All caught up 🎉"
+    public static let celebrationTitle = "You're all caught up"
 
     public init() {}
 
@@ -109,7 +109,7 @@ public struct CheckInContentBuilder: Sendable {
     private var celebrationMessage: CheckInContent {
         .message(
             title: Self.celebrationTitle,
-            body: "Every goal met this week. Enjoy the rest of it!"
+            body: "Every goal met this week. Enjoy the rest of it."
         )
     }
 
@@ -119,9 +119,9 @@ public struct CheckInContentBuilder: Sendable {
         }
 
         return .message(
-            title: "Good morning ☀️",
+            title: "Good morning",
             body:
-                "\(next.routine.name) is a nice place to start — "
+                "\(next.routine.name) is a nice way to start the day — "
                 + "\(next.progress.remainingCount) more to go this \(periodWord(next.routine.period))."
         )
     }
@@ -132,8 +132,8 @@ public struct CheckInContentBuilder: Sendable {
         }
 
         return .message(
-            title: "Nice momentum 👏",
-            body: "\(doneToday) done so far today. \(next.routine.name) is there whenever you've got 5 minutes."
+            title: "Still time today",
+            body: "\(doneToday) done so far today — \(next.routine.name) is there whenever you have a few minutes."
         )
     }
 
@@ -141,8 +141,8 @@ public struct CheckInContentBuilder: Sendable {
         let metCount = pairCount - openGoalCount
 
         return .message(
-            title: "Evening check-in 🌙",
-            body: "\(doneToday) done today. You're \(metCount) of \(pairCount) toward this week's goals."
+            title: "Winding down",
+            body: "\(doneToday) done today. You're at \(metCount) of \(pairCount) goals this week."
         )
     }
 
