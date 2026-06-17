@@ -18,8 +18,8 @@ final class CheckInContentBuilderTests: XCTestCase {
         XCTAssertEqual(
             content,
             .message(
-                title: "Good morning",
-                body: "Stretch is a nice way to start the day — 3 more to go this week."
+                title: "Morning check-in",
+                body: "Stretch is open, with 3 left to reach this week's goal."
             )
         )
     }
@@ -58,8 +58,8 @@ final class CheckInContentBuilderTests: XCTestCase {
         XCTAssertEqual(
             content,
             .message(
-                title: "Good morning",
-                body: "Journal is a nice way to start the day — 5 more to go this week."
+                title: "Morning check-in",
+                body: "Journal is open, with 5 left to reach this week's goal."
             )
         )
     }
@@ -86,8 +86,8 @@ final class CheckInContentBuilderTests: XCTestCase {
         XCTAssertEqual(
             content,
             .message(
-                title: "Still time today",
-                body: "1 done so far today — Read is there whenever you have a few minutes."
+                title: "Midday check-in",
+                body: "1 done so far today. Read is still open, with 2 left this week."
             )
         )
     }
@@ -153,8 +153,8 @@ final class CheckInContentBuilderTests: XCTestCase {
         XCTAssertEqual(
             content,
             .message(
-                title: "Winding down",
-                body: "1 done today. You're at 1 of 3 goals this week."
+                title: "Evening check-in",
+                body: "1 done today. 1 of 3 goals met this week, 2 still open."
             )
         )
     }
@@ -180,8 +180,8 @@ final class CheckInContentBuilderTests: XCTestCase {
         XCTAssertEqual(
             content,
             .message(
-                title: "Good morning",
-                body: "Stretch is a nice way to start the day — 1 more to go this week."
+                title: "Morning check-in",
+                body: "Stretch is open, with 1 left to reach this week's goal."
             )
         )
     }
@@ -200,7 +200,7 @@ final class CheckInContentBuilderTests: XCTestCase {
 
         XCTAssertEqual(
             content,
-            .message(title: "You're all caught up", body: "Every goal met this week. Enjoy the rest of it.")
+            .message(title: "All caught up", body: "Every goal met this week — nothing left open.")
         )
     }
 
@@ -243,8 +243,8 @@ final class CheckInContentBuilderTests: XCTestCase {
         XCTAssertEqual(
             content,
             .message(
-                title: "Good morning",
-                body: "Meditate is a nice way to start the day — 1 more to go this week."
+                title: "Morning check-in",
+                body: "Meditate is open, with 1 left to reach this week's goal."
             )
         )
     }

@@ -46,7 +46,7 @@ public struct CheckInContext: Sendable {
 private typealias RoutineProgressPair = (routine: CheckInRoutineSnapshot, progress: RoutineProgress)
 
 public struct CheckInContentBuilder: Sendable {
-    public static let celebrationTitle = "You're all caught up"
+    public static let celebrationTitle = "All caught up"
 
     public init() {}
 
@@ -109,7 +109,7 @@ public struct CheckInContentBuilder: Sendable {
     private var celebrationMessage: CheckInContent {
         .message(
             title: Self.celebrationTitle,
-            body: "Every goal met this week. Enjoy the rest of it."
+            body: "Every goal met this week — nothing left open."
         )
     }
 
@@ -119,10 +119,10 @@ public struct CheckInContentBuilder: Sendable {
         }
 
         return .message(
-            title: "Good morning",
+            title: "Morning check-in",
             body:
-                "\(next.routine.name) is a nice way to start the day — "
-                + "\(next.progress.remainingCount) more to go this \(periodWord(next.routine.period))."
+                "\(next.routine.name) is open, with \(next.progress.remainingCount) left "
+                + "to reach this \(periodWord(next.routine.period))'s goal."
         )
     }
 
@@ -132,8 +132,10 @@ public struct CheckInContentBuilder: Sendable {
         }
 
         return .message(
-            title: "Still time today",
-            body: "\(doneToday) done so far today — \(next.routine.name) is there whenever you have a few minutes."
+            title: "Midday check-in",
+            body:
+                "\(doneToday) done so far today. \(next.routine.name) is still open, "
+                + "with \(next.progress.remainingCount) left this \(periodWord(next.routine.period))."
         )
     }
 
@@ -141,8 +143,8 @@ public struct CheckInContentBuilder: Sendable {
         let metCount = pairCount - openGoalCount
 
         return .message(
-            title: "Winding down",
-            body: "\(doneToday) done today. You're at \(metCount) of \(pairCount) goals this week."
+            title: "Evening check-in",
+            body: "\(doneToday) done today. \(metCount) of \(pairCount) goals met this week, \(openGoalCount) still open."
         )
     }
 
