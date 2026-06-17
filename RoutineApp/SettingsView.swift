@@ -98,8 +98,7 @@ struct SettingsView: View {
     private var checkInFooter: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(
-                "Check-ins are 3 local daily nudges at the times you choose. They never spam per-routine, "
-                    + "and they go quiet automatically once everything for the period is done."
+                "Three daily reminders at the times you choose. They stop once everything for the period is done."
             )
 
             if isNotificationAccessDenied {

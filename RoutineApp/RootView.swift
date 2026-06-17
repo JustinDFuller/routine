@@ -84,8 +84,7 @@ struct RootView: View {
             }
         } message: {
             Text(
-                "Routine can send a few quiet reminders during the day — morning, afternoon, and evening — "
-                    + "and go quiet automatically once everything's done. No per-routine spam."
+                "Get a morning, afternoon, and evening reminder. They stop once everything's done."
             )
         }
         .onOpenURL { url in
