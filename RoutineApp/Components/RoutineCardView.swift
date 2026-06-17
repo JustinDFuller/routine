@@ -5,8 +5,23 @@ struct RoutineCardView: View {
     let onTap: () -> Void
     let onEdit: (() -> Void)?
     let onHistory: (() -> Void)?
+    let onCollapse: (() -> Void)?
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    init(
+        viewData: RoutineCardViewData,
+        onTap: @escaping () -> Void,
+        onEdit: (() -> Void)?,
+        onHistory: (() -> Void)?,
+        onCollapse: (() -> Void)? = nil
+    ) {
+        self.viewData = viewData
+        self.onTap = onTap
+        self.onEdit = onEdit
+        self.onHistory = onHistory
+        self.onCollapse = onCollapse
+    }
 
     private var isUnavailable: Bool {
         viewData.isCompletedToday == false && viewData.isAvailableNow == false
@@ -121,6 +136,23 @@ struct RoutineCardView: View {
                 .accessibilityIdentifier(
                     "routine-card-history-\(viewData.name.routineAccessibilityIdentifierComponent)"
                 )
+                .padding(.trailing, onCollapse == nil ? 8 : 0)
+            }
+
+            if let onCollapse {
+                Button(action: onCollapse) {
+                    DoubleChevron(direction: .collapse, spacing: 2)
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundStyle(Color.routineLabelSecondary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Collapse \(viewData.name)")
+                .accessibilityHint("Collapses the routine back to a compact row.")
+                .accessibilityIdentifier(
+                    "routine-card-collapse-\(viewData.name.routineAccessibilityIdentifierComponent)"
+                )
                 .padding(.trailing, 8)
             }
         }
@@ -222,7 +254,13 @@ struct RoutineCardView: View {
     ComponentPreviewCanvas {
         VStack(spacing: 12) {
             RoutineCardView(viewData: ComponentPreviewFixtures.incompleteCard, onTap: {}, onEdit: nil, onHistory: {})
-            RoutineCardView(viewData: ComponentPreviewFixtures.completedTodayCard, onTap: {}, onEdit: {}, onHistory: {})
+            RoutineCardView(
+                viewData: ComponentPreviewFixtures.completedTodayCard,
+                onTap: {},
+                onEdit: {},
+                onHistory: {},
+                onCollapse: {}
+            )
             RoutineCardView(viewData: ComponentPreviewFixtures.targetMetCard, onTap: {}, onEdit: nil, onHistory: {})
             RoutineCardView(viewData: ComponentPreviewFixtures.overTargetCard, onTap: {}, onEdit: nil, onHistory: {})
             RoutineCardView(viewData: ComponentPreviewFixtures.highTargetCard, onTap: {}, onEdit: nil, onHistory: {})

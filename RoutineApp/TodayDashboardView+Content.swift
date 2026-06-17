@@ -130,7 +130,7 @@ extension TodayDashboardView {
             VStack(spacing: 8) {
                 ForEach(section.collapsedRoutines) { routine in
                     if expandedCompletedRoutineIDs.contains(routine.id) {
-                        routineCardView(for: routine)
+                        routineCardView(for: routine, onCollapse: { collapse(routine.id) })
                     } else {
                         CompletedRoutineRowView(viewData: routine, onExpand: { expand(routine.id) })
                     }
@@ -139,7 +139,10 @@ extension TodayDashboardView {
         }
     }
 
-    private func routineCardView(for routine: RoutineCardViewData) -> some View {
+    private func routineCardView(
+        for routine: RoutineCardViewData,
+        onCollapse: (() -> Void)? = nil
+    ) -> some View {
         RoutineCardView(
             viewData: routine,
             onTap: {
@@ -150,7 +153,8 @@ extension TodayDashboardView {
                 ? {
                     openHistory(for: routine.id)
                 }
-                : nil
+                : nil,
+            onCollapse: onCollapse
         )
     }
 

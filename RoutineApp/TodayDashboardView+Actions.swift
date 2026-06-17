@@ -10,6 +10,12 @@ extension TodayDashboardView {
         }
     }
 
+    func collapse(_ routineID: UUID) {
+        withAnimation(bannerAnimation) {
+            _ = expandedCompletedRoutineIDs.remove(routineID)
+        }
+    }
+
     func toggleManagementControls() {
         mode = mode == .managementControls ? .tracking : .managementControls
     }
