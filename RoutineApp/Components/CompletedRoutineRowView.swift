@@ -28,7 +28,7 @@ struct CompletedRoutineRowView: View {
                     .font(.caption)
                     .foregroundStyle(Color.routineLabelSecondary)
 
-                Image(systemName: "chevron.down")
+                Image(systemName: "rectangle.expand.vertical")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.routineLabelSecondary)
             }
