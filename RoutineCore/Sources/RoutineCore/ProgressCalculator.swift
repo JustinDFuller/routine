@@ -41,6 +41,13 @@ public struct ProgressCalculator: Sendable {
         uniqueSortedDays(from: completionDays).last
     }
 
+    public func completions(
+        in range: ClosedRange<RoutineDay>,
+        completionDays: [RoutineDay]
+    ) -> [RoutineDay] {
+        uniqueSortedDays(from: completionDays).filter { range.contains($0) }
+    }
+
     private func uniqueSortedDays(from completionDays: [RoutineDay]) -> [RoutineDay] {
         Array(Set(completionDays)).sorted()
     }

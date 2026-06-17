@@ -121,6 +121,22 @@ final class ProgressCalculatorTests: XCTestCase {
         XCTAssertEqual(progress.lastCompletedDay, latestHistoricalDay)
     }
 
+    func testCompletionsInRangeFiltersOutOfRangeDaysAndDeduplicates() throws {
+        let calculator = ProgressCalculator(routineCalendar: testRoutineCalendar())
+        let rangeStart = try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 2))
+        let rangeEnd = try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 8))
+        let inRangeDay = try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 4))
+        let beforeRangeDay = try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 1))
+        let afterRangeDay = try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 9))
+
+        let completions = calculator.completions(
+            in: rangeStart...rangeEnd,
+            completionDays: [inRangeDay, inRangeDay, beforeRangeDay, afterRangeDay]
+        )
+
+        XCTAssertEqual(completions, [inRangeDay])
+    }
+
     func testRemainingCountFloorsAtZeroAndOverTargetBehaviorIsPreserved() {
         let progress = RoutineProgress(
             period: .weekly,

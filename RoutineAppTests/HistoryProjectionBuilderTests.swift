@@ -149,11 +149,11 @@ final class HistoryProjectionBuilderTests: ProjectionBuilderTestCase {
         )
 
         XCTAssertEqual(beforeRemoval.progress.completedCount, 1)
-        XCTAssertTrue(beforeRemoval.monthDays.contains { $0.day == june10 && $0.isCompleted })
+        XCTAssertTrue(beforeRemoval.weeks.flatMap(\.days).contains { $0.day == june10 && $0.isCompleted })
         XCTAssertEqual(afterRemoval.progress.completedCount, 0)
         XCTAssertEqual(afterRemoval.lastDoneText, "Never")
         XCTAssertTrue(afterRemoval.recentCompletions.isEmpty)
-        XCTAssertTrue(afterRemoval.monthDays.contains { $0.day == june10 && $0.isCompleted == false })
+        XCTAssertTrue(afterRemoval.weeks.flatMap(\.days).contains { $0.day == june10 && $0.isCompleted == false })
     }
 
     func testBuildProducesSummaryLabelsForRelativeCases() throws {
@@ -202,23 +202,24 @@ final class HistoryProjectionBuilderTests: ProjectionBuilderTestCase {
             now: now
         )
         let viewData = try foundViewData(from: projection)
+        let monthDays = viewData.weeks.flatMap(\.days)
         let june1 = try makeDay(year: 2026, month: 6, day: 1)
         let june2 = try makeDay(year: 2026, month: 6, day: 2)
         let june10 = try makeDay(year: 2026, month: 6, day: 10)
 
-        XCTAssertEqual(viewData.monthDays.count, 30)
-        XCTAssertEqual(viewData.monthDays.first?.day, june1)
-        XCTAssertEqual(viewData.monthDays.last?.day, try makeDay(year: 2026, month: 6, day: 30))
+        XCTAssertEqual(monthDays.count, 30)
+        XCTAssertEqual(monthDays.first?.day, june1)
+        XCTAssertEqual(monthDays.last?.day, try makeDay(year: 2026, month: 6, day: 30))
 
-        let dayOne = try XCTUnwrap(viewData.monthDays.first { $0.day == june1 })
+        let dayOne = try XCTUnwrap(monthDays.first { $0.day == june1 })
         XCTAssertTrue(dayOne.isCompleted)
         XCTAssertFalse(dayOne.isToday)
 
-        let todayDay = try XCTUnwrap(viewData.monthDays.first { $0.day == june10 })
+        let todayDay = try XCTUnwrap(monthDays.first { $0.day == june10 })
         XCTAssertTrue(todayDay.isToday)
         XCTAssertTrue(todayDay.isCompleted)
 
-        let incompleteDay = try XCTUnwrap(viewData.monthDays.first { $0.day == june2 })
+        let incompleteDay = try XCTUnwrap(monthDays.first { $0.day == june2 })
         XCTAssertFalse(incompleteDay.isCompleted)
         XCTAssertFalse(incompleteDay.isToday)
     }
@@ -239,13 +240,14 @@ final class HistoryProjectionBuilderTests: ProjectionBuilderTestCase {
             now: now
         )
         let viewData = try foundViewData(from: projection)
+        let monthDays = viewData.weeks.flatMap(\.days)
         let june9 = try makeDay(year: 2026, month: 6, day: 9)
         let june10 = try makeDay(year: 2026, month: 6, day: 10)
         let june11 = try makeDay(year: 2026, month: 6, day: 11)
 
-        let pastDay = try XCTUnwrap(viewData.monthDays.first { $0.day == june9 })
-        let todayDay = try XCTUnwrap(viewData.monthDays.first { $0.day == june10 })
-        let futureDay = try XCTUnwrap(viewData.monthDays.first { $0.day == june11 })
+        let pastDay = try XCTUnwrap(monthDays.first { $0.day == june9 })
+        let todayDay = try XCTUnwrap(monthDays.first { $0.day == june10 })
+        let futureDay = try XCTUnwrap(monthDays.first { $0.day == june11 })
 
         XCTAssertFalse(pastDay.isFuture)
         XCTAssertFalse(todayDay.isFuture)

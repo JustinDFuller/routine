@@ -139,12 +139,49 @@ extension HistoryProjectionBuilder {
             ),
             progress: progress,
             lastDoneText: routineCalendar.relativeLabel(for: progress.lastCompletedDay, today: today),
-            monthDays: buildMonthDays(today: today, completedDays: completedDays),
+            weeks: buildWeeks(
+                today: today,
+                completedDays: completedDays,
+                period: routine.period,
+                targetCount: routine.targetCount
+            ),
             recentCompletions: buildRecentCompletionItems(completions: completions, today: today)
         )
     }
 
-    fileprivate func buildMonthDays(
+    fileprivate func buildWeeks(
+        today: RoutineDay,
+        completedDays: Set<RoutineDay>,
+        period: RoutinePeriod,
+        targetCount: Int
+    ) -> [HistoryCalendarWeek] {
+        let days = buildCalendarDays(today: today, completedDays: completedDays)
+
+        guard let firstDay = days.first else {
+            return []
+        }
+
+        let monthlyGoalMet = isMonthlyGoalMet(
+            today: today,
+            completedDays: completedDays,
+            period: period,
+            targetCount: targetCount
+        )
+
+        return chunkIntoWeeks(
+            days: days,
+            leadingOffset: routineCalendar.weekdayOffset(for: firstDay.day)
+        ) { weekDays in
+            switch period {
+            case .weekly:
+                isWeeklyGoalMet(week: weekDays, completedDays: completedDays, targetCount: targetCount)
+            case .monthly:
+                monthlyGoalMet
+            }
+        }
+    }
+
+    fileprivate func buildCalendarDays(
         today: RoutineDay,
         completedDays: Set<RoutineDay>
     ) -> [HistoryCalendarDay] {
@@ -159,6 +196,70 @@ extension HistoryProjectionBuilder {
                 isFuture: day > today
             )
         }
+    }
+
+    fileprivate func chunkIntoWeeks(
+        days: [HistoryCalendarDay],
+        leadingOffset: Int,
+        isGoalMet: ([HistoryCalendarDay]) -> Bool
+    ) -> [HistoryCalendarWeek] {
+        var weeks: [HistoryCalendarWeek] = []
+        var remainingDays = days[...]
+        var weekIndex = 0
+
+        while remainingDays.isEmpty == false {
+            let leadingPlaceholders = weekIndex == 0 ? leadingOffset : 0
+            let take = min(7 - leadingPlaceholders, remainingDays.count)
+            let weekDays = Array(remainingDays.prefix(take))
+            remainingDays = remainingDays.dropFirst(take)
+            let trailingPlaceholders = remainingDays.isEmpty ? 7 - leadingPlaceholders - weekDays.count : 0
+
+            weeks.append(
+                HistoryCalendarWeek(
+                    id: weekIndex,
+                    days: weekDays,
+                    leadingPlaceholders: leadingPlaceholders,
+                    trailingPlaceholders: trailingPlaceholders,
+                    isGoalMet: isGoalMet(weekDays)
+                )
+            )
+            weekIndex += 1
+        }
+
+        return weeks
+    }
+
+    fileprivate func isWeeklyGoalMet(
+        week: [HistoryCalendarDay],
+        completedDays: Set<RoutineDay>,
+        targetCount: Int
+    ) -> Bool {
+        guard targetCount > 0, let firstDay = week.first?.day else {
+            return false
+        }
+
+        let weekRange = routineCalendar.currentWeekRange(containing: firstDay)
+        return progressCalculator.completions(
+            in: weekRange,
+            completionDays: Array(completedDays)
+        ).count >= targetCount
+    }
+
+    fileprivate func isMonthlyGoalMet(
+        today: RoutineDay,
+        completedDays: Set<RoutineDay>,
+        period: RoutinePeriod,
+        targetCount: Int
+    ) -> Bool {
+        guard period == .monthly, targetCount > 0 else {
+            return false
+        }
+
+        let monthRange = routineCalendar.currentMonthRange(containing: today)
+        return progressCalculator.completions(
+            in: monthRange,
+            completionDays: Array(completedDays)
+        ).count >= targetCount
     }
 
     fileprivate func buildRecentCompletionItems(
