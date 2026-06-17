@@ -141,8 +141,8 @@ struct RoutineCardView: View {
 
             if let onCollapse {
                 Button(action: onCollapse) {
-                    Image(systemName: "rectangle.compress.vertical")
-                        .font(.system(size: 22, weight: .regular))
+                    DoubleChevron(direction: .collapse, spacing: 2)
+                        .font(.system(size: 14, weight: .regular))
                         .foregroundStyle(Color.routineLabelSecondary)
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
