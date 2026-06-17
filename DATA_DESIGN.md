@@ -1287,8 +1287,9 @@ Multiple completions per day:
 
 Notifications:
 
-- Add reminder settings separately from routine completion history.
-- Do not overload `RoutinePeriod` with notification behavior.
+- Implemented as a global, non-per-routine daily check-in system (morning/afternoon/evening). Check-in enabled flags and times are global app preferences stored in `@AppStorage`/`UserDefaults`, not a new SwiftData model, and do not overload `RoutinePeriod` with notification behavior.
+- The celebration-consumed flag (whether the "all caught up" notification has already fired for the current open period) is a single App Group `UserDefaults` flag, not routine data.
+- Per-routine reminder notifications remain a future extension if ever added; they would need their own settings model separate from completion history.
 
 Widgets:
 

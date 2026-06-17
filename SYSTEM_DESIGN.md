@@ -26,11 +26,12 @@ In scope for the MVP:
 - Weekly and monthly target progress.
 - One-tap completion, immediate undo, and history correction.
 - Local development, local device deployment, local full validation, and Linux-friendly GitHub Actions checks.
+- Local daily check-in notifications (morning/afternoon/evening), scheduled via `UNUserNotificationCenter`. No per-routine reminders; content is built from current progress and suppressed once all goals for the period are met.
 
 Out of scope for the MVP:
 
 - Cloud sync, accounts, sharing, or collaboration.
-- Notifications, widgets, watch app, or lock screen surfaces.
+- Per-routine notifications, widgets, watch app, or lock screen surfaces.
 - Analytics, telemetry, remote logging, or crash-reporting SDKs.
 - Smart scheduling, recommendations, streaks, scoring, or gamification.
 - Public App Store launch workflow as a required path.
@@ -284,6 +285,12 @@ Required services:
 - `AppDiagnostics`
   Owns loggers, signpost helpers, and DEBUG-only diagnostic behavior.
 
+- `CheckInContentBuilder` (`RoutineCore`, pure)
+  Derives morning/afternoon/evening check-in notification content, or suppression, from a routine progress snapshot, the slot's configured time, and a celebration-consumed flag. See Check-In Notifications below.
+
+- `CheckInScheduler` (app layer, `@MainActor`)
+  Requests notification authorization, snapshots routines/groups/completions, calls `CheckInContentBuilder`, and schedules or cancels `UNNotificationRequest`s.
+
 Service design rules:
 
 - Services are `@MainActor` when they touch SwiftData.
@@ -292,6 +299,22 @@ Service design rules:
 - Views map errors to concise user-safe messages.
 - Duplicate completion attempts are idempotent no-ops, not scary user-facing errors.
 - The service layer is the only place that should decide whether a save is needed after a mutation.
+
+## Check-In Notifications
+
+The app sends local-only check-in notifications instead of per-routine reminders, to stay non-spammy:
+
+- Three daily slots — morning (default 6:00am), afternoon (default 12:00pm), evening (default 6:00pm) — each independently toggleable with a configurable local time within a bounded range.
+- Notifications are scheduled with `UNUserNotificationCenter` and `UNCalendarNotificationTrigger`. No `aps-environment` entitlement is required; only the existing App Group is used, for the celebration-consumed flag.
+- Content is built by the pure `CheckInContentBuilder` from a routine progress snapshot: morning leads with the next available routine, afternoon leads with momentum (done-so-far plus next), evening leads with weekly-goal reflection.
+- Suppression and celebration state machine, evaluated per slot fire:
+  1. Any routine not yet target-met for its period (open goal) → send that slot's normal content; clear the celebration-consumed flag.
+  2. No open goals and the celebration-consumed flag is not set → send a single all-caught-up celebration; set the flag.
+  3. No open goals and the flag is already set → suppress (no notification).
+  4. A week or month rollover, or adding a routine, reopens goals, which clears the flag on the next slot fire and resumes normal notifications automatically.
+- Tapping a notification opens the app via the existing `routine://today` deep link; there are no notification quick actions in v1.
+- Notifications are rescheduled on app foreground/background scene-phase transitions (local data only changes while foregrounded), with a short rolling horizon as a safety net while the app stays closed.
+- A one-time onboarding prompt asks for consent before any slot is enabled by default; declining leaves all slots off until changed in Settings.
 
 ## SwiftUI Implementation
 
@@ -943,7 +966,7 @@ These are intentionally not part of MVP implementation, but the architecture sho
 - TestFlight distribution.
 - macOS GitHub Actions or Xcode Cloud.
 - Widgets through shared read projections.
-- Notifications through separate reminder settings.
+- Per-routine reminder notifications, layered on top of the daily check-in system, through separate reminder settings.
 - Cloud sync after reviewing SwiftData/CloudKit constraints, conflict handling, uniqueness, and deletion semantics.
 - Multiple completions per day by replacing the routine-day uniqueness policy with a more flexible completion limit.
 - Richer analytics through derived query services, not persisted streaks or scores unless product scope changes.

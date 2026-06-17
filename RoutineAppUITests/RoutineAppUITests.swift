@@ -368,6 +368,26 @@ final class RoutineAppUITests: XCTestCase {
 }
 
 extension RoutineAppUITests {
+    func testCheckInOnboardingPromptAppearsAndEnableButtonDismissesIt() {
+        let app = makeApp(
+            additionalLaunchArguments: ["-routine-force-checkin-onboarding-prompt"]
+        )
+        app.launch()
+
+        let alert = app.alerts["Stay on track with check-ins?"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 5))
+
+        let enableButton = alert.buttons["Enable Check-ins"]
+        let notNowButton = alert.buttons["Not Now"]
+        XCTAssertTrue(enableButton.exists)
+        XCTAssertTrue(notNowButton.exists)
+
+        enableButton.tap()
+
+        XCTAssertTrue(dashboardTitle(in: app).waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["Stay on track with check-ins?"].exists)
+    }
+
     func testCompletedRoutineCollapsesToMiniRowAndExpandsAndCollapsesOnTap() {
         let app = makeApp(
             additionalLaunchArguments: ["-routine-collapse-completed-enabled"]
