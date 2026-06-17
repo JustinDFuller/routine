@@ -2,6 +2,7 @@ import Foundation
 import RoutineCore
 import SwiftData
 import SwiftUI
+import WidgetKit
 
 struct RoutineHistoryView: View {
     let routineID: UUID
@@ -11,12 +12,16 @@ struct RoutineHistoryView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.routineRuntimeConfiguration) private var runtime
     @Environment(\.routineCalendar) private var routineCalendar
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @Query private var routines: [Routine]
     @Query private var completions: [RoutineCompletion]
 
     @State private var pendingRemoval: CompletionListItem?
     @State private var removalAlert: HistoryRemovalAlert?
+    @State private var pendingDay: HistoryCalendarDay?
+    @State private var undoBanner: HistoryUndoPresentation?
+    @State private var undoDismissTask: Task<Void, Never>?
 
     init(routineID: UUID) {
         self.routineID = routineID
@@ -69,6 +74,33 @@ struct RoutineHistoryView: View {
         )
     }
 
+    private func pendingPopoverIsPresented(for dayID: String) -> Binding<Bool> {
+        Binding(
+            get: { pendingDay?.id == dayID },
+            set: { isPresented in
+                if isPresented == false, pendingDay?.id == dayID {
+                    pendingDay = nil
+                }
+            }
+        )
+    }
+
+    private var bannerTransition: AnyTransition {
+        if animationsAreDisabled {
+            return .opacity
+        }
+
+        return .move(edge: .bottom).combined(with: .opacity)
+    }
+
+    private var bannerAnimation: Animation? {
+        animationsAreDisabled ? nil : .easeInOut(duration: 0.2)
+    }
+
+    private var animationsAreDisabled: Bool {
+        reduceMotion || runtime.disablesAnimations
+    }
+
     var body: some View {
         ZStack {
             Color.routineCanvas
@@ -78,6 +110,17 @@ struct RoutineHistoryView: View {
         }
         .navigationTitle("History")
         .navigationBarTitleDisplayMode(.inline)
+        .safeAreaInset(edge: .bottom) {
+            if let undoBanner {
+                UndoBannerView(viewData: undoBanner.viewData) {
+                    undoPendingBanner()
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+                .transition(bannerTransition)
+                .accessibilityIdentifier("routine-history-undo-banner")
+            }
+        }
         .alert(
             removalAlert?.title ?? "Could not remove completion.",
             isPresented: removalAlertIsPresented,
@@ -90,6 +133,9 @@ struct RoutineHistoryView: View {
             Text(alert.message)
         }
         .accessibilityIdentifier("routine-history-root")
+        .onDisappear {
+            undoDismissTask?.cancel()
+        }
     }
 
     @ViewBuilder
@@ -99,7 +145,13 @@ struct RoutineHistoryView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     summaryHeader(viewData)
-                    HistoryMonthGridView(weeks: viewData.weeks, routineCalendar: routineCalendar)
+                    HistoryMonthGridView(
+                        weeks: viewData.weeks,
+                        routineCalendar: routineCalendar,
+                        onTapDay: tapDay,
+                        popoverIsPresented: pendingPopoverIsPresented,
+                        onConfirmDay: confirmPendingDay
+                    )
                     recentCompletionsSection(viewData)
                 }
                 .padding(.horizontal, 16)
@@ -252,6 +304,122 @@ struct RoutineHistoryView: View {
         }
     }
 
+    private func tapDay(_ day: HistoryCalendarDay) {
+        guard day.isFuture == false else {
+            return
+        }
+
+        pendingDay = day
+    }
+
+    private func confirmPendingDay() {
+        guard let day = pendingDay else {
+            return
+        }
+
+        pendingDay = nil
+        let dateText = routineCalendar.explicitDateLabel(for: day.day)
+        let service = RoutineTrackingService(context: modelContext, routineCalendar: routineCalendar)
+
+        do {
+            if day.isCompleted {
+                let result = try service.removeCompletion(routineID: routineID, day: day.day)
+                guard result.didRemove else {
+                    return
+                }
+
+                WidgetCenter.shared.reloadAllTimelines()
+                RoutineHaptics.signalUndo()
+                showUndoBanner(day: day.day, action: .removed, message: "Removed \(dateText)")
+            } else {
+                let result = try service.complete(routineID: routineID, day: day.day, now: runtime.now)
+                guard result.didInsert else {
+                    return
+                }
+
+                WidgetCenter.shared.reloadAllTimelines()
+                RoutineHaptics.signalCompletion()
+                showUndoBanner(day: day.day, action: .completed, message: "Completed \(dateText)")
+            }
+        } catch {
+            removalAlert = HistoryRemovalAlert(message: error.localizedDescription)
+        }
+    }
+
+    private func undoPendingBanner() {
+        guard let presentation = undoBanner else {
+            return
+        }
+
+        let service = RoutineTrackingService(context: modelContext, routineCalendar: routineCalendar)
+
+        do {
+            switch presentation.action {
+            case .completed:
+                let result = try service.removeCompletion(routineID: routineID, day: presentation.day)
+                clearUndoBanner()
+                guard result.didRemove else {
+                    return
+                }
+
+                WidgetCenter.shared.reloadAllTimelines()
+                RoutineHaptics.signalUndo()
+            case .removed:
+                let result = try service.complete(routineID: routineID, day: presentation.day, now: runtime.now)
+                clearUndoBanner()
+                guard result.didInsert else {
+                    return
+                }
+
+                WidgetCenter.shared.reloadAllTimelines()
+                RoutineHaptics.signalCompletion()
+            }
+        } catch {
+            clearUndoBanner()
+            removalAlert = HistoryRemovalAlert(message: error.localizedDescription)
+        }
+    }
+
+    private func showUndoBanner(day: RoutineDay, action: HistoryDayAction, message: String) {
+        undoDismissTask?.cancel()
+
+        let presentation = HistoryUndoPresentation(
+            day: day,
+            action: action,
+            viewData: UndoBannerViewData(message: message)
+        )
+
+        withAnimation(bannerAnimation) {
+            undoBanner = presentation
+        }
+
+        let token = presentation.id
+        undoDismissTask = Task {
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+
+            guard Task.isCancelled == false else {
+                return
+            }
+
+            await MainActor.run {
+                guard undoBanner?.id == token else {
+                    return
+                }
+
+                clearUndoBanner()
+            }
+        }
+    }
+
+    private func clearUndoBanner() {
+        undoDismissTask?.cancel()
+        undoDismissTask = nil
+
+        withAnimation(bannerAnimation) {
+            undoBanner = nil
+        }
+    }
+
     private func summaryRing(for viewData: RoutineHistoryViewData) -> some View {
         ProgressRingView(
             viewData: ProgressRingViewData(
@@ -345,6 +513,18 @@ private struct CompletionListRow: View {
 
         return item.dateText
     }
+}
+
+private enum HistoryDayAction: Equatable {
+    case completed
+    case removed
+}
+
+private struct HistoryUndoPresentation: Identifiable, Equatable {
+    let id = UUID()
+    let day: RoutineDay
+    let action: HistoryDayAction
+    let viewData: UndoBannerViewData
 }
 
 private struct HistoryRemovalAlert: Equatable {

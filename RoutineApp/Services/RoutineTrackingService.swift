@@ -18,11 +18,14 @@ struct UndoResult: Equatable, Sendable {
 
 enum RoutineTrackingError: LocalizedError, Equatable {
     case unavailable(routineName: String, windowText: String)
+    case futureDay(routineName: String)
 
     var errorDescription: String? {
         switch self {
         case .unavailable(let routineName, let windowText):
             "\(routineName) is unavailable now. It can only be completed \(windowText)."
+        case .futureDay(let routineName):
+            "\(routineName) cannot be completed for a future day."
         }
     }
 }
@@ -40,38 +43,52 @@ final class RoutineTrackingService {
     }
 
     func completeToday(routineID: UUID, now: Date = .now) throws -> CompletionResult {
-        let routine = try context.routine(id: routineID)
-        let today = routineCalendar.today(now: now)
-        let routineIDText = routine.id.uuidString
-        let logContext = TrackingLogContext(routineID: routineIDText, dayKey: today.key, count: 1)
+        try complete(routineID: routineID, day: routineCalendar.today(now: now), now: now)
+    }
 
-        if try context.completion(routineID: routineID, dayKey: today.key) != nil {
+    func undoToday(routineID: UUID, now: Date = .now) throws -> UndoResult {
+        try removeCompletion(routineID: routineID, day: routineCalendar.today(now: now))
+    }
+
+    func complete(routineID: UUID, day: RoutineDay, now: Date = .now) throws -> CompletionResult {
+        let routine = try context.routine(id: routineID)
+        let routineIDText = routine.id.uuidString
+        let logContext = TrackingLogContext(routineID: routineIDText, dayKey: day.key, count: 1)
+
+        if try context.completion(routineID: routineID, dayKey: day.key) != nil {
             Self.logOutcome(
-                operation: "completeToday",
+                operation: "complete",
                 context: logContext.withCount(0)
             )
             return CompletionResult(
                 routineID: routine.id,
                 routineName: routine.name,
-                day: today,
+                day: day,
                 didInsert: false
             )
         }
 
-        let currentMinuteOfDay = routineCalendar.minuteOfDay(containing: now)
-        if let availabilityWindow = routine.availabilityWindow {
-            guard availabilityWindow.contains(minuteOfDay: currentMinuteOfDay) else {
-                throw RoutineTrackingError.unavailable(
-                    routineName: routine.name,
-                    windowText: RoutineAvailabilityText.trackingWindowText(
-                        for: availabilityWindow,
-                        routineCalendar: routineCalendar
+        let today = routineCalendar.today(now: now)
+        guard day <= today else {
+            throw RoutineTrackingError.futureDay(routineName: routine.name)
+        }
+
+        if day == today {
+            let currentMinuteOfDay = routineCalendar.minuteOfDay(containing: now)
+            if let availabilityWindow = routine.availabilityWindow {
+                guard availabilityWindow.contains(minuteOfDay: currentMinuteOfDay) else {
+                    throw RoutineTrackingError.unavailable(
+                        routineName: routine.name,
+                        windowText: RoutineAvailabilityText.trackingWindowText(
+                            for: availabilityWindow,
+                            routineCalendar: routineCalendar
+                        )
                     )
-                )
+                }
             }
         }
 
-        let completion = RoutineCompletion(routine: routine, day: today, completedAt: now)
+        let completion = RoutineCompletion(routine: routine, day: day, completedAt: now)
         context.insert(completion)
 
         do {
@@ -79,32 +96,31 @@ final class RoutineTrackingService {
         } catch {
             rollbackPendingChanges(insertedCompletionID: completion.id)
             Self.logFailure(
-                operation: "completeTodayFailed",
+                operation: "completeFailed",
                 context: logContext,
                 error: error
             )
             throw error
         }
 
-        Self.logOutcome(operation: "completeToday", context: logContext)
+        Self.logOutcome(operation: "complete", context: logContext)
 
         return CompletionResult(
             routineID: routine.id,
             routineName: routine.name,
-            day: today,
+            day: day,
             didInsert: true
         )
     }
 
-    func undoToday(routineID: UUID, now: Date = .now) throws -> UndoResult {
+    func removeCompletion(routineID: UUID, day: RoutineDay) throws -> UndoResult {
         _ = try context.routine(id: routineID)
-        let today = routineCalendar.today(now: now)
         let routineIDText = routineID.uuidString
-        let logContext = TrackingLogContext(routineID: routineIDText, dayKey: today.key, count: 1)
+        let logContext = TrackingLogContext(routineID: routineIDText, dayKey: day.key, count: 1)
 
-        guard let completion = try context.completion(routineID: routineID, dayKey: today.key) else {
-            Self.logOutcome(operation: "undoToday", context: logContext.withCount(0))
-            return UndoResult(routineID: routineID, day: today, didRemove: false)
+        guard let completion = try context.completion(routineID: routineID, dayKey: day.key) else {
+            Self.logOutcome(operation: "removeCompletion", context: logContext.withCount(0))
+            return UndoResult(routineID: routineID, day: day, didRemove: false)
         }
 
         context.delete(completion)
@@ -114,16 +130,16 @@ final class RoutineTrackingService {
         } catch {
             rollbackPendingChanges()
             Self.logFailure(
-                operation: "undoTodayFailed",
+                operation: "removeCompletionFailed",
                 context: logContext,
                 error: error
             )
             throw error
         }
 
-        Self.logOutcome(operation: "undoToday", context: logContext)
+        Self.logOutcome(operation: "removeCompletion", context: logContext)
 
-        return UndoResult(routineID: routineID, day: today, didRemove: true)
+        return UndoResult(routineID: routineID, day: day, didRemove: true)
     }
 
     func removeCompletion(completionID: UUID) throws {

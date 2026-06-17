@@ -251,6 +251,90 @@ final class RoutineTrackingServiceCompletionTests: RoutineTrackingServiceTestCas
         XCTAssertTrue(try fetchCompletions(in: context).isEmpty)
     }
 
+    func testCompleteForPastDayInsertsCompletionAndIsIdempotent() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let routine = try insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 0),
+            into: context
+        )
+        let service = RoutineTrackingService(context: context, routineCalendar: calendar)
+        let now = makeDate(year: 2026, month: 6, day: 10, hour: 9, minute: 0, calendar: calendar.calendar)
+        let pastDay = try makeDay(year: 2026, month: 6, day: 7)
+
+        let firstResult = try service.complete(routineID: routine.id, day: pastDay, now: now)
+        let secondResult = try service.complete(routineID: routine.id, day: pastDay, now: now)
+        let completions = try fetchCompletions(in: context)
+
+        XCTAssertTrue(firstResult.didInsert)
+        XCTAssertFalse(secondResult.didInsert)
+        XCTAssertEqual(completions.count, 1)
+        XCTAssertEqual(completions[0].dayKey, pastDay.key)
+    }
+
+    func testCompleteForFutureDayThrowsFutureDayErrorAndInsertsNothing() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let routine = try insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 0),
+            into: context
+        )
+        let service = RoutineTrackingService(context: context, routineCalendar: calendar)
+        let now = makeDate(year: 2026, month: 6, day: 7, hour: 9, minute: 0, calendar: calendar.calendar)
+        let futureDay = try makeDay(year: 2026, month: 6, day: 8)
+
+        XCTAssertThrowsError(
+            try service.complete(routineID: routine.id, day: futureDay, now: now)
+        ) { error in
+            XCTAssertEqual(error as? RoutineTrackingError, .futureDay(routineName: "Walk"))
+        }
+        XCTAssertTrue(try fetchCompletions(in: context).isEmpty)
+    }
+
+    func testCompleteForPastDayIgnoresAvailabilityWindow() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let routine = try insertRoutine(
+            seed: RoutineTestSeed(
+                name: "Morning yoga",
+                targetCount: 3,
+                period: .weekly,
+                availabilityStartMinute: 6 * 60,
+                availabilityEndMinute: 8 * 60,
+                sortOrder: 0
+            ),
+            into: context
+        )
+        let service = RoutineTrackingService(context: context, routineCalendar: calendar)
+        let now = makeDate(year: 2026, month: 6, day: 10, hour: 21, minute: 0, calendar: calendar.calendar)
+        let pastDay = try makeDay(year: 2026, month: 6, day: 7)
+
+        let result = try service.complete(routineID: routine.id, day: pastDay, now: now)
+
+        XCTAssertTrue(result.didInsert)
+        XCTAssertEqual(try fetchCompletions(in: context).map(\.dayKey), [pastDay.key])
+    }
+
+    func testRemoveCompletionForDayRemovesExistingAndReturnsFalseWhenAbsent() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let routine = try insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 0),
+            into: context
+        )
+        let service = RoutineTrackingService(context: context, routineCalendar: calendar)
+        let now = makeDate(year: 2026, month: 6, day: 10, hour: 9, minute: 0, calendar: calendar.calendar)
+        let pastDay = try makeDay(year: 2026, month: 6, day: 7)
+
+        _ = try service.complete(routineID: routine.id, day: pastDay, now: now)
+        let removeResult = try service.removeCompletion(routineID: routine.id, day: pastDay)
+        let secondRemoveResult = try service.removeCompletion(routineID: routine.id, day: pastDay)
+
+        XCTAssertTrue(removeResult.didRemove)
+        XCTAssertFalse(secondRemoveResult.didRemove)
+        XCTAssertTrue(try fetchCompletions(in: context).isEmpty)
+    }
+
     func testRemoveCompletionDeletesOnlySelectedHistoricalCompletion() throws {
         let context = try makeContext()
         let calendar = makeCalendar()

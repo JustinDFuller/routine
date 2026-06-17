@@ -4,6 +4,9 @@ import SwiftUI
 struct HistoryMonthGridView: View {
     let weeks: [HistoryCalendarWeek]
     let routineCalendar: RoutineCalendar
+    let onTapDay: (HistoryCalendarDay) -> Void
+    let popoverIsPresented: (String) -> Binding<Bool>
+    let onConfirmDay: () -> Void
 
     private var monthTitle: String {
         guard let firstDay = weeks.first(where: { $0.days.isEmpty == false })?.days.first else {
@@ -88,23 +91,41 @@ struct HistoryMonthGridView: View {
     }
 
     private func dayCell(_ day: HistoryCalendarDay, isGoalMetWeek: Bool) -> some View {
-        ZStack {
-            Circle()
-                .fill(day.isCompleted ? Color.routineAccentComplete.opacity(isGoalMetWeek ? 0.45 : 0.22) : .clear)
+        Button {
+            onTapDay(day)
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(day.isCompleted ? Color.routineAccentComplete.opacity(isGoalMetWeek ? 0.45 : 0.22) : .clear)
 
-            Circle()
-                .stroke(
-                    day.isToday ? Color.routineAccentActive : Color.clear,
-                    lineWidth: day.isToday ? 2 : 0
-                )
+                Circle()
+                    .stroke(
+                        day.isToday ? Color.routineAccentActive : Color.clear,
+                        lineWidth: day.isToday ? 2 : 0
+                    )
 
-            Text(day.label)
-                .font(.subheadline.weight(day.isToday ? .semibold : .regular))
-                .foregroundStyle(day.isCompleted ? Color.routineLabelPrimary : Color.routineLabelSecondary)
+                Text(day.label)
+                    .font(.subheadline.weight(day.isToday ? .semibold : .regular))
+                    .foregroundStyle(day.isCompleted ? Color.routineLabelPrimary : Color.routineLabelSecondary)
+            }
+            .frame(height: 36)
+            .frame(maxWidth: .infinity)
         }
-        .frame(height: 36)
-        .frame(maxWidth: .infinity)
+        .buttonStyle(.plain)
+        .contentShape(Circle())
+        .disabled(day.isFuture)
+        .opacity(day.isFuture ? 0.35 : 1)
+        .popover(isPresented: popoverIsPresented(day.id)) {
+            DayConfirmationPopover(
+                dayID: day.id,
+                dateText: explicitDateLabel(for: day.day),
+                isCompleted: day.isCompleted,
+                onConfirm: onConfirmDay
+            )
+            .presentationCompactAdaptation(.popover)
+        }
         .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier("history-day-\(day.id)")
         .accessibilityLabel(accessibilityLabel(for: day, isGoalMetWeek: isGoalMetWeek))
     }
 
@@ -113,7 +134,13 @@ struct HistoryMonthGridView: View {
         let todayText = day.isToday ? "today" : "not today"
         let completionText = day.isCompleted ? "completed" : "not completed"
         let goalMetSuffix = isGoalMetWeek ? ", goal met" : ""
-        return "\(dateText), \(todayText), \(completionText)\(goalMetSuffix)"
+
+        if day.isFuture {
+            return "\(dateText), \(todayText), \(completionText)\(goalMetSuffix), future"
+        }
+
+        let actionHint = day.isCompleted ? "double tap to remove completion" : "double tap to mark completed"
+        return "\(dateText), \(todayText), \(completionText)\(goalMetSuffix), \(actionHint)"
     }
 
     private func explicitDateLabel(for day: RoutineDay) -> String {
@@ -139,5 +166,30 @@ struct HistoryMonthGridView: View {
         }
 
         return date
+    }
+}
+
+private struct DayConfirmationPopover: View {
+    let dayID: String
+    let dateText: String
+    let isCompleted: Bool
+    let onConfirm: () -> Void
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Text(dateText)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.routineLabelPrimary)
+
+            Button(role: isCompleted ? .destructive : nil, action: onConfirm) {
+                Text(isCompleted ? "Remove Completion" : "Mark Complete")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(isCompleted ? Color.routineAccentDestructive : Color.routineAccentActive)
+            .accessibilityIdentifier("history-day-confirm-\(dayID)")
+        }
+        .padding(16)
+        .frame(minWidth: 200)
     }
 }
