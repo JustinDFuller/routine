@@ -1,3 +1,4 @@
+import Foundation
 import OSLog
 import RoutineCore
 import SwiftData
@@ -7,15 +8,19 @@ struct RootView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.routineRuntimeConfiguration) private var runtime
     @Environment(\.routineCalendar) private var routineCalendar
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var path: [AppRoute] = []
     @State private var hasAppliedDebugLaunchRoute = false
     @State private var seedErrorIsPresented = false
+    @State private var checkInOnboardingPromptIsPresented = false
 
     private let debugLaunchConfiguration: RoutineDebugLaunchConfiguration
 
     private static let starterDataLogger = AppDiagnostics.logger(.starterData)
     private static let routingLogger = AppDiagnostics.logger(.routing)
+    private static let notificationsLogger = AppDiagnostics.logger(.notifications)
+    private static let forceCheckInOnboardingArgument = "-routine-force-checkin-onboarding-prompt"
 
     init(debugLaunchConfiguration: RoutineDebugLaunchConfiguration = .current) {
         self.debugLaunchConfiguration = debugLaunchConfiguration
@@ -44,16 +49,43 @@ struct RootView: View {
                 }
 
                 try applyDebugLaunchRouteIfNeeded()
+                await syncCheckIns()
+                presentCheckInOnboardingPromptIfNeeded()
             } catch {
                 Self.starterDataLogger.error(
                     "Starter data setup failed at launch: \(String(describing: error), privacy: .private)")
                 seedErrorIsPresented = true
             }
         }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else {
+                return
+            }
+
+            Task {
+                await syncCheckIns()
+            }
+        }
         .alert("Could not set up starter routines.", isPresented: $seedErrorIsPresented) {
             Button("OK", role: .cancel) {}
         } message: {
             Text("You can still use Routine.")
+        }
+        .alert(
+            "Stay on track with check-ins?",
+            isPresented: $checkInOnboardingPromptIsPresented
+        ) {
+            Button("Enable Check-ins") {
+                enableCheckInsFromOnboarding()
+            }
+
+            Button("Not Now", role: .cancel) {
+                markCheckInOnboardingShown()
+            }
+        } message: {
+            Text(
+                "Get a morning, afternoon, and evening reminder. They stop once everything's done."
+            )
         }
         .onOpenURL { url in
             guard url.host == "today" else {
@@ -103,6 +135,44 @@ struct RootView: View {
             "applyLaunchRoute route=morningYogaHistoryWithCompletion routineID=\(routineID, privacy: .public)"
         )
         hasAppliedDebugLaunchRoute = true
+    }
+
+    private func syncCheckIns() async {
+        do {
+            try await CheckInScheduler().reschedule(context: modelContext, calendar: routineCalendar, now: runtime.now)
+        } catch {
+            Self.notificationsLogger.error(
+                "syncCheckInsFailed e=\(String(describing: error), privacy: .private)"
+            )
+        }
+    }
+
+    private func presentCheckInOnboardingPromptIfNeeded() {
+        let onboardingShown = UserDefaults.standard.bool(forKey: RoutineSettingsKeys.checkInOnboardingShown)
+        let forcesPrompt = ProcessInfo.processInfo.arguments.contains(Self.forceCheckInOnboardingArgument)
+
+        guard onboardingShown == false || forcesPrompt else {
+            return
+        }
+
+        checkInOnboardingPromptIsPresented = true
+    }
+
+    private func enableCheckInsFromOnboarding() {
+        let defaults = UserDefaults.standard
+        defaults.set(true, forKey: RoutineSettingsKeys.checkInMorningEnabled)
+        defaults.set(true, forKey: RoutineSettingsKeys.checkInAfternoonEnabled)
+        defaults.set(true, forKey: RoutineSettingsKeys.checkInEveningEnabled)
+        markCheckInOnboardingShown()
+
+        Task {
+            await CheckInScheduler().requestAuthorizationIfNeeded()
+            await syncCheckIns()
+        }
+    }
+
+    private func markCheckInOnboardingShown() {
+        UserDefaults.standard.set(true, forKey: RoutineSettingsKeys.checkInOnboardingShown)
     }
 }
 

@@ -11,6 +11,7 @@ enum AppDiagnostics {
         case projection
         case routing
         case ui
+        case notifications
     }
 
     private static let subsystem = Bundle.main.bundleIdentifier ?? "Routine"
@@ -47,6 +48,10 @@ enum AppDiagnostics {
         subsystem: subsystem,
         category: Category.ui.rawValue
     )
+    private static let notificationsLogger = Logger(
+        subsystem: subsystem,
+        category: Category.notifications.rawValue
+    )
 
     private static let appLifecycleSignposter = OSSignposter(
         subsystem: subsystem,
@@ -80,6 +85,10 @@ enum AppDiagnostics {
         subsystem: subsystem,
         category: Category.ui.rawValue
     )
+    private static let notificationsSignposter = OSSignposter(
+        subsystem: subsystem,
+        category: Category.notifications.rawValue
+    )
 
     static func logger(_ category: Category) -> Logger {
         switch category {
@@ -99,6 +108,8 @@ enum AppDiagnostics {
             routingLogger
         case .ui:
             uiLogger
+        case .notifications:
+            notificationsLogger
         }
     }
 
@@ -120,6 +131,8 @@ enum AppDiagnostics {
             routingSignposter
         case .ui:
             uiSignposter
+        case .notifications:
+            notificationsSignposter
         }
     }
 }

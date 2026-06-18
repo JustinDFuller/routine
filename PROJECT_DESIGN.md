@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**Implementation roadmap complete through M16**
+**MVP implementation roadmap complete through M17**
 
 The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -105,6 +105,7 @@ Core invariants that require automated coverage when touched:
 | DONE | M14 - Dogfooding Readiness | Local validation, diagnostics, privacy, app icon, and device-readiness checks are complete. |
 | DONE | M15 - Dashboard-First Management Redesign | The Today Dashboard becomes the tracking and management surface, with home-owned sheets and organize mode replacing the separate manage screen. |
 | DONE | M16 - Time-Based Routine Availability | Routines can optionally limit completion to local-time windows while staying visible and correct across all-day, same-day, and cross-midnight cases. |
+| DONE | M17 - Check-In Notifications | The app schedules local morning/afternoon/evening check-in notifications with progress-aware, non-spammy content that goes quiet once all goals for the period are met. |
 
 ## Milestones
 
@@ -859,6 +860,48 @@ Required tests:
 Completion note:
 
 - Passed `./Scripts/test-core.sh`, `./Scripts/test-ios.sh`, `./Scripts/check-format.sh`, `./Scripts/lint.sh`, and `./Scripts/validate.sh` with no skipped scripted checks.
+
+### M17 - Check-In Notifications
+
+Status: `DONE`
+
+Goal: add local, non-spammy daily check-in notifications (morning, afternoon, evening) that reflect current progress and stay quiet once every goal for the period is met, without introducing per-routine reminders.
+
+Dependencies: M02, M03, M05, M06, M07, M09, M16.
+
+Primary references: [PRODUCT_BRIEF.md](PRODUCT_BRIEF.md), [DATA_DESIGN.md](DATA_DESIGN.md), [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md) Check-In Notifications section.
+
+Deliverables:
+
+- Add a pure `CheckInContentBuilder` in `RoutineCore` that derives morning/afternoon/evening notification content (or suppression) from routine progress, availability windows, and a `celebrationConsumed` flag, using existing `ProgressCalculator`, `RoutineProgress`, `RoutineAvailabilityWindow`, and `RoutineCalendar` APIs.
+- Add a `CheckInScheduler` in the app layer that requests `UNUserNotificationCenter` authorization, snapshots routines/groups/completions from SwiftData, calls the builder, and schedules/cancels `UNNotificationRequest`s with stable per-slot identifiers.
+- Persist the celebration-consumed flag in the shared App Group `UserDefaults` so it survives relaunch and resets naturally on week/month rollover.
+- Add per-slot enabled flags and configurable local times as `@AppStorage` settings, with a "Check-ins" section in Settings (toggle + ranged time picker per slot).
+- Add a one-time onboarding prompt that asks for consent before enabling check-ins by default, gated by a persisted "shown" flag.
+- Reschedule notifications on app foreground/background scene-phase transitions so content stays fresh without a push entitlement.
+- Add or update tests for the builder's full state machine (open goals, celebration, suppression, week-reset resume) and for window relevance per slot.
+
+Validation:
+
+- Run `./Scripts/test-core.sh`.
+- Run `./Scripts/test-ios.sh`.
+- Run `./Scripts/check-format.sh`.
+- Run `./Scripts/lint.sh`.
+- Run `./Scripts/validate.sh`.
+
+Required tests:
+
+- `CheckInContentBuilder` coverage for each slot's normal-content branch, availability-window relevance (in-window, out-of-window, nil-window), next-routine ordering, celebration-on-all-met, suppression-after-celebration-consumed, and resume-after-week-reset.
+
+Completion update:
+
+- Mark this milestone `DONE`.
+- Replace the `Current Milestone` line with `MVP implementation roadmap complete through M17`.
+- Do not add a new milestone unless a new product or engineering scope decision has been made.
+
+Completion note:
+
+- Passed `./Scripts/test-core.sh`, `./Scripts/test-ios.sh`, and `./Scripts/check-format.sh` with no skipped scripted checks. `./Scripts/lint.sh` and `./Scripts/validate.sh` report only pre-existing file/function length violations in files this milestone did not touch (`RoutineHistoryView.swift`, `RoutineManagementService.swift`, `RoutineTrackingService.swift`, `HistoryProjectionBuilderTests.swift`, `RoutineTrackingServiceTests.swift`), confirmed unchanged against the base branch.
 
 ## MVP Completion Criteria
 
