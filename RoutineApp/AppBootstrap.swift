@@ -105,23 +105,31 @@ struct AppBootstrapRootView: View {
     let state: AppBootstrapState
 
     @AppStorage(RoutineSettingsKeys.weekStartWeekday) private var weekStartRaw = Weekday.sunday.rawValue
+    @State private var splashFinished = false
 
     var body: some View {
         switch state {
         case .ready(let modelContainer, let runtime):
-            RootView(debugLaunchConfiguration: .current)
-                .modelContainer(modelContainer)
-                .environment(\.routineRuntimeConfiguration, runtime)
-                .environment(\.routineCalendar, RoutineCalendar.current(weekStart: weekStartWeekday))
-                .preferredColorScheme(runtime.forcedColorScheme?.swiftUIColorScheme)
-                .transaction { transaction in
-                    guard runtime.disablesAnimations else {
-                        return
+            ZStack {
+                RootView(debugLaunchConfiguration: .current)
+                    .modelContainer(modelContainer)
+                    .environment(\.routineRuntimeConfiguration, runtime)
+                    .environment(\.routineCalendar, RoutineCalendar.current(weekStart: weekStartWeekday))
+                    .transaction { transaction in
+                        guard runtime.disablesAnimations else {
+                            return
+                        }
+
+                        transaction.animation = nil
+                        transaction.disablesAnimations = true
                     }
 
-                    transaction.animation = nil
-                    transaction.disablesAnimations = true
+                if runtime.disablesAnimations == false && splashFinished == false {
+                    SplashScreenView { splashFinished = true }
+                        .zIndex(1)
                 }
+            }
+            .preferredColorScheme(runtime.forcedColorScheme?.swiftUIColorScheme)
         case .failed:
             AppBootstrapFailureView()
         }
