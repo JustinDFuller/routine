@@ -144,7 +144,9 @@ public struct CheckInContentBuilder: Sendable {
 
         return .message(
             title: "Evening check-in",
-            body: "\(doneToday) done today. \(metCount) of \(pairCount) goals met this week, \(openGoalCount) still open."
+            body:
+                "\(doneToday) done today. \(metCount) of \(pairCount) goals met this week, "
+                + "\(openGoalCount) still open."
         )
     }
 

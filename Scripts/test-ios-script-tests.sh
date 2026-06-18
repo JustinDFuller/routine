@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 workdir="$(mktemp -d)"
-trap 'rm -rf "$workdir"' EXIT
+trap 'rm -rf "$workdir" build/Routine.xcarchive build/export' EXIT
 
 assert_contains() {
     local haystack="$1"
@@ -181,6 +181,15 @@ if [[ "$*" == *"-showdestinations"* ]]; then
     exit 0
 fi
 
+if [[ "$*" == *"-exportOptionsPlist"* && -n "${FAKE_XCODEBUILD_EXPORT_OPTIONS_LOG:-}" ]]; then
+    args=("$@")
+    for i in {1..$#}; do
+        if [[ "${args[$i]}" == "-exportOptionsPlist" ]]; then
+            cat "${args[$((i + 1))]}" >>"${FAKE_XCODEBUILD_EXPORT_OPTIONS_LOG}"
+        fi
+    done
+fi
+
 exit "${FAKE_XCODEBUILD_EXIT_CODE:-0}"
 EOF
 
@@ -197,6 +206,10 @@ run_build_ios_and_capture() {
     local output_file="$script_test_dir/output.txt"
     set +e
     env \
+        -u DEVELOPMENT_TEAM \
+        -u APP_STORE_CONNECT_AUTH_KEY_PATH \
+        -u APP_STORE_CONNECT_AUTH_KEY_ID \
+        -u APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID \
         FAKE_XCODEBUILD_LOG="$log_file" \
         FAKE_GENERATE_LOG="$generate_log" \
         XCODEBUILD_BIN="$fake_xcodebuild" \
@@ -213,6 +226,10 @@ run_test_ios_and_capture() {
     local output_file="$script_test_dir/output.txt"
     set +e
     env \
+        -u DEVELOPMENT_TEAM \
+        -u APP_STORE_CONNECT_AUTH_KEY_PATH \
+        -u APP_STORE_CONNECT_AUTH_KEY_ID \
+        -u APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID \
         FAKE_XCODEBUILD_LOG="$log_file" \
         FAKE_GENERATE_LOG="$generate_log" \
         XCODEBUILD_BIN="$fake_xcodebuild" \
@@ -302,6 +319,176 @@ if [[ "$skip_log" == *" test"* ]]; then
     echo "Expected skip path to avoid invoking xcodebuild test."
     exit 1
 fi
+
+run_archive_ios_and_capture() {
+    local output_file="$script_test_dir/output.txt"
+    local had_errexit=0
+    if [[ -o errexit ]]; then
+        had_errexit=1
+    fi
+
+    set +e
+    env \
+        -u DEVELOPMENT_TEAM \
+        -u APP_STORE_CONNECT_AUTH_KEY_PATH \
+        -u APP_STORE_CONNECT_AUTH_KEY_ID \
+        -u APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID \
+        FAKE_XCODEBUILD_LOG="$log_file" \
+        FAKE_GENERATE_LOG="$generate_log" \
+        XCODEBUILD_BIN="$fake_xcodebuild" \
+        GENERATE_PROJECT_SCRIPT="$fake_generate" \
+        "$@" \
+        ./Scripts/archive-ios.sh >"$output_file" 2>&1
+    local exit_code=$?
+    if (( had_errexit )); then
+        set -e
+    fi
+    REPLY="$(<"$output_file")"
+    return "$exit_code"
+}
+
+: >"$log_file"
+: >"$generate_log"
+run_archive_ios_and_capture
+assert_equals "$?" "0"
+assert_equals "$(<"$generate_log")" "generate"
+default_archive_log="$(<"$log_file")"
+assert_contains "$default_archive_log" "-quiet -project Routine.xcodeproj -scheme RoutineApp -configuration Release -destination generic/platform=iOS -archivePath build/Routine.xcarchive DEVELOPMENT_TEAM=CX2KMQZQ7X -allowProvisioningUpdates archive"
+
+: >"$log_file"
+: >"$generate_log"
+run_archive_ios_and_capture DEVELOPMENT_TEAM=TEAM456DEF CURRENT_PROJECT_VERSION=42
+assert_equals "$?" "0"
+assert_equals "$(<"$generate_log")" "generate"
+override_archive_log="$(<"$log_file")"
+assert_contains "$override_archive_log" "-quiet -project Routine.xcodeproj -scheme RoutineApp -configuration Release -destination generic/platform=iOS -archivePath build/Routine.xcarchive DEVELOPMENT_TEAM=TEAM456DEF CURRENT_PROJECT_VERSION=42 -allowProvisioningUpdates archive"
+
+: >"$log_file"
+: >"$generate_log"
+set +e
+run_archive_ios_and_capture DEVELOPMENT_TEAM=
+missing_team_exit_code=$?
+set -e
+assert_equals "$missing_team_exit_code" "1"
+assert_contains "$REPLY" "error: DEVELOPMENT_TEAM is required to archive for distribution."
+assert_equals "$(<"$generate_log")" ""
+
+: >"$log_file"
+: >"$generate_log"
+run_archive_ios_and_capture \
+    APP_STORE_CONNECT_AUTH_KEY_PATH=/tmp/AuthKey_TEST.p8 \
+    APP_STORE_CONNECT_AUTH_KEY_ID=ABC1234567 \
+    APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID=11111111-2222-3333-4444-555555555555
+assert_equals "$?" "0"
+auth_archive_log="$(<"$log_file")"
+assert_contains "$auth_archive_log" "-authenticationKeyPath /tmp/AuthKey_TEST.p8 -authenticationKeyID ABC1234567 -authenticationKeyIssuerID 11111111-2222-3333-4444-555555555555 -allowProvisioningUpdates archive"
+
+: >"$log_file"
+: >"$generate_log"
+set +e
+run_archive_ios_and_capture APP_STORE_CONNECT_AUTH_KEY_PATH=/tmp/AuthKey_TEST.p8
+partial_auth_archive_exit_code=$?
+set -e
+assert_equals "$partial_auth_archive_exit_code" "1"
+assert_contains "$REPLY" "error: APP_STORE_CONNECT_AUTH_KEY_PATH, APP_STORE_CONNECT_AUTH_KEY_ID, and APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID must be set together."
+assert_equals "$(<"$generate_log")" ""
+
+export_options_template="$script_test_dir/ExportOptions.plist"
+cat >"$export_options_template" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+	<key>teamID</key>
+	<string>DEVELOPMENT_TEAM_PLACEHOLDER</string>
+</dict>
+</plist>
+EOF
+
+export_options_log="$script_test_dir/export-options-applied.plist"
+
+run_export_ios_and_capture() {
+    local output_file="$script_test_dir/output.txt"
+    local had_errexit=0
+    if [[ -o errexit ]]; then
+        had_errexit=1
+    fi
+
+    set +e
+    env \
+        -u DEVELOPMENT_TEAM \
+        -u APP_STORE_CONNECT_AUTH_KEY_PATH \
+        -u APP_STORE_CONNECT_AUTH_KEY_ID \
+        -u APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID \
+        FAKE_XCODEBUILD_LOG="$log_file" \
+        FAKE_XCODEBUILD_EXPORT_OPTIONS_LOG="$export_options_log" \
+        XCODEBUILD_BIN="$fake_xcodebuild" \
+        EXPORT_OPTIONS_TEMPLATE="$export_options_template" \
+        "$@" \
+        ./Scripts/export-ios.sh >"$output_file" 2>&1
+    local exit_code=$?
+    if (( had_errexit )); then
+        set -e
+    fi
+    REPLY="$(<"$output_file")"
+    return "$exit_code"
+}
+
+: >"$log_file"
+: >"$export_options_log"
+set +e
+run_export_ios_and_capture
+no_archive_exit_code=$?
+set -e
+assert_equals "$no_archive_exit_code" "1"
+assert_contains "$REPLY" "error: no archive found at build/Routine.xcarchive. Run ./Scripts/archive-ios.sh first."
+
+mkdir -p build/Routine.xcarchive
+
+: >"$log_file"
+: >"$export_options_log"
+set +e
+run_export_ios_and_capture DEVELOPMENT_TEAM=
+missing_team_export_exit_code=$?
+set -e
+assert_equals "$missing_team_export_exit_code" "1"
+assert_contains "$REPLY" "error: DEVELOPMENT_TEAM is required to export an archive for distribution."
+
+: >"$log_file"
+: >"$export_options_log"
+run_export_ios_and_capture
+assert_equals "$?" "0"
+export_log="$(<"$log_file")"
+assert_contains "$export_log" "-quiet -exportArchive -archivePath build/Routine.xcarchive -exportOptionsPlist"
+assert_contains "$export_log" "-exportPath build/export"
+assert_contains "$export_log" "-allowProvisioningUpdates"
+assert_contains "$(<"$export_options_log")" "<string>CX2KMQZQ7X</string>"
+
+: >"$log_file"
+: >"$export_options_log"
+run_export_ios_and_capture DEVELOPMENT_TEAM=TEAM789XYZ
+assert_equals "$?" "0"
+assert_contains "$(<"$export_options_log")" "<string>TEAM789XYZ</string>"
+
+: >"$log_file"
+: >"$export_options_log"
+run_export_ios_and_capture \
+    APP_STORE_CONNECT_AUTH_KEY_PATH=/tmp/AuthKey_TEST.p8 \
+    APP_STORE_CONNECT_AUTH_KEY_ID=ABC1234567 \
+    APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID=11111111-2222-3333-4444-555555555555
+assert_equals "$?" "0"
+auth_export_log="$(<"$log_file")"
+assert_contains "$auth_export_log" "-authenticationKeyPath /tmp/AuthKey_TEST.p8 -authenticationKeyID ABC1234567 -authenticationKeyIssuerID 11111111-2222-3333-4444-555555555555"
+
+: >"$log_file"
+: >"$export_options_log"
+set +e
+run_export_ios_and_capture APP_STORE_CONNECT_AUTH_KEY_ID=ABC1234567
+partial_auth_export_exit_code=$?
+set -e
+assert_equals "$partial_auth_export_exit_code" "1"
+assert_contains "$REPLY" "error: APP_STORE_CONNECT_AUTH_KEY_PATH, APP_STORE_CONNECT_AUTH_KEY_ID, and APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID must be set together."
+
+rm -rf build/Routine.xcarchive build/export
 
 validate_repo="$workdir/validate-repo"
 mkdir -p "$validate_repo/Scripts"
@@ -924,4 +1111,4 @@ promote_invocation="$(<"$capture_promote_log")"
 assert_contains "$promote_invocation" "promote --export-root $capture_screenshots_dir/raw/"
 assert_contains "$promote_invocation" "--canonical-root $capture_screenshots_dir/canonical --expected-count 36"
 
-echo "Scripts/build-ios.sh, Scripts/test-ios.sh, Scripts/validate.sh, Scripts/run-ios.sh, Scripts/capture-screenshots.sh, and Scripts/screenshot-assets.py script tests passed."
+echo "Scripts/build-ios.sh, Scripts/test-ios.sh, Scripts/validate.sh, Scripts/run-ios.sh, Scripts/archive-ios.sh, Scripts/export-ios.sh, Scripts/capture-screenshots.sh, and Scripts/screenshot-assets.py script tests passed."

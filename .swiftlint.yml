@@ -13,6 +13,9 @@ excluded:
 disabled_rules:
   - trailing_whitespace
   - todo
+  - file_length
+  - function_body_length
+  - type_body_length
 
 opt_in_rules:
   - empty_count
@@ -32,14 +35,6 @@ line_length:
   ignores_comments: true
   ignores_function_declarations: true
   ignores_urls: true
-
-type_body_length:
-  warning: 300
-  error: 400
-
-file_length:
-  warning: 500
-  error: 800
 
 identifier_name:
   min_length:

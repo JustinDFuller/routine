@@ -42,6 +42,8 @@ Use the scripts directly or the matching `make` targets:
 - Build the app for a generic iOS destination when available: `./Scripts/build-ios.sh` or `make build-ios`
 - Build the Release configuration: `ROUTINE_BUILD_CONFIGURATION=Release ./Scripts/build-ios.sh`
 - Override local development signing when building for a personal device: `DEVELOPMENT_TEAM=YOURTEAMID ./Scripts/build-ios.sh`
+- Archive a Release build for distribution: `CURRENT_PROJECT_VERSION=2 ./Scripts/archive-ios.sh` or `CURRENT_PROJECT_VERSION=2 make archive-ios`
+- Export an `.ipa` from the most recent archive: `./Scripts/export-ios.sh` or `make export-ios`
 - Run iOS tests with an explicit destination: `IOS_TEST_DESTINATION='platform=iOS Simulator,name=iPhone 17' ./Scripts/test-ios.sh` or `IOS_TEST_DESTINATION='platform=iOS Simulator,name=iPhone 17' make test-ios`
 - Run the full local validation chain: `./Scripts/validate.sh` or `make validate`
 
@@ -50,6 +52,8 @@ Use the scripts directly or the matching `make` targets:
 `Scripts/test-ios.sh` accepts `IOS_TEST_DESTINATION`. If that variable is unset, the script tries to choose a concrete simulator automatically and exits with a documented skip message when no eligible simulator destination exists.
 
 `Scripts/build-ios.sh` and `Scripts/test-ios.sh` intentionally preserve skip behavior when the local machine has no eligible simulator or device destination available.
+
+`Scripts/archive-ios.sh` and `Scripts/export-ios.sh` default `DEVELOPMENT_TEAM` to the current Routine team for local convenience, but still allow per-shell overrides. Both scripts pass `-allowProvisioningUpdates` so automatic signing can create or refresh distribution assets when Xcode is signed into the correct Apple Developer account. For headless use, set `APP_STORE_CONNECT_AUTH_KEY_PATH`, `APP_STORE_CONNECT_AUTH_KEY_ID`, and `APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID` together to let `xcodebuild` authenticate with an App Store Connect API key during archive/export.
 
 ## Dogfooding Checklist
 
@@ -65,9 +69,37 @@ Use [Docs/DOGFOODING_CHECKLIST.md](Docs/DOGFOODING_CHECKLIST.md) for the manual 
 6. Confirm the launcher icon appears on the Home Screen and in the App Library.
 7. Walk through the dogfooding checklist on the device. If no personal iPhone is available, run the same checks in Simulator and record the skipped physical-device items.
 
+## TestFlight Distribution
+
+Before the first archive, complete the Apple-side setup:
+
+1. Enroll the Apple Developer membership for the team you plan to use.
+2. Register the app bundle ID `com.justinfuller.routine` with App Groups enabled.
+3. Register the widget bundle ID `com.justinfuller.routine.widget` with App Groups enabled.
+4. Create the App Group `group.com.justinfuller.routine` and attach it to both bundle IDs.
+5. Create the App Store Connect app record for the iOS app bundle ID.
+
+Then use the CLI path:
+
+1. Run `make validate`.
+2. Bump `CURRENT_PROJECT_VERSION` in `project.yml` or override it per archive, for example `CURRENT_PROJECT_VERSION=2 ./Scripts/archive-ios.sh`.
+3. Export the installable package with `./Scripts/export-ios.sh`.
+4. Upload `build/export/Routine.ipa` to App Store Connect.
+
+Manual upload options:
+
+- Xcode Organizer: sign into Xcode with the correct Apple Developer account, then archive and distribute from Xcode if you prefer the GUI flow.
+- `altool`: `xcrun altool --upload-package build/export/Routine.ipa --api-key YOUR_API_KEY --api-issuer YOUR_ISSUER_ID`
+
+Notes:
+
+- `MARKETING_VERSION` is set to `1.0.0` for the first real release train.
+- Every TestFlight upload must use a unique, increasing `CURRENT_PROJECT_VERSION`.
+- `RoutineApp/Info.plist` sets `ITSAppUsesNonExemptEncryption` to `false`, which matches the app’s local-only feature set and avoids the per-build export-compliance prompt for non-exempt encryption.
+
 ## Privacy Posture
 
-Routine is local-only for the MVP. `RoutineApp/PrivacyInfo.xcprivacy` declares no tracking and no collected data, which matches the current app architecture.
+Routine is local-only for the MVP. The app and widget privacy manifests declare no tracking, no collected data, and only the required-reason API usage needed for local `UserDefaults` storage.
 
 ## Implementation Workflow
 
