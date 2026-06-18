@@ -56,7 +56,7 @@ final class CheckInScheduler {
 
     init(
         notificationCenter: CheckInNotificationCenter = UNUserNotificationCenter.current(),
-        userDefaults: UserDefaults = UserDefaults(suiteName: RoutineModelContainer.appGroupID) ?? .standard
+        userDefaults: UserDefaults = .standard
     ) {
         self.notificationCenter = notificationCenter
         self.userDefaults = userDefaults

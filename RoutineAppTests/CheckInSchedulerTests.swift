@@ -236,4 +236,48 @@ final class CheckInSchedulerTests: ProjectionBuilderTestCase {
 
         XCTAssertTrue(fakeCenter.addedRequests.isEmpty)
     }
+
+    /// Regression test for a bug where settings were written to `.standard` (via `@AppStorage`
+    /// and onboarding) but the scheduler read from an App Group suite, so every slot always
+    /// looked disabled and nothing was ever scheduled. This test exercises the scheduler's
+    /// default `userDefaults` argument to pin the read/write store to the same place.
+    func testProductionDefaultUserDefaultsStoreMatchesWhereSettingsAreWritten() async throws {
+        let standard = UserDefaults.standard
+        let keysToClean = [
+            RoutineSettingsKeys.checkInMorningEnabled,
+            RoutineSettingsKeys.checkInMorningMinute,
+            CheckInScheduler.celebrationConsumedKey
+        ]
+        for key in keysToClean {
+            standard.removeObject(forKey: key)
+        }
+        defer {
+            for key in keysToClean {
+                standard.removeObject(forKey: key)
+            }
+        }
+
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let now = makeDate(year: 2026, month: 6, day: 10, hour: 5, minute: 0, calendar: calendar.calendar)
+        let group = insertGroup(name: "Health", sortOrder: 0, into: context)
+        _ = insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 5, period: .weekly, sortOrder: 0),
+            group: group,
+            into: context
+        )
+        try saveChanges(in: context)
+
+        standard.set(true, forKey: RoutineSettingsKeys.checkInMorningEnabled)
+        standard.set(360, forKey: RoutineSettingsKeys.checkInMorningMinute)
+
+        let fakeCenter = FakeCheckInNotificationCenter()
+        let scheduler = CheckInScheduler(notificationCenter: fakeCenter)
+
+        try await scheduler.reschedule(context: context, calendar: calendar, now: now)
+
+        XCTAssertFalse(fakeCenter.addedRequests.isEmpty)
+        let identifiers = fakeCenter.addedRequests.map(\.identifier)
+        XCTAssertTrue(identifiers.contains("checkin.morning.2026-06-10"))
+    }
 }
