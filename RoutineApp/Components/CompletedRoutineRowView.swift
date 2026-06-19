@@ -24,10 +24,6 @@ struct CompletedRoutineRowView: View {
 
                 Spacer(minLength: 0)
 
-                Text(viewData.isCompletedToday ? viewData.countText : "Goal met")
-                    .font(.caption)
-                    .foregroundStyle(Color.routineLabelSecondary)
-
                 DoubleChevron(direction: .expand, spacing: 2)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.routineLabelSecondary)

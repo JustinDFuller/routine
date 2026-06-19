@@ -400,6 +400,7 @@ extension RoutineAppUITests {
 
         let miniRow = identifiedElement("routine-completed-row-morning-yoga", in: app)
         XCTAssertTrue(miniRow.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["1/5"].exists)
 
         XCTAssertFalse(
             identifiedElement("routine-card-history-morning-yoga", in: app).waitForExistence(timeout: 2)
@@ -419,5 +420,20 @@ extension RoutineAppUITests {
         XCTAssertFalse(
             identifiedElement("routine-card-history-morning-yoga", in: app).waitForExistence(timeout: 2)
         )
+    }
+
+    func testGoalMetRoutineCollapsesToMiniRowWithoutStatusText() {
+        let app = makeApp(
+            additionalLaunchArguments: [
+                "-routine-collapse-completed-enabled",
+                "-routine-screenshot-fixture",
+                "full-app"
+            ]
+        )
+        app.launch()
+
+        let goalMetRow = identifiedElement("routine-goal-met-row-water-plants", in: app)
+        XCTAssertTrue(goalMetRow.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["Goal met"].exists)
     }
 }
