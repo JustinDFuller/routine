@@ -109,7 +109,7 @@ public struct CheckInContentBuilder: Sendable {
     private var celebrationMessage: CheckInContent {
         .message(
             title: Self.celebrationTitle,
-            body: "Every goal met this week — nothing left open."
+            body: "You've met all of your current goals. There's nothing left to do right now."
         )
     }
 
@@ -120,9 +120,13 @@ public struct CheckInContentBuilder: Sendable {
 
         return .message(
             title: "Morning check-in",
-            body:
-                "\(next.routine.name) is open, with \(next.progress.remainingCount) left "
-                + "to reach this \(periodWord(next.routine.period))'s goal."
+            body: [
+                nextRoutineSentence(for: next.routine.name),
+                remainingCompletionsSentence(
+                    remainingCount: next.progress.remainingCount,
+                    period: next.routine.period
+                )
+            ].joined(separator: " ")
         )
     }
 
@@ -132,10 +136,15 @@ public struct CheckInContentBuilder: Sendable {
         }
 
         return .message(
-            title: "Midday check-in",
-            body:
-                "\(doneToday) done so far today. \(next.routine.name) is still open, "
-                + "with \(next.progress.remainingCount) left this \(periodWord(next.routine.period))."
+            title: "Afternoon check-in",
+            body: [
+                completedRoutinesSentence(doneToday),
+                nextRoutineSentence(for: next.routine.name),
+                remainingCompletionsSentence(
+                    remainingCount: next.progress.remainingCount,
+                    period: next.routine.period
+                )
+            ].joined(separator: " ")
         )
     }
 
@@ -145,17 +154,45 @@ public struct CheckInContentBuilder: Sendable {
         return .message(
             title: "Evening check-in",
             body:
-                "\(doneToday) done today. \(metCount) of \(pairCount) goals met this week, "
-                + "\(openGoalCount) still open."
+                "\(completedRoutinesSentence(doneToday)) "
+                + "\(metGoalsClause(metCount: metCount, totalCount: pairCount)), "
+                + "and \(openGoalsClause(openGoalCount))."
         )
     }
 
-    private func periodWord(_ period: RoutinePeriod) -> String {
+    private func nextRoutineSentence(for routineName: String) -> String {
+        "Next routine: \(routineName)."
+    }
+
+    private func completedRoutinesSentence(_ count: Int) -> String {
+        "You've completed \(count) \(count == 1 ? "routine" : "routines") today."
+    }
+
+    private func remainingCompletionsSentence(remainingCount: Int, period: RoutinePeriod) -> String {
+        "You need \(remainingCount) more \(remainingCount == 1 ? "completion" : "completions") "
+            + "to reach \(goalPhrase(for: period))."
+    }
+
+    private func metGoalsClause(metCount: Int, totalCount: Int) -> String {
+        let goalWord = totalCount == 1 ? "goal" : "goals"
+        let verb = totalCount == 1 ? "is" : verb(for: metCount)
+        return "\(metCount) of \(totalCount) \(goalWord) \(verb) met"
+    }
+
+    private func openGoalsClause(_ count: Int) -> String {
+        "\(count) \(count == 1 ? "goal" : "goals") \(verb(for: count)) still open"
+    }
+
+    private func goalPhrase(for period: RoutinePeriod) -> String {
         switch period {
         case .weekly:
-            "week"
+            "this week's goal"
         case .monthly:
-            "month"
+            "this month's goal"
         }
+    }
+
+    private func verb(for count: Int) -> String {
+        count == 1 ? "is" : "are"
     }
 }

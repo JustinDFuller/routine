@@ -19,7 +19,7 @@ final class CheckInContentBuilderTests: XCTestCase {
             content,
             .message(
                 title: "Morning check-in",
-                body: "Stretch is open, with 3 left to reach this week's goal."
+                body: "Next routine: Stretch. You need 3 more completions to reach this week's goal."
             )
         )
     }
@@ -59,7 +59,7 @@ final class CheckInContentBuilderTests: XCTestCase {
             content,
             .message(
                 title: "Morning check-in",
-                body: "Journal is open, with 5 left to reach this week's goal."
+                body: "Next routine: Journal. You need 5 more completions to reach this week's goal."
             )
         )
     }
@@ -86,8 +86,10 @@ final class CheckInContentBuilderTests: XCTestCase {
         XCTAssertEqual(
             content,
             .message(
-                title: "Midday check-in",
-                body: "1 done so far today. Read is still open, with 2 left this week."
+                title: "Afternoon check-in",
+                body:
+                    "You've completed 1 routine today. Next routine: Read. "
+                    + "You need 2 more completions to reach this week's goal."
             )
         )
     }
@@ -154,7 +156,7 @@ final class CheckInContentBuilderTests: XCTestCase {
             content,
             .message(
                 title: "Evening check-in",
-                body: "1 done today. 1 of 3 goals met this week, 2 still open."
+                body: "You've completed 1 routine today. 1 of 3 goals is met, and 2 goals are still open."
             )
         )
     }
@@ -181,7 +183,7 @@ final class CheckInContentBuilderTests: XCTestCase {
             content,
             .message(
                 title: "Morning check-in",
-                body: "Stretch is open, with 1 left to reach this week's goal."
+                body: "Next routine: Stretch. You need 1 more completion to reach this week's goal."
             )
         )
     }
@@ -200,7 +202,10 @@ final class CheckInContentBuilderTests: XCTestCase {
 
         XCTAssertEqual(
             content,
-            .message(title: "All caught up", body: "Every goal met this week — nothing left open.")
+            .message(
+                title: "All caught up",
+                body: "You've met all of your current goals. There's nothing left to do right now."
+            )
         )
     }
 
@@ -244,9 +249,155 @@ final class CheckInContentBuilderTests: XCTestCase {
             content,
             .message(
                 title: "Morning check-in",
-                body: "Meditate is open, with 1 left to reach this week's goal."
+                body: "Next routine: Meditate. You need 1 more completion to reach this week's goal."
             )
         )
+    }
+
+    func testRoutineSpecificMessagesUseExplicitRoutineLabelFormat() throws {
+        let routine = CheckInRoutineSnapshot(
+            name: "Read",
+            targetCount: 2,
+            period: .weekly,
+            availabilityWindow: nil,
+            completionDays: []
+        )
+
+        let content = try content(slot: .morning, slotHour: 8, routines: [routine])
+
+        guard case .message(_, let body) = content else {
+            return XCTFail("Expected notification content message.")
+        }
+
+        XCTAssertTrue(body.contains("Next routine: Read."))
+    }
+
+    func testAfternoonPluralizesCompletedRoutineCountForMultipleRoutines() throws {
+        let today = try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 4))
+        let completedRoutineA = CheckInRoutineSnapshot(
+            name: "Meditate",
+            targetCount: 1,
+            period: .weekly,
+            availabilityWindow: nil,
+            completionDays: [today]
+        )
+        let completedRoutineB = CheckInRoutineSnapshot(
+            name: "Journal",
+            targetCount: 1,
+            period: .weekly,
+            availabilityWindow: nil,
+            completionDays: [today]
+        )
+        let openRoutine = CheckInRoutineSnapshot(
+            name: "Read",
+            targetCount: 2,
+            period: .weekly,
+            availabilityWindow: nil,
+            completionDays: []
+        )
+
+        let content = try content(
+            slot: .afternoon,
+            slotHour: 14,
+            routines: [completedRoutineA, completedRoutineB, openRoutine]
+        )
+
+        XCTAssertEqual(
+            content,
+            .message(
+                title: "Afternoon check-in",
+                body:
+                    "You've completed 2 routines today. Next routine: Read. "
+                    + "You need 2 more completions to reach this week's goal."
+            )
+        )
+    }
+
+    func testMorningUsesMonthlyGoalWordingForMonthlyRoutine() throws {
+        let routine = CheckInRoutineSnapshot(
+            name: "Budget review",
+            targetCount: 1,
+            period: .monthly,
+            availabilityWindow: nil,
+            completionDays: []
+        )
+
+        let content = try content(slot: .morning, slotHour: 8, routines: [routine])
+
+        XCTAssertEqual(
+            content,
+            .message(
+                title: "Morning check-in",
+                body: "Next routine: Budget review. You need 1 more completion to reach this month's goal."
+            )
+        )
+    }
+
+    func testEveningUsesSingularGoalPhrasingWhenOneGoalRemainsOpen() throws {
+        let today = try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 4))
+        let metRoutine = CheckInRoutineSnapshot(
+            name: "Meditate",
+            targetCount: 1,
+            period: .weekly,
+            availabilityWindow: nil,
+            completionDays: [today]
+        )
+        let openRoutine = CheckInRoutineSnapshot(
+            name: "Read",
+            targetCount: 2,
+            period: .weekly,
+            availabilityWindow: nil,
+            completionDays: []
+        )
+
+        let content = try content(slot: .evening, slotHour: 20, routines: [metRoutine, openRoutine])
+
+        XCTAssertEqual(
+            content,
+            .message(
+                title: "Evening check-in",
+                body: "You've completed 1 routine today. 1 of 2 goals is met, and 1 goal is still open."
+            )
+        )
+    }
+
+    func testEveningAggregateMessageStaysPeriodNeutralForMixedPeriods() throws {
+        let today = try XCTUnwrap(RoutineDay(year: 2025, month: 6, day: 4))
+        let weeklyOpenRoutine = CheckInRoutineSnapshot(
+            name: "Stretch",
+            targetCount: 3,
+            period: .weekly,
+            availabilityWindow: nil,
+            completionDays: []
+        )
+        let monthlyMetRoutine = CheckInRoutineSnapshot(
+            name: "Budget review",
+            targetCount: 1,
+            period: .monthly,
+            availabilityWindow: nil,
+            completionDays: [today]
+        )
+
+        let content = try content(
+            slot: .evening,
+            slotHour: 20,
+            routines: [weeklyOpenRoutine, monthlyMetRoutine]
+        )
+
+        XCTAssertEqual(
+            content,
+            .message(
+                title: "Evening check-in",
+                body: "You've completed 1 routine today. 1 of 2 goals is met, and 1 goal is still open."
+            )
+        )
+
+        guard case .message(_, let body) = content else {
+            return XCTFail("Expected notification content message.")
+        }
+
+        XCTAssertFalse(body.localizedCaseInsensitiveContains("week"))
+        XCTAssertFalse(body.localizedCaseInsensitiveContains("month"))
     }
 
     private func content(

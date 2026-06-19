@@ -98,7 +98,8 @@ struct SettingsView: View {
     private var checkInFooter: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(
-                "Three daily reminders at the times you choose. They stop once everything for the period is done."
+                "Choose which check-ins you want and when they should arrive. "
+                    + "Routine stops sending them once your current goals are done."
             )
 
             if isNotificationAccessDenied {
