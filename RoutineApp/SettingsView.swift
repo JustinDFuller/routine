@@ -10,6 +10,8 @@ struct SettingsView: View {
 
     @AppStorage(RoutineSettingsKeys.weekStartWeekday) private var weekStartRaw = Weekday.sunday.rawValue
     @AppStorage(RoutineSettingsKeys.collapseCompletedToday) private var collapseCompletedToday = true
+    @AppStorage(RoutineSettingsKeys.collapseGoalMetToday) private var collapseGoalMetToday = true
+    @AppStorage(RoutineSettingsKeys.collapseUnavailableToday) private var collapseUnavailableToday = true
 
     @AppStorage(RoutineSettingsKeys.checkInMorningEnabled) private var checkInMorningEnabled = false
     @AppStorage(RoutineSettingsKeys.checkInMorningMinute) private var checkInMorningMinute = 360
@@ -37,10 +39,15 @@ struct SettingsView: View {
                 Section {
                     Toggle("Collapse completed routines", isOn: $collapseCompletedToday)
                         .accessibilityIdentifier("settings-collapse-completed-toggle")
+                    Toggle("Collapse goal-met routines", isOn: $collapseGoalMetToday)
+                        .accessibilityIdentifier("settings-collapse-goal-met-toggle")
+                    Toggle("Collapse unavailable routines", isOn: $collapseUnavailableToday)
+                        .accessibilityIdentifier("settings-collapse-unavailable-toggle")
                 } footer: {
                     Text(
-                        "Completed routines collapse into compact rows so you can focus on what's left. "
-                            + "Tap one to expand it."
+                        "Completed routines can collapse into compact checkmark rows, goal-met "
+                            + "routines can collapse into compact goal-met rows, and unavailable "
+                            + "routines can collapse into compact clock rows. Tap a row to expand it."
                     )
                 }
 

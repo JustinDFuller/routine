@@ -368,6 +368,61 @@ final class RoutineAppUITests: XCTestCase {
 }
 
 extension RoutineAppUITests {
+    func testUnavailableRoutineCollapsesToClockRowAndExpandsAndCollapsesOnTap() {
+        let app = makeApp(
+            seeded: false,
+            additionalLaunchArguments: [
+                "-routine-empty-in-memory-store",
+                "-routine-screenshot-fixture",
+                "full-app"
+            ]
+        )
+        app.launch()
+
+        let unavailableRow = identifiedElement("routine-unavailable-row-wake-up-early", in: app)
+        XCTAssertTrue(unavailableRow.waitForExistence(timeout: 5))
+        XCTAssertFalse(
+            identifiedElement("routine-card-history-wake-up-early", in: app).waitForExistence(timeout: 2)
+        )
+
+        unavailableRow.tap()
+
+        XCTAssertTrue(
+            identifiedElement("routine-card-history-wake-up-early", in: app).waitForExistence(timeout: 5)
+        )
+        XCTAssertTrue(app.staticTexts["Available 12:00 AM-6:45 AM"].waitForExistence(timeout: 5))
+
+        let collapseButton = identifiedElement("routine-card-collapse-wake-up-early", in: app)
+        XCTAssertTrue(collapseButton.waitForExistence(timeout: 5))
+        collapseButton.tap()
+
+        XCTAssertTrue(unavailableRow.waitForExistence(timeout: 5))
+        XCTAssertFalse(
+            identifiedElement("routine-card-history-wake-up-early", in: app).waitForExistence(timeout: 2)
+        )
+    }
+
+    func testUnavailableRoutineStaysExpandedWhenCollapseUnavailableIsDisabledAtLaunch() {
+        let app = makeApp(
+            seeded: false,
+            additionalLaunchArguments: [
+                "-routine-empty-in-memory-store",
+                "-routine-screenshot-fixture",
+                "full-app",
+                "-routine-collapse-unavailable-disabled"
+            ]
+        )
+        app.launch()
+
+        XCTAssertTrue(
+            identifiedElement("routine-card-history-wake-up-early", in: app).waitForExistence(timeout: 5)
+        )
+        XCTAssertTrue(app.staticTexts["Available 12:00 AM-6:45 AM"].waitForExistence(timeout: 5))
+        XCTAssertFalse(
+            identifiedElement("routine-unavailable-row-wake-up-early", in: app).waitForExistence(timeout: 2)
+        )
+    }
+
     func testCheckInOnboardingPromptAppearsAndEnableButtonDismissesIt() {
         let app = makeApp(
             additionalLaunchArguments: ["-routine-force-checkin-onboarding-prompt"]
@@ -425,7 +480,6 @@ extension RoutineAppUITests {
     func testGoalMetRoutineCollapsesToMiniRowWithoutStatusText() {
         let app = makeApp(
             additionalLaunchArguments: [
-                "-routine-collapse-completed-enabled",
                 "-routine-screenshot-fixture",
                 "full-app"
             ]
@@ -435,5 +489,49 @@ extension RoutineAppUITests {
         let goalMetRow = identifiedElement("routine-goal-met-row-water-plants", in: app)
         XCTAssertTrue(goalMetRow.waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["Goal met"].exists)
+    }
+
+    func testGoalMetRoutineStaysExpandedWhenCollapseGoalMetIsDisabledAtLaunch() {
+        let app = makeApp(
+            additionalLaunchArguments: [
+                "-routine-screenshot-fixture",
+                "full-app",
+                "-routine-collapse-goal-met-disabled"
+            ]
+        )
+        app.launch()
+
+        XCTAssertTrue(
+            identifiedElement("routine-card-history-water-plants", in: app).waitForExistence(timeout: 5)
+        )
+        XCTAssertFalse(
+            identifiedElement("routine-goal-met-row-water-plants", in: app).waitForExistence(timeout: 2)
+        )
+    }
+
+    func testSettingsToggleUpdatesGoalMetCollapseOnTodayDashboard() {
+        let app = makeApp(
+            additionalLaunchArguments: [
+                "-routine-screenshot-fixture",
+                "full-app"
+            ]
+        )
+        app.launch()
+
+        let goalMetRow = identifiedElement("routine-goal-met-row-water-plants", in: app)
+        XCTAssertTrue(goalMetRow.waitForExistence(timeout: 5))
+
+        openManagementMenu(in: app)
+        app.buttons["today-dashboard-settings-button"].tap()
+
+        let goalMetToggle = identifiedElement("settings-collapse-goal-met-toggle", in: app)
+        XCTAssertTrue(goalMetToggle.waitForExistence(timeout: 5))
+        goalMetToggle.tap()
+        app.buttons["settings-done-button"].tap()
+
+        XCTAssertTrue(
+            identifiedElement("routine-card-history-water-plants", in: app).waitForExistence(timeout: 5)
+        )
+        XCTAssertFalse(goalMetRow.waitForExistence(timeout: 2))
     }
 }

@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**MVP implementation roadmap complete through M18**
+**M20 - Next Post-Launch Follow-On**
 
 The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -107,6 +107,8 @@ Core invariants that require automated coverage when touched:
 | DONE | M16 - Time-Based Routine Availability | Routines can optionally limit completion to local-time windows while staying visible and correct across all-day, same-day, and cross-midnight cases. |
 | DONE | M17 - Check-In Notifications | The app schedules local morning/afternoon/evening check-in notifications with progress-aware, non-spammy content that goes quiet once all goals for the period are met. |
 | DONE | M18 - Production Launch Readiness | Release assets/docs are aligned, widget completion/handoff flows are covered, and internal-TestFlight operator workflows are documented and scripted. |
+| DONE | M19 - Separate Goal-Met Collapse Preference | Today collapse settings independently control completed-today, goal-met, and unavailable compact rows while preserving unavailable precedence. |
+| CURRENT | M20 - Next Post-Launch Follow-On | The next post-launch dogfooding refinement is identified and scoped before implementation. |
 
 ## Milestones
 
@@ -955,6 +957,67 @@ Completion update:
 Completion note:
 
 - Passed `./Scripts/test-ios-script-tests.sh`, targeted `xcodebuild test` for `RoutineAppTests/WidgetCompletionFlowTests` and `RoutineAppTests/NextRoutineSelectorTests` on `platform=iOS Simulator,name=iPhone Air,OS=26.5`, `./Scripts/test-core.sh`, `./Scripts/check-format.sh`, `./Scripts/lint.sh`, `./Scripts/build-ios.sh`, and `ROUTINE_BUILD_CONFIGURATION=Release ./Scripts/build-ios.sh`. `./Scripts/archive-ios.sh` failed because this machine is not signed into team `CX2KMQZQ7X` and therefore has no matching provisioning/account access for `com.justinfuller.routine` or `com.justinfuller.routine.widget`; `./Scripts/export-ios.sh` then correctly failed because no archive existed. `./Scripts/validate.sh` stalled in `./Scripts/test-ios.sh`, and a direct UI-test probe on `platform=iOS Simulator,name=iPhone Air,OS=26.5` reproduced `FBSOpenApplicationServiceErrorDomain` / `Application failed preflight checks` when launching `com.justinfuller.routine.uitests.xctrunner`, so full UI-test validation and release-preflight completion remain blocked by the local simulator/signing environment rather than by the code changes in this milestone.
+
+### M19 - Separate Goal-Met Collapse Preference
+
+Status: `DONE`
+
+Goal: split Today collapse behavior so completed-today, goal-met, and unavailable routines can compact independently without changing completion or availability rules.
+
+Dependencies: M15, M16.
+
+Primary references: [PRODUCT_BRIEF.md](PRODUCT_BRIEF.md) Today Dashboard and Routine Item Interaction; [VISUAL_DESIGN.md](VISUAL_DESIGN.md) card states for completed, goal-met, and unavailable routines; [DATA_DESIGN.md](DATA_DESIGN.md) Today dashboard view data and settings-backed compaction behavior.
+
+Deliverables:
+
+- Add a dedicated Today setting and `@AppStorage` key for collapsing goal-met routines.
+- Keep completed-today collapse scoped to done-today rows only.
+- Keep unavailable collapse behavior and precedence intact so unavailable goal-met routines still use unavailable compact rows.
+- Update the compact-row partitioning tests, debug launch configuration, and in-memory settings seeding for the new goal-met preference.
+- Add UI coverage for default goal-met compaction, debug disabling, and in-app settings toggling.
+- Reconcile the design docs so completed, goal-met, and unavailable compaction are described as separate configurable Today behaviors.
+
+Validation:
+
+- Run targeted `xcodebuild test` coverage for `RoutineAppTests/AppBootstrapTests`, `RoutineAppTests/RoutineDebugLaunchConfigurationTests`, and `RoutineAppTests/DashboardProjectionBuilderTests`.
+- Attempt targeted `xcodebuild test` coverage for the new `RoutineAppUITests` goal-met collapse scenarios.
+- Run `./Scripts/check-format.sh`.
+- Run `./Scripts/lint.sh`.
+- Run `./Scripts/build-ios.sh`.
+- Run `./Scripts/validate.sh` as the final broad validation entrypoint.
+
+Required tests:
+
+- Goal-met rows collapse only when the goal-met setting is enabled.
+- Goal-met rows stay full when the goal-met setting is disabled.
+- Completed-today rows are unaffected by the goal-met setting.
+- Unavailable goal-met routines still follow unavailable-collapse precedence.
+- In-memory bootstrap writes the goal-met setting as enabled by default and disabled when the debug flag is passed.
+- Debug launch parsing keeps goal-met collapse enabled by default and disables it only when requested.
+- UI coverage verifies default goal-met compaction, launch-time disable behavior, and settings-driven toggling on Today.
+
+Completion update:
+
+- Mark this milestone `DONE`.
+- Mark M20 `CURRENT`.
+
+Completion note:
+
+- Passed targeted `xcodebuild test` for `RoutineAppTests/AppBootstrapTests`, `RoutineAppTests/RoutineDebugLaunchConfigurationTests`, and `RoutineAppTests/DashboardProjectionBuilderTests` on `platform=iOS Simulator,name=iPhone 17 Pro Max`; also passed `./Scripts/check-format.sh`, `./Scripts/lint.sh`, and `./Scripts/build-ios.sh`. Targeted UI-test attempts for the new `RoutineAppUITests` goal-met collapse scenarios stalled in simulator launch, and `./Scripts/validate.sh` reached `PASS generate-project`, `PASS test-ios-script-tests`, and `PASS test-core` before stalling in `./Scripts/test-ios.sh`, matching the existing local simulator runner blocker rather than exposing a code failure in this milestone.
+
+### M20 - Next Post-Launch Follow-On
+
+Status: `CURRENT`
+
+Goal: define and scope the next post-launch dogfooding refinement before implementation starts.
+
+Dependencies: M19.
+
+Primary references: to be selected with the next scoped follow-on.
+
+Deliverables:
+
+- Choose the next concrete post-launch milestone before implementation begins.
 
 ## MVP Completion Criteria
 

@@ -77,6 +77,14 @@ enum AppBootstrap {
             launchConfiguration.collapseCompletedEnabled,
             forKey: RoutineSettingsKeys.collapseCompletedToday
         )
+        userDefaults.set(
+            launchConfiguration.collapseGoalMetEnabled,
+            forKey: RoutineSettingsKeys.collapseGoalMetToday
+        )
+        userDefaults.set(
+            launchConfiguration.collapseUnavailableEnabled,
+            forKey: RoutineSettingsKeys.collapseUnavailableToday
+        )
 
         userDefaults.removeObject(forKey: RoutineSettingsKeys.checkInMorningEnabled)
         userDefaults.removeObject(forKey: RoutineSettingsKeys.checkInMorningMinute)

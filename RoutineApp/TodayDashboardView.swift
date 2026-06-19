@@ -31,15 +31,19 @@ struct TodayDashboardView: View {
     var completions: [RoutineCompletion]
 
     @AppStorage(RoutineSettingsKeys.collapseCompletedToday) private var collapseCompletedToday = true
+    @AppStorage(RoutineSettingsKeys.collapseGoalMetToday) private var collapseGoalMetToday = true
+    @AppStorage(RoutineSettingsKeys.collapseUnavailableToday) private var collapseUnavailableToday = true
 
     @State var mode: DashboardMode = .tracking
     @State var sheetPresentation: ManageSheetPresentation?
     @State var undoBanner: UndoBannerPresentation?
     @State var undoDismissTask: Task<Void, Never>?
     @State var alertPresentation: DashboardAlertPresentation?
-    @State var expandedCompletedRoutineIDs: Set<UUID> = []
+    @State var expandedCollapsedRoutineIDs: Set<UUID> = []
 
     var collapsesCompleted: Bool { collapseCompletedToday && mode == .tracking }
+    var collapsesGoalMet: Bool { collapseGoalMetToday && mode == .tracking }
+    var collapsesUnavailable: Bool { collapseUnavailableToday && mode == .tracking }
 
     var viewData: TodayDashboardViewData {
         DashboardProjectionBuilder(context: modelContext, routineCalendar: routineCalendar).build(

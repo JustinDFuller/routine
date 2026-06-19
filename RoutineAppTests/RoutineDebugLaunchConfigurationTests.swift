@@ -19,6 +19,8 @@ final class RoutineDebugLaunchConfigurationTests: ProjectionBuilderTestCase {
         XCTAssertEqual(configuration.runtime.starterSeedVersion, StarterDataService.seedMetadataValue)
         XCTAssertNil(configuration.runtime.fixedNow)
         XCTAssertNil(configuration.launchRoute)
+        XCTAssertTrue(configuration.collapseGoalMetEnabled)
+        XCTAssertTrue(configuration.collapseUnavailableEnabled)
     }
 
     func testEmptyInMemoryLaunchConfigurationParsesResetAnimationAndSeedVersionFlags() {
@@ -130,6 +132,34 @@ final class RoutineDebugLaunchConfigurationTests: ProjectionBuilderTestCase {
 
         XCTAssertTrue(withFlag.collapseCompletedEnabled)
         XCTAssertFalse(withoutFlag.collapseCompletedEnabled)
+    }
+
+    func testCollapseUnavailableEnabledDefaultsToTrueAndCanBeDisabled() {
+        let defaultConfiguration = RoutineDebugLaunchConfiguration(
+            arguments: ["Routine", "-routine-use-in-memory-store"],
+            calendar: makeCalendar().calendar
+        )
+        let disabledConfiguration = RoutineDebugLaunchConfiguration(
+            arguments: ["Routine", "-routine-use-in-memory-store", "-routine-collapse-unavailable-disabled"],
+            calendar: makeCalendar().calendar
+        )
+
+        XCTAssertTrue(defaultConfiguration.collapseUnavailableEnabled)
+        XCTAssertFalse(disabledConfiguration.collapseUnavailableEnabled)
+    }
+
+    func testCollapseGoalMetEnabledDefaultsToTrueAndCanBeDisabled() {
+        let defaultConfiguration = RoutineDebugLaunchConfiguration(
+            arguments: ["Routine", "-routine-use-in-memory-store"],
+            calendar: makeCalendar().calendar
+        )
+        let disabledConfiguration = RoutineDebugLaunchConfiguration(
+            arguments: ["Routine", "-routine-use-in-memory-store", "-routine-collapse-goal-met-disabled"],
+            calendar: makeCalendar().calendar
+        )
+
+        XCTAssertTrue(defaultConfiguration.collapseGoalMetEnabled)
+        XCTAssertFalse(disabledConfiguration.collapseGoalMetEnabled)
     }
 
     func testMalformedOrMissingFixedDateFallsBackSafely() {

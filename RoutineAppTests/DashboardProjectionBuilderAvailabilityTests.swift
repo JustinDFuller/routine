@@ -35,7 +35,7 @@ final class DashboardAvailabilityTests: ProjectionBuilderTestCase {
 
         XCTAssertNil(cardsByName["Walk"]?.availabilityText)
         XCTAssertEqual(cardsByName["Walk"]?.isAvailableNow, true)
-        XCTAssertEqual(cardsByName["Wake up early"]?.availabilityText, "Available until 6:45 AM")
+        XCTAssertNil(cardsByName["Wake up early"]?.availabilityText)
         XCTAssertEqual(cardsByName["Wake up early"]?.isAvailableNow, true)
     }
 
@@ -104,7 +104,7 @@ final class DashboardAvailabilityTests: ProjectionBuilderTestCase {
         let card = try XCTUnwrap(viewData.sections.first?.routines.first)
 
         XCTAssertTrue(card.isAvailableNow)
-        XCTAssertEqual(card.availabilityText, "Available until 3:00 AM")
+        XCTAssertNil(card.availabilityText)
     }
 
     func testBuildMarksCrossMidnightRoutineAvailableAfterMidnight() throws {
@@ -130,6 +130,6 @@ final class DashboardAvailabilityTests: ProjectionBuilderTestCase {
         let card = try XCTUnwrap(viewData.sections.first?.routines.first)
 
         XCTAssertTrue(card.isAvailableNow)
-        XCTAssertEqual(card.availabilityText, "Available until 3:00 AM")
+        XCTAssertNil(card.availabilityText)
     }
 }

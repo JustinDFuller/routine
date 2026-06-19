@@ -887,8 +887,11 @@ Rules:
 
 - Use one continuous ring for every target count.
 - All-day routines omit availability text to avoid clutter.
-- Configured routines show a concise availability label, such as `Available until 6:45 AM` when currently available and `Available 12:00 AM-6:45 AM` when currently unavailable.
-- Incomplete unavailable routines remain visible in their normal group and order but present disabled completion state.
+- Configured routines on Today omit visible availability text while currently available, and show an explicit range such as `Available 12:00 AM-6:45 AM` only while currently unavailable.
+- Routines that are completed today may collapse into compact completed rows when the completed-collapse setting is enabled.
+- Routines whose period goal is met but which are not completed today may collapse into compact goal-met rows when the goal-met-collapse setting is enabled.
+- Incomplete unavailable routines remain visible in their normal group and order, present disabled completion state when expanded, and may collapse into compact clock rows on Today when the unavailable-collapse setting is enabled.
+- Unavailable compaction takes precedence over goal-met compaction for routines that are both unavailable and already at goal.
 - Section `remainingCount` includes incomplete routines that are currently available, not disabled unavailable routines.
 - Accessibility label includes routine name, availability state when relevant, completed-today state, count, and period.
 
