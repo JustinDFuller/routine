@@ -241,7 +241,7 @@ extension TodayDashboardView {
     }
 
     func handlePendingWidgetCompletion() {
-        guard let restoration = RoutineWidgetBridge.restoration(for: routines) else {
+        guard let restoration = RoutineWidgetBridge.restoration(context: modelContext) else {
             return
         }
 

@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import WidgetKit
 
 struct WidgetCompletionRestoration: Equatable, Sendable {
@@ -21,35 +22,43 @@ enum RoutineWidgetBridge {
         userDefaults?.set(routineID.uuidString, forKey: completedRoutineIDKey)
     }
 
-    static func takeCompletedRoutineID(
+    static func clearCompletedRoutineID(
         userDefaults: UserDefaults? = UserDefaults(suiteName: RoutineModelContainer.appGroupID)
-    ) -> UUID? {
+    ) {
+        userDefaults?.removeObject(forKey: completedRoutineIDKey)
+    }
+
+    @MainActor
+    static func restoration(
+        context: ModelContext,
+        userDefaults: UserDefaults? = UserDefaults(suiteName: RoutineModelContainer.appGroupID)
+    ) -> WidgetCompletionRestoration? {
         guard let userDefaults else {
             return nil
-        }
-
-        defer {
-            userDefaults.removeObject(forKey: completedRoutineIDKey)
         }
 
         guard let rawValue = userDefaults.string(forKey: completedRoutineIDKey) else {
             return nil
         }
 
-        return UUID(uuidString: rawValue)
-    }
-
-    static func restoration(
-        for routines: [Routine],
-        userDefaults: UserDefaults? = UserDefaults(suiteName: RoutineModelContainer.appGroupID)
-    ) -> WidgetCompletionRestoration? {
-        guard
-            let routineID = takeCompletedRoutineID(userDefaults: userDefaults),
-            let routine = routines.first(where: { $0.id == routineID })
-        else {
+        guard let routineID = UUID(uuidString: rawValue) else {
+            clearCompletedRoutineID(userDefaults: userDefaults)
             return nil
         }
 
-        return WidgetCompletionRestoration(routineID: routineID, routineName: routine.name)
+        do {
+            let routine = try context.routine(id: routineID)
+            clearCompletedRoutineID(userDefaults: userDefaults)
+            return WidgetCompletionRestoration(routineID: routineID, routineName: routine.name)
+        } catch let error as PersistenceError {
+            guard case .routineNotFound = error else {
+                return nil
+            }
+
+            clearCompletedRoutineID(userDefaults: userDefaults)
+            return nil
+        } catch {
+            return nil
+        }
     }
 }

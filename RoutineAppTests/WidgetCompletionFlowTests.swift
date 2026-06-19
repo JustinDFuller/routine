@@ -97,17 +97,18 @@ final class WidgetCompletionFlowTests: ProjectionBuilderTestCase {
         XCTAssertEqual(try fetchCompletions(in: context).count, 1)
     }
 
-    func testTakeCompletedRoutineIDClearsInvalidStoredIdentifier() throws {
+    func testRestorationClearsInvalidStoredIdentifier() throws {
         let defaults = makeDefaults(suffix: "invalid-pending")
+        let context = try makeContext()
         defaults.set("bad-value", forKey: RoutineWidgetBridge.completedRoutineIDKey)
 
-        let routineID = RoutineWidgetBridge.takeCompletedRoutineID(userDefaults: defaults)
+        let restoration = RoutineWidgetBridge.restoration(context: context, userDefaults: defaults)
 
-        XCTAssertNil(routineID)
+        XCTAssertNil(restoration)
         XCTAssertNil(defaults.string(forKey: RoutineWidgetBridge.completedRoutineIDKey))
     }
 
-    func testRestorationReturnsBannerPayloadAndClearsStoredIdentifier() throws {
+    func testRestorationFetchesRoutineFromContextAndClearsStoredIdentifierOnce() throws {
         let defaults = makeDefaults(suffix: "restoration")
         let context = try makeContext()
         let group = insertGroup(name: "Morning", sortOrder: 0, into: context)
@@ -119,23 +120,47 @@ final class WidgetCompletionFlowTests: ProjectionBuilderTestCase {
         try saveChanges(in: context)
         RoutineWidgetBridge.recordCompletedRoutineID(routine.id, userDefaults: defaults)
 
-        let restoration = RoutineWidgetBridge.restoration(for: [routine], userDefaults: defaults)
+        let restoration = RoutineWidgetBridge.restoration(context: context, userDefaults: defaults)
 
         XCTAssertEqual(
             restoration,
             WidgetCompletionRestoration(routineID: routine.id, routineName: "Walk")
         )
         XCTAssertNil(defaults.string(forKey: RoutineWidgetBridge.completedRoutineIDKey))
+        XCTAssertNil(RoutineWidgetBridge.restoration(context: context, userDefaults: defaults))
     }
 
     func testRestorationClearsPendingIdentifierWhenRoutineNoLongerExists() throws {
         let defaults = makeDefaults(suffix: "missing-routine")
+        let context = try makeContext()
         RoutineWidgetBridge.recordCompletedRoutineID(UUID(), userDefaults: defaults)
 
-        let restoration = RoutineWidgetBridge.restoration(for: [], userDefaults: defaults)
+        let restoration = RoutineWidgetBridge.restoration(context: context, userDefaults: defaults)
 
         XCTAssertNil(restoration)
         XCTAssertNil(defaults.string(forKey: RoutineWidgetBridge.completedRoutineIDKey))
+    }
+
+    func testRestorationRetainsPendingIdentifierUntilMissingStateIsConfirmed() throws {
+        enum ExpectedFailure: Error {
+            case fetchFailed
+        }
+
+        let defaults = makeDefaults(suffix: "transient-fetch-failure")
+        let context = try makeContext()
+        let routineID = UUID()
+        RoutineWidgetBridge.recordCompletedRoutineID(routineID, userDefaults: defaults)
+
+        let originalFetch = RoutinePersistenceFetchExecutor.fetchRoutines
+        defer { RoutinePersistenceFetchExecutor.fetchRoutines = originalFetch }
+        RoutinePersistenceFetchExecutor.fetchRoutines = { _, _ in
+            throw ExpectedFailure.fetchFailed
+        }
+
+        let restoration = RoutineWidgetBridge.restoration(context: context, userDefaults: defaults)
+
+        XCTAssertNil(restoration)
+        XCTAssertEqual(defaults.string(forKey: RoutineWidgetBridge.completedRoutineIDKey), routineID.uuidString)
     }
 }
 

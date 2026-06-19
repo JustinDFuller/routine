@@ -34,7 +34,7 @@ validate:
 	./Scripts/validate.sh
 
 archive-ios:
-	./Scripts/archive-ios.sh
+	CURRENT_PROJECT_VERSION=$${CURRENT_PROJECT_VERSION:?Set CURRENT_PROJECT_VERSION} ./Scripts/archive-ios.sh
 
 export-ios:
 	./Scripts/export-ios.sh

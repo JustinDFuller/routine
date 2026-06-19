@@ -17,6 +17,12 @@ if [[ -z "$development_team" ]]; then
     exit 1
 fi
 
+if [[ -z "${CURRENT_PROJECT_VERSION:-}" ]]; then
+    echo "error: CURRENT_PROJECT_VERSION is required to archive for distribution." >&2
+    echo "Set it in your shell, e.g. CURRENT_PROJECT_VERSION=2 ./Scripts/archive-ios.sh" >&2
+    exit 1
+fi
+
 if [[ -n "$auth_key_path$auth_key_id$auth_key_issuer_id" ]]; then
     if [[ -z "$auth_key_path" || -z "$auth_key_id" || -z "$auth_key_issuer_id" ]]; then
         echo "error: APP_STORE_CONNECT_AUTH_KEY_PATH, APP_STORE_CONNECT_AUTH_KEY_ID, and APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID must be set together." >&2
@@ -36,11 +42,8 @@ xcodebuild_args=(
     -destination "generic/platform=iOS"
     -archivePath "$archive_path"
     "DEVELOPMENT_TEAM=${development_team}"
+    "CURRENT_PROJECT_VERSION=${CURRENT_PROJECT_VERSION}"
 )
-
-if [[ -n "${CURRENT_PROJECT_VERSION:-}" ]]; then
-    xcodebuild_args+=("CURRENT_PROJECT_VERSION=${CURRENT_PROJECT_VERSION}")
-fi
 
 if [[ -n "$auth_key_path" ]]; then
     xcodebuild_args+=(

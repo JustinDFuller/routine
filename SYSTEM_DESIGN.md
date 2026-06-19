@@ -511,7 +511,9 @@ SwiftLint policy:
 - Avoid high-churn style rules that fight SwiftUI's natural shape.
 - Enable rules that catch likely defects or readability problems, such as force unwraps, force tries, empty collections, duplicate imports, unused closures, and accidental complexity.
 - Keep line-length rules pragmatic for SwiftUI and tests.
-- Do not require warnings-as-errors until the initial implementation is stable.
+- Run SwiftLint in strict mode against the committed `.swiftlint.yml`.
+- Keep `file_length`, `function_body_length`, and `type_body_length` intentionally disabled repo-wide for the app's SwiftUI- and test-heavy code.
+- Treat committed repo-wide exceptions as policy, but do not add baselines, new exclusions, or ad hoc config disables to avoid task-local violations.
 - SwiftLint should run locally with the same Xcode toolchain used to compile the app.
 
 Agent rule:

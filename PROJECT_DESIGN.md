@@ -902,7 +902,7 @@ Completion update:
 
 Completion note:
 
-- Passed `./Scripts/test-core.sh`, `./Scripts/test-ios.sh`, and `./Scripts/check-format.sh` with no skipped scripted checks. `./Scripts/lint.sh` and `./Scripts/validate.sh` report only pre-existing file/function length violations in files this milestone did not touch (`RoutineHistoryView.swift`, `RoutineManagementService.swift`, `RoutineTrackingService.swift`, `HistoryProjectionBuilderTests.swift`, `RoutineTrackingServiceTests.swift`), confirmed unchanged against the base branch.
+- Passed `./Scripts/test-core.sh`, `./Scripts/test-ios.sh`, `./Scripts/check-format.sh`, `./Scripts/lint.sh`, and `./Scripts/validate.sh` with no skipped scripted checks.
 
 ### M18 - Production Launch Readiness
 

@@ -153,6 +153,9 @@ struct TodayDashboardView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("today-dashboard-root")
+        .task {
+            handlePendingWidgetCompletion()
+        }
         .onDisappear {
             undoDismissTask?.cancel()
         }

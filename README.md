@@ -48,13 +48,15 @@ Use the scripts directly or the matching `make` targets:
 - Run iOS tests with an explicit destination: `IOS_TEST_DESTINATION='platform=iOS Simulator,name=iPhone 17' ./Scripts/test-ios.sh` or `IOS_TEST_DESTINATION='platform=iOS Simulator,name=iPhone 17' make test-ios`
 - Run the full local validation chain: `./Scripts/validate.sh` or `make validate`
 
+`Scripts/lint.sh` runs SwiftLint in strict mode against the committed `.swiftlint.yml`. The repo intentionally disables `file_length`, `function_body_length`, and `type_body_length` there; do not recreate task-local exceptions or alternate lint configs to work around other violations.
+
 `Scripts/build-ios.sh` defaults to `Debug`. Set `ROUTINE_BUILD_CONFIGURATION=Release` to validate the Release path. Set `DEVELOPMENT_TEAM` only in your local shell when Xcode needs a team for device signing; do not commit signing credentials.
 
 `Scripts/test-ios.sh` accepts `IOS_TEST_DESTINATION`. If that variable is unset, the script tries to choose a concrete simulator automatically and exits with a documented skip message when no eligible simulator destination exists.
 
 `Scripts/build-ios.sh` and `Scripts/test-ios.sh` intentionally preserve skip behavior when the local machine has no eligible simulator or device destination available.
 
-`Scripts/archive-ios.sh` and `Scripts/export-ios.sh` default `DEVELOPMENT_TEAM` to the current Routine team for local convenience, but still allow per-shell overrides. Both scripts pass `-allowProvisioningUpdates` so automatic signing can create or refresh distribution assets when Xcode is signed into the correct Apple Developer account. For headless use, set `APP_STORE_CONNECT_AUTH_KEY_PATH`, `APP_STORE_CONNECT_AUTH_KEY_ID`, and `APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID` together to let `xcodebuild` authenticate with an App Store Connect API key during archive/export.
+`Scripts/archive-ios.sh`, `make archive-ios`, and release preflight require an explicit `CURRENT_PROJECT_VERSION`; `Scripts/export-ios.sh` and `make export-ios` only require an existing archive. `Scripts/archive-ios.sh` and `Scripts/export-ios.sh` default `DEVELOPMENT_TEAM` to the current Routine team for local convenience, but still allow per-shell overrides. Both scripts pass `-allowProvisioningUpdates` so automatic signing can create or refresh distribution assets when Xcode is signed into the correct Apple Developer account. For headless use, set `APP_STORE_CONNECT_AUTH_KEY_PATH`, `APP_STORE_CONNECT_AUTH_KEY_ID`, and `APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID` together to let `xcodebuild` authenticate with an App Store Connect API key during archive/export.
 
 ## Dogfooding Checklist
 

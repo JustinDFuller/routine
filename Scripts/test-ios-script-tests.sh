@@ -349,11 +349,13 @@ run_archive_ios_and_capture() {
 
 : >"$log_file"
 : >"$generate_log"
+set +e
 run_archive_ios_and_capture
-assert_equals "$?" "0"
-assert_equals "$(<"$generate_log")" "generate"
-default_archive_log="$(<"$log_file")"
-assert_contains "$default_archive_log" "-quiet -project Routine.xcodeproj -scheme RoutineApp -configuration Release -destination generic/platform=iOS -archivePath build/Routine.xcarchive DEVELOPMENT_TEAM=CX2KMQZQ7X -allowProvisioningUpdates archive"
+missing_build_number_exit_code=$?
+set -e
+assert_equals "$missing_build_number_exit_code" "1"
+assert_contains "$REPLY" "error: CURRENT_PROJECT_VERSION is required to archive for distribution."
+assert_equals "$(<"$generate_log")" ""
 
 : >"$log_file"
 : >"$generate_log"
@@ -378,7 +380,8 @@ assert_equals "$(<"$generate_log")" ""
 run_archive_ios_and_capture \
     APP_STORE_CONNECT_AUTH_KEY_PATH=/tmp/AuthKey_TEST.p8 \
     APP_STORE_CONNECT_AUTH_KEY_ID=ABC1234567 \
-    APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID=11111111-2222-3333-4444-555555555555
+    APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID=11111111-2222-3333-4444-555555555555 \
+    CURRENT_PROJECT_VERSION=42
 assert_equals "$?" "0"
 auth_archive_log="$(<"$log_file")"
 assert_contains "$auth_archive_log" "-authenticationKeyPath /tmp/AuthKey_TEST.p8 -authenticationKeyID ABC1234567 -authenticationKeyIssuerID 11111111-2222-3333-4444-555555555555 -allowProvisioningUpdates archive"
@@ -386,12 +389,64 @@ assert_contains "$auth_archive_log" "-authenticationKeyPath /tmp/AuthKey_TEST.p8
 : >"$log_file"
 : >"$generate_log"
 set +e
-run_archive_ios_and_capture APP_STORE_CONNECT_AUTH_KEY_PATH=/tmp/AuthKey_TEST.p8
+run_archive_ios_and_capture APP_STORE_CONNECT_AUTH_KEY_PATH=/tmp/AuthKey_TEST.p8 CURRENT_PROJECT_VERSION=42
 partial_auth_archive_exit_code=$?
 set -e
 assert_equals "$partial_auth_archive_exit_code" "1"
 assert_contains "$REPLY" "error: APP_STORE_CONNECT_AUTH_KEY_PATH, APP_STORE_CONNECT_AUTH_KEY_ID, and APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID must be set together."
 assert_equals "$(<"$generate_log")" ""
+
+archive_make_repo="$workdir/archive-make-repo"
+mkdir -p "$archive_make_repo/Scripts"
+cp ./Makefile "$archive_make_repo/Makefile"
+
+cat >"$archive_make_repo/Scripts/archive-ios.sh" <<'EOF'
+#!/bin/zsh
+set -euo pipefail
+
+print -r -- "${CURRENT_PROJECT_VERSION:-}" >>"${FAKE_MAKE_ARCHIVE_LOG}"
+EOF
+
+chmod +x "$archive_make_repo/Scripts/archive-ios.sh"
+
+run_make_archive_and_capture() {
+    local output_file="$script_test_dir/output.txt"
+    local had_errexit=0
+    if [[ -o errexit ]]; then
+        had_errexit=1
+    fi
+
+    set +e
+    (
+        cd "$archive_make_repo"
+        env "$@" make archive-ios
+    ) >"$output_file" 2>&1
+    local exit_code=$?
+    if (( had_errexit )); then
+        set -e
+    fi
+    REPLY="$(<"$output_file")"
+    return "$exit_code"
+}
+
+make_archive_log="$workdir/make-archive.log"
+
+: >"$make_archive_log"
+set +e
+run_make_archive_and_capture FAKE_MAKE_ARCHIVE_LOG="$make_archive_log"
+missing_make_archive_exit_code=$?
+set -e
+if [[ "$missing_make_archive_exit_code" == "0" ]]; then
+    echo "Expected make archive-ios to fail without CURRENT_PROJECT_VERSION."
+    exit 1
+fi
+assert_contains "$REPLY" "CURRENT_PROJECT_VERSION"
+assert_equals "$(<"$make_archive_log")" ""
+
+: >"$make_archive_log"
+run_make_archive_and_capture CURRENT_PROJECT_VERSION=42 FAKE_MAKE_ARCHIVE_LOG="$make_archive_log"
+assert_equals "$?" "0"
+assert_equals "$(<"$make_archive_log")" "42"
 
 export_options_template="$script_test_dir/ExportOptions.plist"
 cat >"$export_options_template" <<'EOF'
