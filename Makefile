@@ -1,4 +1,4 @@
-.PHONY: generate app-icons format check-format lint test-core test-scripts build-ios run-ios test-ios validate archive-ios export-ios
+.PHONY: generate app-icons format check-format lint test-core test-scripts build-ios run-ios test-ios validate archive-ios export-ios release-preflight
 
 generate:
 	./Scripts/generate-project.sh
@@ -38,3 +38,6 @@ archive-ios:
 
 export-ios:
 	./Scripts/export-ios.sh
+
+release-preflight:
+	CURRENT_PROJECT_VERSION=$${CURRENT_PROJECT_VERSION:?Set CURRENT_PROJECT_VERSION} ./Scripts/release-preflight.sh

@@ -7,17 +7,19 @@ import XCTest
 @MainActor
 final class RoutinePersistenceTests: XCTestCase {
     override func tearDown() {
-        RoutinePersistenceFetchExecutor.fetchRoutines = { context, descriptor in
-            try context.fetch(descriptor)
-        }
-        RoutinePersistenceFetchExecutor.fetchGroups = { context, descriptor in
-            try context.fetch(descriptor)
-        }
-        RoutinePersistenceFetchExecutor.fetchCompletions = { context, descriptor in
-            try context.fetch(descriptor)
-        }
-        RoutinePersistenceFetchExecutor.fetchMetadata = { context, descriptor in
-            try context.fetch(descriptor)
+        MainActor.assumeIsolated {
+            RoutinePersistenceFetchExecutor.fetchRoutines = { context, descriptor in
+                try context.fetch(descriptor)
+            }
+            RoutinePersistenceFetchExecutor.fetchGroups = { context, descriptor in
+                try context.fetch(descriptor)
+            }
+            RoutinePersistenceFetchExecutor.fetchCompletions = { context, descriptor in
+                try context.fetch(descriptor)
+            }
+            RoutinePersistenceFetchExecutor.fetchMetadata = { context, descriptor in
+                try context.fetch(descriptor)
+            }
         }
         super.tearDown()
     }

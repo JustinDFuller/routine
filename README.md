@@ -44,6 +44,7 @@ Use the scripts directly or the matching `make` targets:
 - Override local development signing when building for a personal device: `DEVELOPMENT_TEAM=YOURTEAMID ./Scripts/build-ios.sh`
 - Archive a Release build for distribution: `CURRENT_PROJECT_VERSION=2 ./Scripts/archive-ios.sh` or `CURRENT_PROJECT_VERSION=2 make archive-ios`
 - Export an `.ipa` from the most recent archive: `./Scripts/export-ios.sh` or `make export-ios`
+- Run the full release preflight before an internal beta upload: `CURRENT_PROJECT_VERSION=2 ./Scripts/release-preflight.sh` or `CURRENT_PROJECT_VERSION=2 make release-preflight`
 - Run iOS tests with an explicit destination: `IOS_TEST_DESTINATION='platform=iOS Simulator,name=iPhone 17' ./Scripts/test-ios.sh` or `IOS_TEST_DESTINATION='platform=iOS Simulator,name=iPhone 17' make test-ios`
 - Run the full local validation chain: `./Scripts/validate.sh` or `make validate`
 
@@ -58,6 +59,11 @@ Use the scripts directly or the matching `make` targets:
 ## Dogfooding Checklist
 
 Use [Docs/DOGFOODING_CHECKLIST.md](Docs/DOGFOODING_CHECKLIST.md) for the manual MVP acceptance pass before relying on the app locally.
+
+## Release Docs
+
+- Internal beta workflow: [Docs/TESTFLIGHT_RUNBOOK.md](Docs/TESTFLIGHT_RUNBOOK.md)
+- Public App Store follow-up: [Docs/APP_STORE_SUBMISSION_CHECKLIST.md](Docs/APP_STORE_SUBMISSION_CHECKLIST.md)
 
 ## Local iPhone Deployment
 
@@ -79,23 +85,21 @@ Before the first archive, complete the Apple-side setup:
 4. Create the App Group `group.com.justinfuller.routine` and attach it to both bundle IDs.
 5. Create the App Store Connect app record for the iOS app bundle ID.
 
-Then use the CLI path:
+Then run release preflight with the next build number:
 
-1. Run `make validate`.
-2. Bump `CURRENT_PROJECT_VERSION` in `project.yml` or override it per archive, for example `CURRENT_PROJECT_VERSION=2 ./Scripts/archive-ios.sh`.
-3. Export the installable package with `./Scripts/export-ios.sh`.
-4. Upload `build/export/Routine.ipa` to App Store Connect.
+1. Pick the next unique `CURRENT_PROJECT_VERSION`.
+2. Run `CURRENT_PROJECT_VERSION=2 make release-preflight`.
+3. Confirm the archive exists at `build/Routine.xcarchive` and the export exists at `build/export/Routine.ipa`.
+4. Upload from Xcode Organizer using the archived build. Treat Organizer as the canonical upload path for the first internal beta.
 
-Manual upload options:
-
-- Xcode Organizer: sign into Xcode with the correct Apple Developer account, then archive and distribute from Xcode if you prefer the GUI flow.
-- `altool`: `xcrun altool --upload-package build/export/Routine.ipa --api-key YOUR_API_KEY --api-issuer YOUR_ISSUER_ID`
+The full operator checklist lives in [Docs/TESTFLIGHT_RUNBOOK.md](Docs/TESTFLIGHT_RUNBOOK.md).
 
 Notes:
 
 - `MARKETING_VERSION` is set to `1.0.0` for the first real release train.
 - Every TestFlight upload must use a unique, increasing `CURRENT_PROJECT_VERSION`.
 - `RoutineApp/Info.plist` sets `ITSAppUsesNonExemptEncryption` to `false`, which matches the app’s local-only feature set and avoids the per-build export-compliance prompt for non-exempt encryption.
+- The widget is part of the same first-ship internal beta and must stay provisioned with the same App Group as the app target.
 
 ## Privacy Posture
 

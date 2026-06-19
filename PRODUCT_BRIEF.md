@@ -60,9 +60,9 @@ Help the user consistently keep up with their routine by making completion track
 ## Out of Scope
 
 - Smart scheduling or app-generated "recommended today" logic
-- Reminders and notifications
+- Per-routine reminders or notification quick actions
 - Streak systems, scores, or gamification
-- Widgets, watch app, or lock screen surfaces
+- Watch app or lock screen surfaces
 - Sharing, collaboration, or multi-user support
 - Cloud sync
 - Telemetry, analytics, or production-grade operational concerns
@@ -95,6 +95,8 @@ The MVP is optimized for one person who wants a practical personal tracker on an
 - Show last completed date for each routine.
 - Show current weekly or monthly progress visually.
 - Let the user review past completions in a calendar/history view.
+- Offer local morning, afternoon, and evening check-in notifications that stay quiet once goals are met.
+- Show the next ready routine in a Home Screen widget, with tap-through to Today and one-tap completion.
 
 ## Core Product Behavior
 
@@ -255,8 +257,7 @@ These are intentionally deferred, not part of the MVP:
 - Smart daily suggestions based on target frequency and recent completion history
 - Per-routine limits for more than one completion per day
 - Multiple dashboard modes, such as a richer calendar-first view
-- Notifications and reminders
-- Home screen widgets
+- Lock screen surfaces or richer widget families
 - Shared or public use cases
 
 ## Assumptions

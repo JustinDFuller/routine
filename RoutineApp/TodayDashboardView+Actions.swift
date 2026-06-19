@@ -241,19 +241,15 @@ extension TodayDashboardView {
     }
 
     func handlePendingWidgetCompletion() {
-        let defaults = UserDefaults(suiteName: RoutineModelContainer.appGroupID)
-        guard
-            let idValue = defaults?.string(forKey: "widgetCompletedRoutineID"),
-            let routineID = UUID(uuidString: idValue),
-            let routine = routines.first(where: { $0.id == routineID })
-        else {
-            defaults?.removeObject(forKey: "widgetCompletedRoutineID")
+        guard let restoration = RoutineWidgetBridge.restoration(for: routines) else {
             return
         }
 
-        defaults?.removeObject(forKey: "widgetCompletedRoutineID")
         path = []
-        showUndoBanner(routineID: routineID, message: "Completed \(routine.name)")
+        showUndoBanner(
+            routineID: restoration.routineID,
+            message: "Completed \(restoration.routineName)"
+        )
     }
 
     func clearUndoBanner() {

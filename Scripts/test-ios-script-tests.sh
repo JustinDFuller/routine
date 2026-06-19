@@ -583,6 +583,86 @@ validate_verbose_output="$REPLY"
 assert_contains "$validate_verbose_output" "stream me directly"
 assert_contains "$validate_verbose_output" "PASS generate-project"
 
+release_preflight_repo="$workdir/release-preflight-repo"
+mkdir -p "$release_preflight_repo/Scripts"
+cp ./Scripts/release-preflight.sh "$release_preflight_repo/Scripts/release-preflight.sh"
+chmod +x "$release_preflight_repo/Scripts/release-preflight.sh"
+
+for stage_name in validate build-ios archive-ios export-ios
+do
+    cat >"$release_preflight_repo/Scripts/${stage_name}.sh" <<'EOF'
+#!/bin/zsh
+set -euo pipefail
+
+stage_name="${0:t:r}"
+stage_key="$(print -r -- "$stage_name" | tr '[:lower:]-' '[:upper:]_')"
+output_var="FAKE_${stage_key}_OUTPUT"
+exit_var="FAKE_${stage_key}_EXIT"
+
+print -r -- "$stage_name" >>"${FAKE_RELEASE_PREFLIGHT_ORDER_LOG}"
+
+if [[ -n "${ROUTINE_BUILD_CONFIGURATION:-}" ]]; then
+    print -r -- "${stage_name}:ROUTINE_BUILD_CONFIGURATION=${ROUTINE_BUILD_CONFIGURATION}" >>"${FAKE_RELEASE_PREFLIGHT_ENV_LOG}"
+fi
+
+if [[ -n "${CURRENT_PROJECT_VERSION:-}" ]]; then
+    print -r -- "${stage_name}:CURRENT_PROJECT_VERSION=${CURRENT_PROJECT_VERSION}" >>"${FAKE_RELEASE_PREFLIGHT_ENV_LOG}"
+fi
+
+if [[ -n "${(P)output_var:-}" ]]; then
+    print -r -- "${(P)output_var}"
+fi
+
+exit "${${(P)exit_var}:-0}"
+EOF
+    chmod +x "$release_preflight_repo/Scripts/${stage_name}.sh"
+done
+
+run_release_preflight_and_capture() {
+    local output_file="$workdir/release-preflight-output.txt"
+    set +e
+    env "$@" "$release_preflight_repo/Scripts/release-preflight.sh" >"$output_file" 2>&1
+    CAPTURED_EXIT_CODE=$?
+    set -e
+    REPLY="$(<"$output_file")"
+    return 0
+}
+
+release_preflight_order_log="$workdir/release-preflight-order.log"
+release_preflight_env_log="$workdir/release-preflight-env.log"
+
+: >"$release_preflight_order_log"
+: >"$release_preflight_env_log"
+set +e
+run_release_preflight_and_capture \
+    FAKE_RELEASE_PREFLIGHT_ORDER_LOG="$release_preflight_order_log" \
+    FAKE_RELEASE_PREFLIGHT_ENV_LOG="$release_preflight_env_log"
+set -e
+assert_equals "$CAPTURED_EXIT_CODE" "1"
+assert_contains "$REPLY" "error: CURRENT_PROJECT_VERSION is required for release preflight."
+assert_equals "$(wc -l <"$release_preflight_order_log" | tr -d ' ')" "0"
+
+: >"$release_preflight_order_log"
+: >"$release_preflight_env_log"
+run_release_preflight_and_capture \
+    CURRENT_PROJECT_VERSION=42 \
+    FAKE_RELEASE_PREFLIGHT_ORDER_LOG="$release_preflight_order_log" \
+    FAKE_RELEASE_PREFLIGHT_ENV_LOG="$release_preflight_env_log" \
+    FAKE_VALIDATE_OUTPUT="Skipping iOS tests: no concrete iOS Simulator destination is available."
+assert_equals "$?" "0"
+release_preflight_output="$REPLY"
+assert_contains "$release_preflight_output" "PASS validate"
+assert_contains "$release_preflight_output" "PASS build-release"
+assert_contains "$release_preflight_output" "PASS archive"
+assert_contains "$release_preflight_output" "PASS export"
+assert_contains "$release_preflight_output" "Skipping iOS tests: no concrete iOS Simulator destination is available."
+assert_contains "$release_preflight_output" "Release preflight finished for CURRENT_PROJECT_VERSION=42."
+release_preflight_order="$(<"$release_preflight_order_log")"
+assert_equals "$release_preflight_order" $'validate\nbuild-ios\narchive-ios\nexport-ios'
+release_preflight_env="$(<"$release_preflight_env_log")"
+assert_contains "$release_preflight_env" "build-ios:ROUTINE_BUILD_CONFIGURATION=Release"
+assert_contains "$release_preflight_env" "archive-ios:CURRENT_PROJECT_VERSION=42"
+
 run_ios_dir="$workdir/run-ios"
 mkdir -p "$run_ios_dir"
 
@@ -1111,4 +1191,4 @@ promote_invocation="$(<"$capture_promote_log")"
 assert_contains "$promote_invocation" "promote --export-root $capture_screenshots_dir/raw/"
 assert_contains "$promote_invocation" "--canonical-root $capture_screenshots_dir/canonical --expected-count 36"
 
-echo "Scripts/build-ios.sh, Scripts/test-ios.sh, Scripts/validate.sh, Scripts/run-ios.sh, Scripts/archive-ios.sh, Scripts/export-ios.sh, Scripts/capture-screenshots.sh, and Scripts/screenshot-assets.py script tests passed."
+echo "Scripts/build-ios.sh, Scripts/test-ios.sh, Scripts/validate.sh, Scripts/release-preflight.sh, Scripts/run-ios.sh, Scripts/archive-ios.sh, Scripts/export-ios.sh, Scripts/capture-screenshots.sh, and Scripts/screenshot-assets.py script tests passed."

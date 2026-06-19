@@ -36,8 +36,8 @@ The system should optimize for:
 - Correct daily uniqueness: a routine can be completed at most once per local calendar day.
 - Correct period progress: weekly routines count Monday-start calendar weeks; monthly routines count calendar months.
 - Safe persistence: user data survives app restarts and common app lifecycle interruptions.
-- Simple local architecture: no sync, accounts, analytics, reminders, widgets, or background scheduling.
-- Extensibility: future features can add richer scheduling, widgets, or sync without rewriting the core domain model.
+- Simple local architecture: no sync, accounts, analytics, or remote services; notifications and widget handoff stay local to the device.
+- Extensibility: future features can add richer scheduling, deeper widget surfaces, or sync without rewriting the core domain model.
 
 ## Platform And Architecture Decisions
 

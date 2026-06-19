@@ -8,14 +8,16 @@ import XCTest
 @MainActor
 class RoutineManagementServiceTestCase: XCTestCase {
     override func tearDown() {
-        RoutinePersistenceFetchExecutor.fetchRoutines = { context, descriptor in
-            try context.fetch(descriptor)
-        }
-        RoutinePersistenceFetchExecutor.fetchGroups = { context, descriptor in
-            try context.fetch(descriptor)
-        }
-        RoutinePersistenceSaveExecutor.save = { context in
-            try context.save()
+        MainActor.assumeIsolated {
+            RoutinePersistenceFetchExecutor.fetchRoutines = { context, descriptor in
+                try context.fetch(descriptor)
+            }
+            RoutinePersistenceFetchExecutor.fetchGroups = { context, descriptor in
+                try context.fetch(descriptor)
+            }
+            RoutinePersistenceSaveExecutor.save = { context in
+                try context.save()
+            }
         }
         super.tearDown()
     }
