@@ -19,9 +19,10 @@ When a milestone is complete:
 ## Validation Policy
 
 - SwiftLint warnings and errors must be fixed before completion.
-- Do not treat lint violations as acceptable because they were already present.
-- Do not use baselines, suppression comments, config disables, or exclusions to avoid fixing real SwiftLint violations.
-- `Scripts/lint.sh` is the canonical lint command and must pass in strict mode.
+- Do not treat lint violations as acceptable because they were already present, outside documented repo-wide exceptions in the committed config.
+- Do not add baselines, suppression comments, new config disables, or exclusions to avoid fixing real SwiftLint violations.
+- `Scripts/lint.sh` is the canonical lint command. It runs SwiftLint in strict mode against the committed `.swiftlint.yml`.
+- `file_length`, `function_body_length`, and `type_body_length` are intentionally disabled repo-wide in the committed config and should be treated as documented policy, not task-local exceptions.
 - `./Scripts/validate.sh` is the canonical final validation command for completed work.
 - If `./Scripts/validate.sh` fails, individual scripts such as `./Scripts/test-core.sh`, `./Scripts/test-ios.sh`, `./Scripts/check-format.sh`, `./Scripts/lint.sh`, and `./Scripts/build-ios.sh` may be used to isolate, dig into, or rerun specific failing stages.
 

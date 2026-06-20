@@ -19,6 +19,8 @@ struct RoutineDebugLaunchConfiguration: Equatable, Sendable {
     let runtime: RoutineRuntimeConfiguration
     let launchRoute: LaunchRoute?
     let collapseCompletedEnabled: Bool
+    let collapseGoalMetEnabled: Bool
+    let collapseUnavailableEnabled: Bool
 
     init(
         storeMode: StoreMode = .persistent,
@@ -26,7 +28,9 @@ struct RoutineDebugLaunchConfiguration: Equatable, Sendable {
         forcesBootstrapFailure: Bool = false,
         runtime: RoutineRuntimeConfiguration = RoutineRuntimeConfiguration(),
         launchRoute: LaunchRoute? = nil,
-        collapseCompletedEnabled: Bool = false
+        collapseCompletedEnabled: Bool = false,
+        collapseGoalMetEnabled: Bool = true,
+        collapseUnavailableEnabled: Bool = true
     ) {
         self.storeMode = storeMode
         self.resetsStore = resetsStore
@@ -34,6 +38,8 @@ struct RoutineDebugLaunchConfiguration: Equatable, Sendable {
         self.runtime = runtime
         self.launchRoute = launchRoute
         self.collapseCompletedEnabled = collapseCompletedEnabled
+        self.collapseGoalMetEnabled = collapseGoalMetEnabled
+        self.collapseUnavailableEnabled = collapseUnavailableEnabled
     }
 
     init(arguments: [String], calendar: Calendar = .current) {
@@ -57,7 +63,10 @@ struct RoutineDebugLaunchConfiguration: Equatable, Sendable {
                     forcedColorScheme: Self.forcedColorScheme(in: arguments)
                 ),
                 launchRoute: Self.launchRoute(in: arguments),
-                collapseCompletedEnabled: arguments.contains("-routine-collapse-completed-enabled")
+                collapseCompletedEnabled: arguments.contains("-routine-collapse-completed-enabled"),
+                collapseGoalMetEnabled: arguments.contains("-routine-collapse-goal-met-disabled") == false,
+                collapseUnavailableEnabled: arguments.contains("-routine-collapse-unavailable-disabled")
+                    == false
             )
         #else
             self.init()

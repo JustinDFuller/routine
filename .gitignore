@@ -69,6 +69,7 @@ DerivedData/
 *.xcworkspace/
 *.xcuserstate
 .xcodegen/
+/build/
 *.xcarchive
 *.xcresult
 *.mobileprovision

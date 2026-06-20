@@ -104,7 +104,7 @@ extension TodayDashboardView {
                             .foregroundStyle(Color.routineLabelSecondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.vertical, 8)
-                    } else if collapsesCompleted {
+                    } else if collapsesCompleted || collapsesGoalMet || collapsesUnavailable {
                         collapsedSectionContent(section)
                     } else {
                         VStack(spacing: 12) {
@@ -120,19 +120,26 @@ extension TodayDashboardView {
 
     @ViewBuilder
     private func collapsedSectionContent(_ section: RoutineSectionViewData) -> some View {
+        let partition = RoutineSectionViewData.displayPartition(
+            collapseCompletedToday: collapsesCompleted,
+            collapseGoalMetToday: collapsesGoalMet,
+            collapseUnavailableToday: collapsesUnavailable,
+            routines: section.routines
+        )
+
         VStack(spacing: 12) {
-            ForEach(section.activeRoutines) { routine in
+            ForEach(partition.fullCards) { routine in
                 routineCardView(for: routine)
             }
         }
 
-        if section.collapsedRoutines.isEmpty == false {
+        if partition.collapsedRows.isEmpty == false {
             VStack(spacing: 8) {
-                ForEach(section.collapsedRoutines) { routine in
-                    if expandedCompletedRoutineIDs.contains(routine.id) {
-                        routineCardView(for: routine, onCollapse: { collapse(routine.id) })
+                ForEach(partition.collapsedRows) { row in
+                    if expandedCollapsedRoutineIDs.contains(row.id) {
+                        routineCardView(for: row.routine, onCollapse: { collapse(row.id) })
                     } else {
-                        CompletedRoutineRowView(viewData: routine, onExpand: { expand(routine.id) })
+                        CollapsedRoutineRowView(viewData: row, onExpand: { expand(row.id) })
                     }
                 }
             }

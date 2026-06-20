@@ -6,13 +6,13 @@ import WidgetKit
 extension TodayDashboardView {
     func expand(_ routineID: UUID) {
         withAnimation(bannerAnimation) {
-            _ = expandedCompletedRoutineIDs.insert(routineID)
+            _ = expandedCollapsedRoutineIDs.insert(routineID)
         }
     }
 
     func collapse(_ routineID: UUID) {
         withAnimation(bannerAnimation) {
-            _ = expandedCompletedRoutineIDs.remove(routineID)
+            _ = expandedCollapsedRoutineIDs.remove(routineID)
         }
     }
 
@@ -241,19 +241,15 @@ extension TodayDashboardView {
     }
 
     func handlePendingWidgetCompletion() {
-        let defaults = UserDefaults(suiteName: RoutineModelContainer.appGroupID)
-        guard
-            let idValue = defaults?.string(forKey: "widgetCompletedRoutineID"),
-            let routineID = UUID(uuidString: idValue),
-            let routine = routines.first(where: { $0.id == routineID })
-        else {
-            defaults?.removeObject(forKey: "widgetCompletedRoutineID")
+        guard let restoration = RoutineWidgetBridge.restoration(context: modelContext) else {
             return
         }
 
-        defaults?.removeObject(forKey: "widgetCompletedRoutineID")
         path = []
-        showUndoBanner(routineID: routineID, message: "Completed \(routine.name)")
+        showUndoBanner(
+            routineID: restoration.routineID,
+            message: "Completed \(restoration.routineName)"
+        )
     }
 
     func clearUndoBanner() {

@@ -20,8 +20,22 @@ Use this checklist before relying on the MVP on a simulator or personal iPhone.
 - Reorder routines within a group.
 - Move a routine into a different group.
 - Reorder groups.
+- Accept the check-in onboarding prompt and confirm morning, afternoon, and evening toggles turn on.
+- Relaunch after enabling check-ins and confirm the selected notification slot settings persist.
+- Deny notification permission and confirm the app remains usable without broken settings or alerts.
+- Re-enable notification permission and confirm scheduling resumes without duplicating requests.
+- Change each check-in slot time and confirm the updated time persists after leaving and reopening Settings.
+- Foreground the app after a routine completion and confirm check-ins reschedule against current progress.
+- Add the widget to the Home Screen and confirm the small layout renders with a routine or empty state.
+- Add the medium widget and confirm the routine name, count, period, and last-done text render legibly.
+- Confirm the widget shows the "Add routines in Routine" state when the store is empty.
+- Confirm the widget shows the "All caught up" state when everything available is already complete.
+- Complete a routine from the widget and confirm the app opens back on Today with the completion banner restored.
+- Tap the widget body and confirm it routes to Today rather than an unrelated screen.
+- Remove and re-add the widget, then confirm it repopulates from the shared store.
 - Verify the app remains usable in both dark mode and light mode.
 - Verify the app remains usable with larger Dynamic Type sizes.
 - Verify VoiceOver can reach the primary dashboard, history, and management flows.
 - Verify Reduce Motion does not introduce broken transitions or blocked flows.
 - Verify the primary dashboard interactions remain comfortable for one-handed use on iPhone.
+- Run the same checklist on at least one secondary internal TestFlight device before widening the tester list.

@@ -17,18 +17,34 @@ struct CompleteRoutineIntent: AppIntent {
     }
 
     @MainActor
-    func perform() async throws -> some IntentResult {
+    static func completeRoutine(
+        routineID: String,
+        makeContext: @MainActor () throws -> ModelContext = {
+            ModelContext(try RoutineModelContainer.shared())
+        },
+        userDefaults: UserDefaults? = UserDefaults(suiteName: RoutineModelContainer.appGroupID)
+    ) {
         guard let id = UUID(uuidString: routineID) else {
-            return .result()
+            return
         }
 
-        let context = ModelContext(try RoutineModelContainer.shared())
-        _ = try? RoutineTrackingService(context: context).completeToday(routineID: id)
-        WidgetCenter.shared.reloadAllTimelines()
+        guard let context = try? makeContext() else {
+            return
+        }
 
-        UserDefaults(suiteName: RoutineModelContainer.appGroupID)?
-            .set(id.uuidString, forKey: "widgetCompletedRoutineID")
+        let result = try? RoutineTrackingService(context: context).completeToday(routineID: id)
+        RoutineWidgetBridge.reloadAllTimelines()
 
+        guard result?.didInsert == true else {
+            return
+        }
+
+        RoutineWidgetBridge.recordCompletedRoutineID(id, userDefaults: userDefaults)
+    }
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        Self.completeRoutine(routineID: routineID)
         return .result()
     }
 }

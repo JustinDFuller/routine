@@ -84,7 +84,8 @@ struct RootView: View {
             }
         } message: {
             Text(
-                "Get a morning, afternoon, and evening reminder. They stop once everything's done."
+                "Routine can send morning, afternoon, and evening check-ins. "
+                    + "They stop once your current goals are done."
             )
         }
         .onOpenURL { url in

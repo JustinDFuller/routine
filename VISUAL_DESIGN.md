@@ -376,7 +376,7 @@ Each routine card should contain five pieces of information:
 4. Frequency period context
 5. Last-done cue
 
-When a routine has a configured availability window, add a compact sixth metadata element:
+When a routine has a configured availability window and is currently unavailable, add a compact sixth metadata element:
 
 6. Availability label
 
@@ -412,6 +412,7 @@ Recommended visual treatment:
 - Count and period can be shown as separate quiet pills, or as a single compact pill
 - Last-done text should remain plain secondary text, not another dominant chip
 - Availability can use a quiet pill or concise secondary label, but it should remain visible when the routine is unavailable
+- Availability should stay hidden on Today while the routine is currently available so active cards keep the standard compact metadata row
 
 #### Card states
 
@@ -432,11 +433,14 @@ The dashboard must clearly distinguish at least these states:
 - Last-done text reads `Today`
 - Card contrast softens slightly to indicate completion without disappearing
 - Routine name remains readable and present
+- When the Today completed-collapse preference is enabled, completed-today routines may collapse into compact checkmark rows beneath the full cards in their section
 - Do not gray the row into irrelevance
 
 ##### Unavailable now
 
 - Incomplete unavailable routines remain visible in the same section and order as available routines
+- By default, incomplete unavailable routines may collapse into compact clock rows beneath the actionable cards in their section
+- Expanding a compact unavailable row should reveal the normal full card with the disabled completion state and explicit availability line
 - The primary completion affordance is visibly disabled and should read as inactive before the user taps it
 - Card contrast softens further than a normal incomplete card, but the card remains readable
 - Availability text becomes explicit, such as `Available 11:00 PM-3:00 AM`
@@ -449,6 +453,7 @@ The dashboard must clearly distinguish at least these states:
 - Ring reads visually complete
 - Count remains visible
 - If the routine is not done today, it should still appear actionable if incomplete for the day
+- When the Today goal-met collapse preference is enabled, a goal-met routine that is still available and not completed today may collapse into a compact row beneath the full cards in its section
 
 ##### Period target exceeded
 

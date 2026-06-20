@@ -13,14 +13,74 @@ struct RoutineSectionViewData: Identifiable, Equatable, Sendable {
     let remainingCount: Int
     let routines: [RoutineCardViewData]
 
-    var activeRoutines: [RoutineCardViewData] {
-        routines.filter { $0.isCompletedToday == false && $0.isTargetMet == false }
+    static func displayPartition(
+        collapseCompletedToday: Bool,
+        collapseGoalMetToday: Bool,
+        collapseUnavailableToday: Bool,
+        routines: [RoutineCardViewData]
+    ) -> RoutineSectionDisplayPartition {
+        let collapsedUnavailable: [CollapsedRoutineRowViewData] =
+            collapseUnavailableToday
+            ? routines.compactMap { routine in
+                guard routine.isCompletedToday == false, routine.isAvailableNow == false else {
+                    return nil
+                }
+
+                return CollapsedRoutineRowViewData(routine: routine, style: .unavailable)
+            }
+            : []
+        let collapsedCompleted: [CollapsedRoutineRowViewData] =
+            collapseCompletedToday
+            ? routines.compactMap { routine in
+                guard routine.isCompletedToday else {
+                    return nil
+                }
+
+                return CollapsedRoutineRowViewData(routine: routine, style: .completed)
+            }
+            : []
+        let collapsedGoalMet: [CollapsedRoutineRowViewData] =
+            collapseGoalMetToday
+            ? routines.compactMap { routine in
+                guard
+                    routine.isCompletedToday == false,
+                    routine.isTargetMet,
+                    routine.isAvailableNow
+                else {
+                    return nil
+                }
+
+                return CollapsedRoutineRowViewData(routine: routine, style: .goalMet)
+            }
+            : []
+        let collapsedRoutineIDs = Set(
+            collapsedUnavailable.map(\.id) + collapsedCompleted.map(\.id) + collapsedGoalMet.map(\.id)
+        )
+        let fullCards = routines.filter { collapsedRoutineIDs.contains($0.id) == false }
+
+        return RoutineSectionDisplayPartition(
+            fullCards: fullCards,
+            collapsedRows: collapsedUnavailable + collapsedCompleted + collapsedGoalMet
+        )
     }
-    var collapsedRoutines: [RoutineCardViewData] {
-        let doneToday = routines.filter(\.isCompletedToday)
-        let goalMet = routines.filter { $0.isCompletedToday == false && $0.isTargetMet }
-        return doneToday + goalMet
+}
+
+struct RoutineSectionDisplayPartition: Equatable, Sendable {
+    let fullCards: [RoutineCardViewData]
+    let collapsedRows: [CollapsedRoutineRowViewData]
+}
+
+struct CollapsedRoutineRowViewData: Identifiable, Equatable, Sendable {
+    enum Style: Equatable, Sendable {
+        case unavailable
+        case completed
+        case goalMet
     }
+
+    let routine: RoutineCardViewData
+    let style: Style
+
+    var id: UUID { routine.id }
 }
 
 struct RoutineCardViewData: Identifiable, Equatable, Sendable {

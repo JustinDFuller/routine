@@ -42,8 +42,13 @@ Use the scripts directly or the matching `make` targets:
 - Build the app for a generic iOS destination when available: `./Scripts/build-ios.sh` or `make build-ios`
 - Build the Release configuration: `ROUTINE_BUILD_CONFIGURATION=Release ./Scripts/build-ios.sh`
 - Override local development signing when building for a personal device: `DEVELOPMENT_TEAM=YOURTEAMID ./Scripts/build-ios.sh`
+- Archive a Release build for distribution: `CURRENT_PROJECT_VERSION=2 ./Scripts/archive-ios.sh` or `CURRENT_PROJECT_VERSION=2 make archive-ios`
+- Export an `.ipa` from the most recent archive: `./Scripts/export-ios.sh` or `make export-ios`
+- Run the full release preflight before an internal beta upload: `CURRENT_PROJECT_VERSION=2 ./Scripts/release-preflight.sh` or `CURRENT_PROJECT_VERSION=2 make release-preflight`
 - Run iOS tests with an explicit destination: `IOS_TEST_DESTINATION='platform=iOS Simulator,name=iPhone 17' ./Scripts/test-ios.sh` or `IOS_TEST_DESTINATION='platform=iOS Simulator,name=iPhone 17' make test-ios`
 - Run the full local validation chain: `./Scripts/validate.sh` or `make validate`
+
+`Scripts/lint.sh` runs SwiftLint in strict mode against the committed `.swiftlint.yml`. The repo intentionally disables `file_length`, `function_body_length`, and `type_body_length` there; do not recreate task-local exceptions or alternate lint configs to work around other violations.
 
 `Scripts/build-ios.sh` defaults to `Debug`. Set `ROUTINE_BUILD_CONFIGURATION=Release` to validate the Release path. Set `DEVELOPMENT_TEAM` only in your local shell when Xcode needs a team for device signing; do not commit signing credentials.
 
@@ -51,9 +56,16 @@ Use the scripts directly or the matching `make` targets:
 
 `Scripts/build-ios.sh` and `Scripts/test-ios.sh` intentionally preserve skip behavior when the local machine has no eligible simulator or device destination available.
 
+`Scripts/archive-ios.sh`, `make archive-ios`, and release preflight require an explicit `CURRENT_PROJECT_VERSION`; `Scripts/export-ios.sh` and `make export-ios` only require an existing archive. `Scripts/archive-ios.sh` and `Scripts/export-ios.sh` default `DEVELOPMENT_TEAM` to the current Routine team for local convenience, but still allow per-shell overrides. Both scripts pass `-allowProvisioningUpdates` so automatic signing can create or refresh distribution assets when Xcode is signed into the correct Apple Developer account. For headless use, set `APP_STORE_CONNECT_AUTH_KEY_PATH`, `APP_STORE_CONNECT_AUTH_KEY_ID`, and `APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID` together to let `xcodebuild` authenticate with an App Store Connect API key during archive/export.
+
 ## Dogfooding Checklist
 
 Use [Docs/DOGFOODING_CHECKLIST.md](Docs/DOGFOODING_CHECKLIST.md) for the manual MVP acceptance pass before relying on the app locally.
+
+## Release Docs
+
+- Internal beta workflow: [Docs/TESTFLIGHT_RUNBOOK.md](Docs/TESTFLIGHT_RUNBOOK.md)
+- Public App Store follow-up: [Docs/APP_STORE_SUBMISSION_CHECKLIST.md](Docs/APP_STORE_SUBMISSION_CHECKLIST.md)
 
 ## Local iPhone Deployment
 
@@ -65,9 +77,35 @@ Use [Docs/DOGFOODING_CHECKLIST.md](Docs/DOGFOODING_CHECKLIST.md) for the manual 
 6. Confirm the launcher icon appears on the Home Screen and in the App Library.
 7. Walk through the dogfooding checklist on the device. If no personal iPhone is available, run the same checks in Simulator and record the skipped physical-device items.
 
+## TestFlight Distribution
+
+Before the first archive, complete the Apple-side setup:
+
+1. Enroll the Apple Developer membership for the team you plan to use.
+2. Register the app bundle ID `com.justinfuller.routine` with App Groups enabled.
+3. Register the widget bundle ID `com.justinfuller.routine.widget` with App Groups enabled.
+4. Create the App Group `group.com.justinfuller.routine` and attach it to both bundle IDs.
+5. Create the App Store Connect app record for the iOS app bundle ID.
+
+Then run release preflight with the next build number:
+
+1. Pick the next unique `CURRENT_PROJECT_VERSION`.
+2. Run `CURRENT_PROJECT_VERSION=2 make release-preflight`.
+3. Confirm the archive exists at `build/Routine.xcarchive` and the export exists at `build/export/Routine.ipa`.
+4. Upload from Xcode Organizer using the archived build. Treat Organizer as the canonical upload path for the first internal beta.
+
+The full operator checklist lives in [Docs/TESTFLIGHT_RUNBOOK.md](Docs/TESTFLIGHT_RUNBOOK.md).
+
+Notes:
+
+- `MARKETING_VERSION` is set to `1.0.0` for the first real release train.
+- Every TestFlight upload must use a unique, increasing `CURRENT_PROJECT_VERSION`.
+- `RoutineApp/Info.plist` sets `ITSAppUsesNonExemptEncryption` to `false`, which matches the app’s local-only feature set and avoids the per-build export-compliance prompt for non-exempt encryption.
+- The widget is part of the same first-ship internal beta and must stay provisioned with the same App Group as the app target.
+
 ## Privacy Posture
 
-Routine is local-only for the MVP. `RoutineApp/PrivacyInfo.xcprivacy` declares no tracking and no collected data, which matches the current app architecture.
+Routine is local-only for the MVP. The app and widget privacy manifests declare no tracking, no collected data, and only the required-reason API usage needed for local `UserDefaults` storage.
 
 ## Implementation Workflow
 

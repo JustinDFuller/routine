@@ -27,11 +27,12 @@ In scope for the MVP:
 - One-tap completion, immediate undo, and history correction.
 - Local development, local device deployment, local full validation, and Linux-friendly GitHub Actions checks.
 - Local daily check-in notifications (morning/afternoon/evening), scheduled via `UNUserNotificationCenter`. No per-routine reminders; content is built from current progress and suppressed once all goals for the period are met.
+- A Home Screen widget that shows the next ready routine, supports one-tap completion, and hands off back to Today.
 
 Out of scope for the MVP:
 
 - Cloud sync, accounts, sharing, or collaboration.
-- Per-routine notifications, widgets, watch app, or lock screen surfaces.
+- Per-routine notifications, watch app, or lock screen surfaces.
 - Analytics, telemetry, remote logging, or crash-reporting SDKs.
 - Smart scheduling, recommendations, streaks, scoring, or gamification.
 - Public App Store launch workflow as a required path.
@@ -463,9 +464,9 @@ App identity:
 
 TestFlight:
 
-- Not required for MVP implementation.
-- Add only when local device dogfooding is insufficient.
-- If added later, document Apple Developer Program membership, App Store Connect app record, archive validation, TestFlight internal testing, privacy answers, and export compliance decisions.
+- Internal TestFlight is the default first-launch path once local dogfooding passes.
+- Keep the first release train internal-only until widget, notification, and persistence flows have been exercised on at least two devices.
+- Document Apple Developer Program membership, App Store Connect app record, archive validation, internal testing, privacy answers, and export compliance decisions.
 
 ## GitHub Actions Strategy
 
@@ -510,7 +511,9 @@ SwiftLint policy:
 - Avoid high-churn style rules that fight SwiftUI's natural shape.
 - Enable rules that catch likely defects or readability problems, such as force unwraps, force tries, empty collections, duplicate imports, unused closures, and accidental complexity.
 - Keep line-length rules pragmatic for SwiftUI and tests.
-- Do not require warnings-as-errors until the initial implementation is stable.
+- Run SwiftLint in strict mode against the committed `.swiftlint.yml`.
+- Keep `file_length`, `function_body_length`, and `type_body_length` intentionally disabled repo-wide for the app's SwiftUI- and test-heavy code.
+- Treat committed repo-wide exceptions as policy, but do not add baselines, new exclusions, or ad hoc config disables to avoid task-local violations.
 - SwiftLint should run locally with the same Xcode toolchain used to compile the app.
 
 Agent rule:

@@ -225,11 +225,13 @@ extension DashboardProjectionBuilder {
 
         let isAvailableNow = availabilityWindow.contains(minuteOfDay: currentMinuteOfDay)
         return RoutineAvailabilityState(
-            text: RoutineAvailabilityText.cardLabel(
-                for: availabilityWindow,
-                isAvailableNow: isAvailableNow,
-                routineCalendar: routineCalendar
-            ),
+            text: isAvailableNow
+                ? nil
+                : RoutineAvailabilityText.cardLabel(
+                    for: availabilityWindow,
+                    isAvailableNow: isAvailableNow,
+                    routineCalendar: routineCalendar
+                ),
             unavailableAccessibilityPhrase:
                 isAvailableNow
                 ? nil

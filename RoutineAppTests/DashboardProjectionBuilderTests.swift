@@ -168,7 +168,7 @@ final class DashboardProjectionBuilderTests: ProjectionBuilderTestCase {
         XCTAssertEqual(nineCard.progressRing.fillRatio, 1)
     }
 
-    func testRoutineSectionViewDataPartitionsSplitsAndPreservesOrder() {
+    func testRoutineSectionViewDataDisplayPartitionCollapsesCompletedRowsOnlyWhenEnabled() {
         let completedA = ComponentPreviewFixtures.completedTodayCard
         let completedB = RoutineCardViewData(
             id: UUID(uuidString: "AAAAAAAA-0000-0000-0000-000000000001") ?? UUID(),
@@ -198,8 +198,179 @@ final class DashboardProjectionBuilderTests: ProjectionBuilderTestCase {
             routines: [completedA, activeA, completedB, goalMet]
         )
 
-        XCTAssertEqual(section.activeRoutines.map(\.id), [activeA.id])
-        XCTAssertEqual(section.collapsedRoutines.map(\.id), [completedA.id, completedB.id, goalMet.id])
+        let partition = RoutineSectionViewData.displayPartition(
+            collapseCompletedToday: true,
+            collapseGoalMetToday: false,
+            collapseUnavailableToday: false,
+            routines: section.routines
+        )
+
+        XCTAssertEqual(partition.fullCards.map(\.id), [activeA.id, goalMet.id])
+        XCTAssertEqual(partition.collapsedRows.map(\.id), [completedA.id, completedB.id])
+        XCTAssertEqual(partition.collapsedRows.map(\.style), [.completed, .completed])
+    }
+
+    func testRoutineSectionViewDataDisplayPartitionCollapsesGoalMetRowsWhenEnabled() {
+        let goalMet = ComponentPreviewFixtures.targetMetCard
+        let available = ComponentPreviewFixtures.incompleteCard
+
+        let partition = RoutineSectionViewData.displayPartition(
+            collapseCompletedToday: false,
+            collapseGoalMetToday: true,
+            collapseUnavailableToday: false,
+            routines: [available, goalMet]
+        )
+
+        XCTAssertEqual(partition.fullCards.map(\.id), [available.id])
+        XCTAssertEqual(partition.collapsedRows.map(\.id), [goalMet.id])
+        XCTAssertEqual(partition.collapsedRows.map(\.style), [.goalMet])
+    }
+
+    func testRoutineSectionViewDataDisplayPartitionLeavesGoalMetRowsFullWhenDisabled() {
+        let goalMet = ComponentPreviewFixtures.targetMetCard
+        let available = ComponentPreviewFixtures.incompleteCard
+
+        let partition = RoutineSectionViewData.displayPartition(
+            collapseCompletedToday: false,
+            collapseGoalMetToday: false,
+            collapseUnavailableToday: false,
+            routines: [available, goalMet]
+        )
+
+        XCTAssertEqual(partition.fullCards.map(\.id), [available.id, goalMet.id])
+        XCTAssertTrue(partition.collapsedRows.isEmpty)
+    }
+
+    func testRoutineSectionViewDataDisplayPartitionKeepsCompletedRowsFullWhenOnlyGoalMetCollapseIsEnabled() {
+        let completed = ComponentPreviewFixtures.completedTodayCard
+        let goalMet = ComponentPreviewFixtures.targetMetCard
+
+        let partition = RoutineSectionViewData.displayPartition(
+            collapseCompletedToday: false,
+            collapseGoalMetToday: true,
+            collapseUnavailableToday: false,
+            routines: [completed, goalMet]
+        )
+
+        XCTAssertEqual(partition.fullCards.map(\.id), [completed.id])
+        XCTAssertEqual(partition.collapsedRows.map(\.id), [goalMet.id])
+        XCTAssertEqual(partition.collapsedRows.map(\.style), [.goalMet])
+    }
+
+    func testRoutineSectionViewDataDisplayPartitionCollapsesUnavailableIncompleteRoutinesWhenEnabled() {
+        let unavailable = ComponentPreviewFixtures.unavailableCard
+        let available = ComponentPreviewFixtures.incompleteCard
+
+        let partition = RoutineSectionViewData.displayPartition(
+            collapseCompletedToday: false,
+            collapseGoalMetToday: false,
+            collapseUnavailableToday: true,
+            routines: [available, unavailable]
+        )
+
+        XCTAssertEqual(partition.fullCards.map(\.id), [available.id])
+        XCTAssertEqual(partition.collapsedRows.map(\.id), [unavailable.id])
+        XCTAssertEqual(partition.collapsedRows.map(\.style), [.unavailable])
+    }
+
+    func testRoutineSectionViewDataDisplayPartitionLeavesUnavailableIncompleteRoutinesFullWhenDisabled() {
+        let unavailable = ComponentPreviewFixtures.unavailableCard
+        let available = ComponentPreviewFixtures.incompleteCard
+
+        let partition = RoutineSectionViewData.displayPartition(
+            collapseCompletedToday: false,
+            collapseGoalMetToday: false,
+            collapseUnavailableToday: false,
+            routines: [available, unavailable]
+        )
+
+        XCTAssertEqual(partition.fullCards.map(\.id), [available.id, unavailable.id])
+        XCTAssertTrue(partition.collapsedRows.isEmpty)
+    }
+
+    func testRoutineSectionViewDataDisplayPartitionUsesUnavailableRowForUnavailableGoalMetRoutine() {
+        let unavailableGoalMet = RoutineCardViewData(
+            id: UUID(uuidString: "AAAAAAAA-0000-0000-0000-000000000002") ?? UUID(),
+            name: "Unavailable Goal Met",
+            period: .weekly,
+            countText: "3/3",
+            periodText: "week",
+            lastDoneText: "Yesterday",
+            availabilityText: "Available 12:00 AM-6:45 AM",
+            accessibilityLabel: "Unavailable Goal Met, not completed today, 3 of 3 this week, last done yesterday",
+            unavailableAccessibilityPhrase: "unavailable now, available 12:00 AM to 6:45 AM",
+            progressRing: ProgressRingViewData(
+                targetCount: 3,
+                completedCount: 3,
+                fillRatio: 1,
+                showsTodayCheckmark: false
+            ),
+            isAvailableNow: false,
+            isCompletedToday: false,
+            isTargetMet: true,
+            isOverTarget: false
+        )
+
+        let partition = RoutineSectionViewData.displayPartition(
+            collapseCompletedToday: true,
+            collapseGoalMetToday: true,
+            collapseUnavailableToday: true,
+            routines: [unavailableGoalMet]
+        )
+
+        XCTAssertTrue(partition.fullCards.isEmpty)
+        XCTAssertEqual(partition.collapsedRows.map(\.style), [.unavailable])
+    }
+
+    func testRoutineSectionViewDataDisplayPartitionKeepsCompletedUnavailableRoutinesOnCompletedPath() {
+        let completedUnavailable = RoutineCardViewData(
+            id: UUID(uuidString: "AAAAAAAA-0000-0000-0000-000000000003") ?? UUID(),
+            name: "Completed Unavailable",
+            period: .weekly,
+            countText: "1/4",
+            periodText: "week",
+            lastDoneText: "Today",
+            availabilityText: "Available 12:00 AM-6:45 AM",
+            accessibilityLabel: "Completed Unavailable, completed today, 1 of 4 this week, last done today",
+            unavailableAccessibilityPhrase: "unavailable now, available 12:00 AM to 6:45 AM",
+            progressRing: ProgressRingViewData(
+                targetCount: 4,
+                completedCount: 1,
+                fillRatio: 0.25,
+                showsTodayCheckmark: true
+            ),
+            isAvailableNow: false,
+            isCompletedToday: true,
+            isTargetMet: false,
+            isOverTarget: false
+        )
+
+        let partition = RoutineSectionViewData.displayPartition(
+            collapseCompletedToday: true,
+            collapseGoalMetToday: true,
+            collapseUnavailableToday: true,
+            routines: [completedUnavailable]
+        )
+
+        XCTAssertTrue(partition.fullCards.isEmpty)
+        XCTAssertEqual(partition.collapsedRows.map(\.style), [.completed])
+    }
+
+    func testRoutineSectionViewDataDisplayPartitionShowsFullCardsBeforeCompactRows() {
+        let fullCard = ComponentPreviewFixtures.incompleteCard
+        let unavailable = ComponentPreviewFixtures.unavailableCard
+        let completed = ComponentPreviewFixtures.completedTodayCard
+        let goalMet = ComponentPreviewFixtures.targetMetCard
+
+        let partition = RoutineSectionViewData.displayPartition(
+            collapseCompletedToday: true,
+            collapseGoalMetToday: true,
+            collapseUnavailableToday: true,
+            routines: [completed, fullCard, unavailable, goalMet]
+        )
+
+        XCTAssertEqual(partition.fullCards.map(\.id), [fullCard.id])
+        XCTAssertEqual(partition.collapsedRows.map(\.id), [unavailable.id, completed.id, goalMet.id])
     }
 
     func testBuildMapsFetchFailuresToPersistenceError() throws {

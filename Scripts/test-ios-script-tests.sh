@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 workdir="$(mktemp -d)"
-trap 'rm -rf "$workdir"' EXIT
+trap 'rm -rf "$workdir" build/Routine.xcarchive build/export' EXIT
 
 assert_contains() {
     local haystack="$1"
@@ -181,6 +181,15 @@ if [[ "$*" == *"-showdestinations"* ]]; then
     exit 0
 fi
 
+if [[ "$*" == *"-exportOptionsPlist"* && -n "${FAKE_XCODEBUILD_EXPORT_OPTIONS_LOG:-}" ]]; then
+    args=("$@")
+    for i in {1..$#}; do
+        if [[ "${args[$i]}" == "-exportOptionsPlist" ]]; then
+            cat "${args[$((i + 1))]}" >>"${FAKE_XCODEBUILD_EXPORT_OPTIONS_LOG}"
+        fi
+    done
+fi
+
 exit "${FAKE_XCODEBUILD_EXIT_CODE:-0}"
 EOF
 
@@ -197,6 +206,10 @@ run_build_ios_and_capture() {
     local output_file="$script_test_dir/output.txt"
     set +e
     env \
+        -u DEVELOPMENT_TEAM \
+        -u APP_STORE_CONNECT_AUTH_KEY_PATH \
+        -u APP_STORE_CONNECT_AUTH_KEY_ID \
+        -u APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID \
         FAKE_XCODEBUILD_LOG="$log_file" \
         FAKE_GENERATE_LOG="$generate_log" \
         XCODEBUILD_BIN="$fake_xcodebuild" \
@@ -213,6 +226,10 @@ run_test_ios_and_capture() {
     local output_file="$script_test_dir/output.txt"
     set +e
     env \
+        -u DEVELOPMENT_TEAM \
+        -u APP_STORE_CONNECT_AUTH_KEY_PATH \
+        -u APP_STORE_CONNECT_AUTH_KEY_ID \
+        -u APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID \
         FAKE_XCODEBUILD_LOG="$log_file" \
         FAKE_GENERATE_LOG="$generate_log" \
         XCODEBUILD_BIN="$fake_xcodebuild" \
@@ -302,6 +319,231 @@ if [[ "$skip_log" == *" test"* ]]; then
     echo "Expected skip path to avoid invoking xcodebuild test."
     exit 1
 fi
+
+run_archive_ios_and_capture() {
+    local output_file="$script_test_dir/output.txt"
+    local had_errexit=0
+    if [[ -o errexit ]]; then
+        had_errexit=1
+    fi
+
+    set +e
+    env \
+        -u DEVELOPMENT_TEAM \
+        -u APP_STORE_CONNECT_AUTH_KEY_PATH \
+        -u APP_STORE_CONNECT_AUTH_KEY_ID \
+        -u APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID \
+        FAKE_XCODEBUILD_LOG="$log_file" \
+        FAKE_GENERATE_LOG="$generate_log" \
+        XCODEBUILD_BIN="$fake_xcodebuild" \
+        GENERATE_PROJECT_SCRIPT="$fake_generate" \
+        "$@" \
+        ./Scripts/archive-ios.sh >"$output_file" 2>&1
+    local exit_code=$?
+    if (( had_errexit )); then
+        set -e
+    fi
+    REPLY="$(<"$output_file")"
+    return "$exit_code"
+}
+
+: >"$log_file"
+: >"$generate_log"
+set +e
+run_archive_ios_and_capture
+missing_build_number_exit_code=$?
+set -e
+assert_equals "$missing_build_number_exit_code" "1"
+assert_contains "$REPLY" "error: CURRENT_PROJECT_VERSION is required to archive for distribution."
+assert_equals "$(<"$generate_log")" ""
+
+: >"$log_file"
+: >"$generate_log"
+run_archive_ios_and_capture DEVELOPMENT_TEAM=TEAM456DEF CURRENT_PROJECT_VERSION=42
+assert_equals "$?" "0"
+assert_equals "$(<"$generate_log")" "generate"
+override_archive_log="$(<"$log_file")"
+assert_contains "$override_archive_log" "-quiet -project Routine.xcodeproj -scheme RoutineApp -configuration Release -destination generic/platform=iOS -archivePath build/Routine.xcarchive DEVELOPMENT_TEAM=TEAM456DEF CURRENT_PROJECT_VERSION=42 -allowProvisioningUpdates archive"
+
+: >"$log_file"
+: >"$generate_log"
+set +e
+run_archive_ios_and_capture DEVELOPMENT_TEAM=
+missing_team_exit_code=$?
+set -e
+assert_equals "$missing_team_exit_code" "1"
+assert_contains "$REPLY" "error: DEVELOPMENT_TEAM is required to archive for distribution."
+assert_equals "$(<"$generate_log")" ""
+
+: >"$log_file"
+: >"$generate_log"
+run_archive_ios_and_capture \
+    APP_STORE_CONNECT_AUTH_KEY_PATH=/tmp/AuthKey_TEST.p8 \
+    APP_STORE_CONNECT_AUTH_KEY_ID=ABC1234567 \
+    APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID=11111111-2222-3333-4444-555555555555 \
+    CURRENT_PROJECT_VERSION=42
+assert_equals "$?" "0"
+auth_archive_log="$(<"$log_file")"
+assert_contains "$auth_archive_log" "-authenticationKeyPath /tmp/AuthKey_TEST.p8 -authenticationKeyID ABC1234567 -authenticationKeyIssuerID 11111111-2222-3333-4444-555555555555 -allowProvisioningUpdates archive"
+
+: >"$log_file"
+: >"$generate_log"
+set +e
+run_archive_ios_and_capture APP_STORE_CONNECT_AUTH_KEY_PATH=/tmp/AuthKey_TEST.p8 CURRENT_PROJECT_VERSION=42
+partial_auth_archive_exit_code=$?
+set -e
+assert_equals "$partial_auth_archive_exit_code" "1"
+assert_contains "$REPLY" "error: APP_STORE_CONNECT_AUTH_KEY_PATH, APP_STORE_CONNECT_AUTH_KEY_ID, and APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID must be set together."
+assert_equals "$(<"$generate_log")" ""
+
+archive_make_repo="$workdir/archive-make-repo"
+mkdir -p "$archive_make_repo/Scripts"
+cp ./Makefile "$archive_make_repo/Makefile"
+
+cat >"$archive_make_repo/Scripts/archive-ios.sh" <<'EOF'
+#!/bin/zsh
+set -euo pipefail
+
+print -r -- "${CURRENT_PROJECT_VERSION:-}" >>"${FAKE_MAKE_ARCHIVE_LOG}"
+EOF
+
+chmod +x "$archive_make_repo/Scripts/archive-ios.sh"
+
+run_make_archive_and_capture() {
+    local output_file="$script_test_dir/output.txt"
+    local had_errexit=0
+    if [[ -o errexit ]]; then
+        had_errexit=1
+    fi
+
+    set +e
+    (
+        cd "$archive_make_repo"
+        env "$@" make archive-ios
+    ) >"$output_file" 2>&1
+    local exit_code=$?
+    if (( had_errexit )); then
+        set -e
+    fi
+    REPLY="$(<"$output_file")"
+    return "$exit_code"
+}
+
+make_archive_log="$workdir/make-archive.log"
+
+: >"$make_archive_log"
+set +e
+run_make_archive_and_capture FAKE_MAKE_ARCHIVE_LOG="$make_archive_log"
+missing_make_archive_exit_code=$?
+set -e
+if [[ "$missing_make_archive_exit_code" == "0" ]]; then
+    echo "Expected make archive-ios to fail without CURRENT_PROJECT_VERSION."
+    exit 1
+fi
+assert_contains "$REPLY" "CURRENT_PROJECT_VERSION"
+assert_equals "$(<"$make_archive_log")" ""
+
+: >"$make_archive_log"
+run_make_archive_and_capture CURRENT_PROJECT_VERSION=42 FAKE_MAKE_ARCHIVE_LOG="$make_archive_log"
+assert_equals "$?" "0"
+assert_equals "$(<"$make_archive_log")" "42"
+
+export_options_template="$script_test_dir/ExportOptions.plist"
+cat >"$export_options_template" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+	<key>teamID</key>
+	<string>DEVELOPMENT_TEAM_PLACEHOLDER</string>
+</dict>
+</plist>
+EOF
+
+export_options_log="$script_test_dir/export-options-applied.plist"
+
+run_export_ios_and_capture() {
+    local output_file="$script_test_dir/output.txt"
+    local had_errexit=0
+    if [[ -o errexit ]]; then
+        had_errexit=1
+    fi
+
+    set +e
+    env \
+        -u DEVELOPMENT_TEAM \
+        -u APP_STORE_CONNECT_AUTH_KEY_PATH \
+        -u APP_STORE_CONNECT_AUTH_KEY_ID \
+        -u APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID \
+        FAKE_XCODEBUILD_LOG="$log_file" \
+        FAKE_XCODEBUILD_EXPORT_OPTIONS_LOG="$export_options_log" \
+        XCODEBUILD_BIN="$fake_xcodebuild" \
+        EXPORT_OPTIONS_TEMPLATE="$export_options_template" \
+        "$@" \
+        ./Scripts/export-ios.sh >"$output_file" 2>&1
+    local exit_code=$?
+    if (( had_errexit )); then
+        set -e
+    fi
+    REPLY="$(<"$output_file")"
+    return "$exit_code"
+}
+
+: >"$log_file"
+: >"$export_options_log"
+set +e
+run_export_ios_and_capture
+no_archive_exit_code=$?
+set -e
+assert_equals "$no_archive_exit_code" "1"
+assert_contains "$REPLY" "error: no archive found at build/Routine.xcarchive. Run ./Scripts/archive-ios.sh first."
+
+mkdir -p build/Routine.xcarchive
+
+: >"$log_file"
+: >"$export_options_log"
+set +e
+run_export_ios_and_capture DEVELOPMENT_TEAM=
+missing_team_export_exit_code=$?
+set -e
+assert_equals "$missing_team_export_exit_code" "1"
+assert_contains "$REPLY" "error: DEVELOPMENT_TEAM is required to export an archive for distribution."
+
+: >"$log_file"
+: >"$export_options_log"
+run_export_ios_and_capture
+assert_equals "$?" "0"
+export_log="$(<"$log_file")"
+assert_contains "$export_log" "-quiet -exportArchive -archivePath build/Routine.xcarchive -exportOptionsPlist"
+assert_contains "$export_log" "-exportPath build/export"
+assert_contains "$export_log" "-allowProvisioningUpdates"
+assert_contains "$(<"$export_options_log")" "<string>CX2KMQZQ7X</string>"
+
+: >"$log_file"
+: >"$export_options_log"
+run_export_ios_and_capture DEVELOPMENT_TEAM=TEAM789XYZ
+assert_equals "$?" "0"
+assert_contains "$(<"$export_options_log")" "<string>TEAM789XYZ</string>"
+
+: >"$log_file"
+: >"$export_options_log"
+run_export_ios_and_capture \
+    APP_STORE_CONNECT_AUTH_KEY_PATH=/tmp/AuthKey_TEST.p8 \
+    APP_STORE_CONNECT_AUTH_KEY_ID=ABC1234567 \
+    APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID=11111111-2222-3333-4444-555555555555
+assert_equals "$?" "0"
+auth_export_log="$(<"$log_file")"
+assert_contains "$auth_export_log" "-authenticationKeyPath /tmp/AuthKey_TEST.p8 -authenticationKeyID ABC1234567 -authenticationKeyIssuerID 11111111-2222-3333-4444-555555555555"
+
+: >"$log_file"
+: >"$export_options_log"
+set +e
+run_export_ios_and_capture APP_STORE_CONNECT_AUTH_KEY_ID=ABC1234567
+partial_auth_export_exit_code=$?
+set -e
+assert_equals "$partial_auth_export_exit_code" "1"
+assert_contains "$REPLY" "error: APP_STORE_CONNECT_AUTH_KEY_PATH, APP_STORE_CONNECT_AUTH_KEY_ID, and APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID must be set together."
+
+rm -rf build/Routine.xcarchive build/export
 
 validate_repo="$workdir/validate-repo"
 mkdir -p "$validate_repo/Scripts"
@@ -395,6 +637,86 @@ assert_equals "$?" "0"
 validate_verbose_output="$REPLY"
 assert_contains "$validate_verbose_output" "stream me directly"
 assert_contains "$validate_verbose_output" "PASS generate-project"
+
+release_preflight_repo="$workdir/release-preflight-repo"
+mkdir -p "$release_preflight_repo/Scripts"
+cp ./Scripts/release-preflight.sh "$release_preflight_repo/Scripts/release-preflight.sh"
+chmod +x "$release_preflight_repo/Scripts/release-preflight.sh"
+
+for stage_name in validate build-ios archive-ios export-ios
+do
+    cat >"$release_preflight_repo/Scripts/${stage_name}.sh" <<'EOF'
+#!/bin/zsh
+set -euo pipefail
+
+stage_name="${0:t:r}"
+stage_key="$(print -r -- "$stage_name" | tr '[:lower:]-' '[:upper:]_')"
+output_var="FAKE_${stage_key}_OUTPUT"
+exit_var="FAKE_${stage_key}_EXIT"
+
+print -r -- "$stage_name" >>"${FAKE_RELEASE_PREFLIGHT_ORDER_LOG}"
+
+if [[ -n "${ROUTINE_BUILD_CONFIGURATION:-}" ]]; then
+    print -r -- "${stage_name}:ROUTINE_BUILD_CONFIGURATION=${ROUTINE_BUILD_CONFIGURATION}" >>"${FAKE_RELEASE_PREFLIGHT_ENV_LOG}"
+fi
+
+if [[ -n "${CURRENT_PROJECT_VERSION:-}" ]]; then
+    print -r -- "${stage_name}:CURRENT_PROJECT_VERSION=${CURRENT_PROJECT_VERSION}" >>"${FAKE_RELEASE_PREFLIGHT_ENV_LOG}"
+fi
+
+if [[ -n "${(P)output_var:-}" ]]; then
+    print -r -- "${(P)output_var}"
+fi
+
+exit "${${(P)exit_var}:-0}"
+EOF
+    chmod +x "$release_preflight_repo/Scripts/${stage_name}.sh"
+done
+
+run_release_preflight_and_capture() {
+    local output_file="$workdir/release-preflight-output.txt"
+    set +e
+    env "$@" "$release_preflight_repo/Scripts/release-preflight.sh" >"$output_file" 2>&1
+    CAPTURED_EXIT_CODE=$?
+    set -e
+    REPLY="$(<"$output_file")"
+    return 0
+}
+
+release_preflight_order_log="$workdir/release-preflight-order.log"
+release_preflight_env_log="$workdir/release-preflight-env.log"
+
+: >"$release_preflight_order_log"
+: >"$release_preflight_env_log"
+set +e
+run_release_preflight_and_capture \
+    FAKE_RELEASE_PREFLIGHT_ORDER_LOG="$release_preflight_order_log" \
+    FAKE_RELEASE_PREFLIGHT_ENV_LOG="$release_preflight_env_log"
+set -e
+assert_equals "$CAPTURED_EXIT_CODE" "1"
+assert_contains "$REPLY" "error: CURRENT_PROJECT_VERSION is required for release preflight."
+assert_equals "$(wc -l <"$release_preflight_order_log" | tr -d ' ')" "0"
+
+: >"$release_preflight_order_log"
+: >"$release_preflight_env_log"
+run_release_preflight_and_capture \
+    CURRENT_PROJECT_VERSION=42 \
+    FAKE_RELEASE_PREFLIGHT_ORDER_LOG="$release_preflight_order_log" \
+    FAKE_RELEASE_PREFLIGHT_ENV_LOG="$release_preflight_env_log" \
+    FAKE_VALIDATE_OUTPUT="Skipping iOS tests: no concrete iOS Simulator destination is available."
+assert_equals "$?" "0"
+release_preflight_output="$REPLY"
+assert_contains "$release_preflight_output" "PASS validate"
+assert_contains "$release_preflight_output" "PASS build-release"
+assert_contains "$release_preflight_output" "PASS archive"
+assert_contains "$release_preflight_output" "PASS export"
+assert_contains "$release_preflight_output" "Skipping iOS tests: no concrete iOS Simulator destination is available."
+assert_contains "$release_preflight_output" "Release preflight finished for CURRENT_PROJECT_VERSION=42."
+release_preflight_order="$(<"$release_preflight_order_log")"
+assert_equals "$release_preflight_order" $'validate\nbuild-ios\narchive-ios\nexport-ios'
+release_preflight_env="$(<"$release_preflight_env_log")"
+assert_contains "$release_preflight_env" "build-ios:ROUTINE_BUILD_CONFIGURATION=Release"
+assert_contains "$release_preflight_env" "archive-ios:CURRENT_PROJECT_VERSION=42"
 
 run_ios_dir="$workdir/run-ios"
 mkdir -p "$run_ios_dir"
@@ -924,4 +1246,4 @@ promote_invocation="$(<"$capture_promote_log")"
 assert_contains "$promote_invocation" "promote --export-root $capture_screenshots_dir/raw/"
 assert_contains "$promote_invocation" "--canonical-root $capture_screenshots_dir/canonical --expected-count 36"
 
-echo "Scripts/build-ios.sh, Scripts/test-ios.sh, Scripts/validate.sh, Scripts/run-ios.sh, Scripts/capture-screenshots.sh, and Scripts/screenshot-assets.py script tests passed."
+echo "Scripts/build-ios.sh, Scripts/test-ios.sh, Scripts/validate.sh, Scripts/release-preflight.sh, Scripts/run-ios.sh, Scripts/archive-ios.sh, Scripts/export-ios.sh, Scripts/capture-screenshots.sh, and Scripts/screenshot-assets.py script tests passed."
