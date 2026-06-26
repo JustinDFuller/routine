@@ -11,6 +11,7 @@ struct RoutineDraft: Equatable, Sendable {
     var groupID: UUID
     var availabilityStartMinute: Int?
     var availabilityEndMinute: Int?
+    var pauseResumeDayKey: String?
 }
 enum RoutineManagementError: LocalizedError, Equatable {
     case nonEmptyGroup(UUID)
@@ -49,6 +50,7 @@ final class RoutineManagementService {
             period: draft.period,
             availabilityStartMinute: availabilityWindow?.start.minuteOfDay,
             availabilityEndMinute: availabilityWindow?.end.minuteOfDay,
+            pauseResumeDayKey: draft.pauseResumeDayKey,
             sortOrder: existingRoutines.count,
             group: group,
             createdAt: now,
@@ -96,6 +98,7 @@ final class RoutineManagementService {
         routine.period = draft.period
         routine.availabilityStartMinute = availabilityWindow?.start.minuteOfDay
         routine.availabilityEndMinute = availabilityWindow?.end.minuteOfDay
+        routine.pauseResumeDayKey = draft.pauseResumeDayKey
         routine.updatedAt = now
 
         if sourceGroupID == destinationGroup.id {
@@ -164,6 +167,58 @@ final class RoutineManagementService {
                 details: "routineID=\(routine.id.uuidString) groupID=\(sourceGroupID.uuidString)",
                 error: error
             )
+            throw error
+        }
+    }
+
+    func resumeRoutine(id: UUID, now: Date = .now) throws {
+        let routine = try context.routine(id: id)
+        routine.pauseResumeDayKey = nil
+        routine.updatedAt = now
+
+        do {
+            try context.saveRoutineChanges()
+            logMutationSucceeded(operation: "resumeRoutine", details: "routineID=\(routine.id.uuidString)")
+        } catch {
+            rollbackPendingChanges()
+            logMutationFailed(
+                operation: "resumeRoutine",
+                details: "routineID=\(routine.id.uuidString)",
+                error: error
+            )
+            throw error
+        }
+    }
+
+    func setGlobalPause(skipPeriods: Int, anchor: RoutineDay, now: Date = .now) throws {
+        try context.setGlobalPause(anchor: anchor, skipPeriods: skipPeriods, now: now)
+
+        do {
+            try context.saveRoutineChanges()
+            logMutationSucceeded(
+                operation: "setGlobalPause",
+                details: "skipPeriods=\(skipPeriods) anchorDayKey=\(anchor.key)"
+            )
+        } catch {
+            rollbackPendingChanges()
+            logMutationFailed(
+                operation: "setGlobalPause",
+                details: "skipPeriods=\(skipPeriods)",
+                error: error
+            )
+            throw error
+        }
+    }
+
+    func clearGlobalPause(now: Date = .now) throws {
+        try context.clearGlobalPause(now: now)
+
+        do {
+            try context.saveRoutineChanges()
+            logMutationSucceeded(operation: "clearGlobalPause", details: "")
+        } catch {
+            rollbackPendingChanges()
+            logMutationFailed(operation: "clearGlobalPause", details: "", error: error)
             throw error
         }
     }

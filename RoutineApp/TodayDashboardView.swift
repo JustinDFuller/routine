@@ -121,7 +121,9 @@ struct TodayDashboardView: View {
             case .routine(let routinePresentation):
                 AddEditRoutineView(
                     presentation: routinePresentation,
-                    groupChoices: managementViewData.groupChoices
+                    groupChoices: managementViewData.groupChoices,
+                    routineCalendar: routineCalendar,
+                    today: routineCalendar.today(now: runtime.now)
                 )
             case .group(let groupPresentation):
                 AddEditGroupView(
@@ -130,6 +132,8 @@ struct TodayDashboardView: View {
                 )
             case .settings:
                 SettingsView()
+            case .globalPause:
+                GlobalPauseView()
             }
         }
         .safeAreaInset(edge: .bottom) {

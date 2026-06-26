@@ -42,9 +42,21 @@ enum NextRoutineSelector {
         let currentMinuteOfDay = calendar.minuteOfDay(containing: now)
         let progressCalculator = ProgressCalculator(routineCalendar: calendar)
         let completionDaysByRoutineID = completionDaysByRoutineID(from: completions)
+        let globalPause = context.globalPause()
 
         for routine in orderedRoutines {
             guard isAvailableNow(routine: routine, currentMinuteOfDay: currentMinuteOfDay) else {
+                continue
+            }
+
+            let perRoutineResume = routine.pauseResumeDayKey.flatMap(RoutineDay.init(key:))
+            let resumeDay = RoutinePause.resumeDay(
+                perRoutineResume: perRoutineResume,
+                global: globalPause,
+                period: routine.period,
+                calendar: calendar
+            )
+            guard RoutinePause.isPaused(resumeDay: resumeDay, today: today) == false else {
                 continue
             }
 
@@ -73,6 +85,7 @@ enum NextRoutineSelector {
         let routines = try fetchRoutines(context)
         let today = calendar.today(now: now)
         let currentMinuteOfDay = calendar.minuteOfDay(containing: now)
+        let globalPause = context.globalPause()
 
         var candidates: [Date] = []
         if let midnight = calendar.calendar.date(byAdding: .day, value: 1, to: calendar.calendar.startOfDay(for: now)) {
@@ -80,13 +93,24 @@ enum NextRoutineSelector {
         }
 
         for routine in routines {
-            guard let window = routine.availabilityWindow else {
-                continue
+            if let window = routine.availabilityWindow {
+                for edge in [window.start.minuteOfDay, window.end.minuteOfDay] where edge > currentMinuteOfDay {
+                    if let edgeDate = date(forMinuteOfDay: edge, on: today, calendar: calendar) {
+                        candidates.append(edgeDate)
+                    }
+                }
             }
 
-            for edge in [window.start.minuteOfDay, window.end.minuteOfDay] where edge > currentMinuteOfDay {
-                if let edgeDate = date(forMinuteOfDay: edge, on: today, calendar: calendar) {
-                    candidates.append(edgeDate)
+            let perRoutineResume = routine.pauseResumeDayKey.flatMap(RoutineDay.init(key:))
+            let resumeDay = RoutinePause.resumeDay(
+                perRoutineResume: perRoutineResume,
+                global: globalPause,
+                period: routine.period,
+                calendar: calendar
+            )
+            if let resumeDay, RoutinePause.isPaused(resumeDay: resumeDay, today: today) {
+                if let resumeDate = date(forMinuteOfDay: 0, on: resumeDay, calendar: calendar) {
+                    candidates.append(resumeDate)
                 }
             }
         }

@@ -8,6 +8,7 @@ struct RoutineTestSeed {
     let period: RoutinePeriod
     let availabilityStartMinute: Int?
     let availabilityEndMinute: Int?
+    let pauseResumeDayKey: String?
     let sortOrder: Int
 
     init(
@@ -17,6 +18,7 @@ struct RoutineTestSeed {
         period: RoutinePeriod,
         availabilityStartMinute: Int? = nil,
         availabilityEndMinute: Int? = nil,
+        pauseResumeDayKey: String? = nil,
         sortOrder: Int
     ) {
         self.id = id
@@ -25,6 +27,7 @@ struct RoutineTestSeed {
         self.period = period
         self.availabilityStartMinute = availabilityStartMinute
         self.availabilityEndMinute = availabilityEndMinute
+        self.pauseResumeDayKey = pauseResumeDayKey
         self.sortOrder = sortOrder
     }
 }

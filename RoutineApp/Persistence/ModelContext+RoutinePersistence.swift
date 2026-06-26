@@ -1,5 +1,6 @@
 import Foundation
 import OSLog
+import RoutineCore
 import SwiftData
 
 private enum PersistenceDiagnostics {
@@ -165,4 +166,51 @@ extension ModelContext {
     private static func routineDayKey(routineID: UUID, dayKey: String) -> String {
         "\(routineID.uuidString)|\(dayKey)"
     }
+
+    func globalPause() -> GlobalPause? {
+        guard let metadata = try? metadata(key: AppMetadataKeys.globalPause) else {
+            return nil
+        }
+
+        guard let data = metadata.value.data(using: .utf8),
+            let payload = try? JSONDecoder().decode(GlobalPausePayload.self, from: data),
+            let anchor = RoutineDay(key: payload.anchorDayKey)
+        else {
+            return nil
+        }
+
+        return GlobalPause(anchor: anchor, skipPeriods: payload.skipPeriods)
+    }
+
+    func setGlobalPause(anchor: RoutineDay, skipPeriods: Int, now: Date = .now) throws {
+        let payload = GlobalPausePayload(anchorDayKey: anchor.key, skipPeriods: skipPeriods)
+        guard let data = try? JSONEncoder().encode(payload),
+            let value = String(data: data, encoding: .utf8)
+        else {
+            throw PersistenceError.saveFailed("Unable to encode global pause.")
+        }
+
+        if let existing = try? metadata(key: AppMetadataKeys.globalPause) {
+            existing.value = value
+            existing.updatedAt = now
+        } else {
+            insert(AppMetadata(key: AppMetadataKeys.globalPause, value: value, updatedAt: now))
+        }
+    }
+
+    func clearGlobalPause(now: Date = .now) throws {
+        guard let existing = try? metadata(key: AppMetadataKeys.globalPause) else {
+            return
+        }
+        delete(existing)
+    }
+}
+
+private enum AppMetadataKeys {
+    static let globalPause = "global.pause"
+}
+
+private struct GlobalPausePayload: Codable {
+    let anchorDayKey: String
+    let skipPeriods: Int
 }

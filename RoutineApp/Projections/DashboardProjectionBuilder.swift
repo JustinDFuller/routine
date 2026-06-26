@@ -37,10 +37,12 @@ final class DashboardProjectionBuilder {
         now: Date = .now
     ) -> TodayDashboardViewData {
         let today = routineCalendar.today(now: now)
+        let globalPause = context.globalPause()
         let buildContext = DashboardBuildContext(
             completionDaysByRoutineID: completionDaysByRoutineID(from: completions),
             today: today,
-            currentMinuteOfDay: routineCalendar.minuteOfDay(containing: now)
+            currentMinuteOfDay: routineCalendar.minuteOfDay(containing: now),
+            globalPause: globalPause
         )
         let routinesByGroupID = Dictionary(grouping: routines, by: \.groupID)
 
@@ -67,10 +69,33 @@ final class DashboardProjectionBuilder {
             )
         }
 
+        let globalPauseBanner = globalPause.map { pause -> GlobalPauseBannerViewData in
+            let allPeriods: [RoutinePeriod] = [.weekly, .monthly]
+            let resumeDays = allPeriods.compactMap { period -> RoutineDay? in
+                RoutinePause.resumeDay(
+                    perRoutineResume: nil,
+                    global: pause,
+                    period: period,
+                    calendar: routineCalendar
+                )
+            }
+            let latestResume =
+                resumeDays.max()
+                ?? routineCalendar.advancingPeriodStart(
+                    routineCalendar.periodStart(for: .weekly, containing: today),
+                    by: pause.skipPeriods,
+                    period: .weekly
+                )
+            return GlobalPauseBannerViewData(
+                resumeText: routineCalendar.relativeLabel(for: latestResume, today: today)
+            )
+        }
+
         return TodayDashboardViewData(
             title: "Today",
             sections: sections,
-            isEmpty: routines.isEmpty
+            isEmpty: routines.isEmpty,
+            globalPause: globalPauseBanner
         )
     }
 }
@@ -149,7 +174,8 @@ extension DashboardProjectionBuilder {
                 routine: routine,
                 completionDays: buildContext.completionDaysByRoutineID[routine.id] ?? [],
                 today: buildContext.today,
-                currentMinuteOfDay: buildContext.currentMinuteOfDay
+                currentMinuteOfDay: buildContext.currentMinuteOfDay,
+                globalPause: buildContext.globalPause
             )
         }
 
@@ -157,7 +183,10 @@ extension DashboardProjectionBuilder {
             id: id,
             name: name,
             remainingCount: cards.filter {
-                $0.isCompletedToday == false && $0.isTargetMet == false && $0.isAvailableNow
+                $0.isPaused == false
+                    && $0.isCompletedToday == false
+                    && $0.isTargetMet == false
+                    && $0.isAvailableNow
             }.count,
             routines: cards
         )
@@ -167,7 +196,8 @@ extension DashboardProjectionBuilder {
         routine: Routine,
         completionDays: [RoutineDay],
         today: RoutineDay,
-        currentMinuteOfDay: Int
+        currentMinuteOfDay: Int,
+        globalPause: GlobalPause?
     ) -> RoutineCardViewData {
         let progress = progressCalculator.progress(
             period: routine.period,
@@ -181,6 +211,15 @@ extension DashboardProjectionBuilder {
             for: routine,
             currentMinuteOfDay: currentMinuteOfDay
         )
+        let perRoutineResume = routine.pauseResumeDayKey.flatMap(RoutineDay.init(key:))
+        let resumeDay = RoutinePause.resumeDay(
+            perRoutineResume: perRoutineResume,
+            global: globalPause,
+            period: routine.period,
+            calendar: routineCalendar
+        )
+        let isPaused = RoutinePause.isPaused(resumeDay: resumeDay, today: today)
+        let pauseResumeText = resumeDay.map { routineCalendar.relativeLabel(for: $0, today: today) }
 
         return RoutineCardViewData(
             id: routine.id,
@@ -207,7 +246,9 @@ extension DashboardProjectionBuilder {
             isAvailableNow: availabilityState.isAvailableNow,
             isCompletedToday: progress.isCompletedToday,
             isTargetMet: progress.isTargetMet,
-            isOverTarget: progress.isOverTarget
+            isOverTarget: progress.isOverTarget,
+            isPaused: isPaused,
+            pauseResumeText: isPaused ? pauseResumeText : nil
         )
     }
 
@@ -312,6 +353,7 @@ private struct DashboardBuildContext {
     let completionDaysByRoutineID: [UUID: [RoutineDay]]
     let today: RoutineDay
     let currentMinuteOfDay: Int
+    let globalPause: GlobalPause?
 }
 
 private struct RoutineAvailabilityState {

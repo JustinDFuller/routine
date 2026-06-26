@@ -24,6 +24,7 @@ struct RoutineFormSnapshot: Equatable, Sendable {
     let groupID: UUID?
     let availabilityStartMinute: Int?
     let availabilityEndMinute: Int?
+    let pauseResumeDayKey: String?
 
     init(
         routineID: UUID,
@@ -32,7 +33,8 @@ struct RoutineFormSnapshot: Equatable, Sendable {
         period: RoutinePeriod,
         groupID: UUID?,
         availabilityStartMinute: Int?,
-        availabilityEndMinute: Int?
+        availabilityEndMinute: Int?,
+        pauseResumeDayKey: String? = nil
     ) {
         self.routineID = routineID
         self.name = name
@@ -41,6 +43,7 @@ struct RoutineFormSnapshot: Equatable, Sendable {
         self.groupID = groupID
         self.availabilityStartMinute = availabilityStartMinute
         self.availabilityEndMinute = availabilityEndMinute
+        self.pauseResumeDayKey = pauseResumeDayKey
     }
 
     init(
@@ -54,7 +57,8 @@ struct RoutineFormSnapshot: Equatable, Sendable {
             period: row.period,
             groupID: availableGroupIDs.contains(row.groupID) ? row.groupID : nil,
             availabilityStartMinute: row.availabilityStartMinute,
-            availabilityEndMinute: row.availabilityEndMinute
+            availabilityEndMinute: row.availabilityEndMinute,
+            pauseResumeDayKey: row.pauseResumeDayKey
         )
     }
 }
@@ -113,6 +117,10 @@ final class RoutineFormState {
     var period: RoutinePeriod {
         didSet {
             targetCount = clampedTargetCount(targetCount, for: period)
+            if oldValue != period {
+                isPausedRoutine = false
+                pauseSkipPeriods = 1
+            }
             clearValidationError()
         }
     }
@@ -139,9 +147,27 @@ final class RoutineFormState {
         didSet { clearValidationError() }
     }
 
+    var isPausedRoutine: Bool {
+        didSet { clearValidationError() }
+    }
+
+    var pauseSkipPeriods: Int {
+        didSet { clearValidationError() }
+    }
+
+    private let routineCalendar: RoutineCalendar
+    private let today: RoutineDay
+
     private(set) var validationError: RoutineFormError?
 
-    init(presentation: RoutineFormPresentation) {
+    init(
+        presentation: RoutineFormPresentation,
+        routineCalendar: RoutineCalendar = .current,
+        today: RoutineDay = RoutineCalendar.current.today(now: .now)
+    ) {
+        self.routineCalendar = routineCalendar
+        self.today = today
+
         switch presentation {
         case .add(let initialGroupID):
             name = ""
@@ -151,6 +177,8 @@ final class RoutineFormState {
             isAvailableAllDay = true
             availabilityStartMinute = nil
             availabilityEndMinute = nil
+            isPausedRoutine = false
+            pauseSkipPeriods = 1
         case .edit(let snapshot):
             name = snapshot.name
             targetCount = snapshot.targetCount
@@ -161,6 +189,20 @@ final class RoutineFormState {
                 || snapshot.availabilityEndMinute == nil
             availabilityStartMinute = snapshot.availabilityStartMinute
             availabilityEndMinute = snapshot.availabilityEndMinute
+
+            if let key = snapshot.pauseResumeDayKey,
+                let resumeDay = RoutineDay(key: key),
+                resumeDay > today {
+                isPausedRoutine = true
+                let start = routineCalendar.periodStart(for: snapshot.period, containing: today)
+                pauseSkipPeriods = max(
+                    1,
+                    routineCalendar.periodCount(from: start, to: resumeDay, period: snapshot.period)
+                )
+            } else {
+                isPausedRoutine = false
+                pauseSkipPeriods = 1
+            }
         }
 
         targetCount = clampedTargetCount(targetCount, for: period)
@@ -168,6 +210,27 @@ final class RoutineFormState {
 
     var validationMessage: String? {
         validationError?.errorDescription
+    }
+
+    var pauseResumeLabel: String? {
+        guard isPausedRoutine, pauseSkipPeriods > 0 else { return nil }
+        let start = routineCalendar.periodStart(for: period, containing: today)
+        let resume = routineCalendar.advancingPeriodStart(start, by: pauseSkipPeriods, period: period)
+        return routineCalendar.relativeLabel(for: resume, today: today)
+    }
+
+    var pauseSkipRange: ClosedRange<Int> { 1...52 }
+
+    var pauseUnitLabel: String {
+        switch period {
+        case .weekly: "week"
+        case .monthly: "month"
+        }
+    }
+
+    var pauseSkipLabel: String {
+        let unit = pauseSkipPeriods == 1 ? pauseUnitLabel : "\(pauseUnitLabel)s"
+        return "\(pauseSkipPeriods) \(unit)"
     }
 
     func makeDraft() throws -> RoutineDraft {
@@ -191,6 +254,13 @@ final class RoutineFormState {
                     )
                 }
 
+            let pauseResumeDayKey: String? = {
+                guard isPausedRoutine, pauseSkipPeriods > 0 else { return nil }
+                let start = routineCalendar.periodStart(for: period, containing: today)
+                let resume = routineCalendar.advancingPeriodStart(start, by: pauseSkipPeriods, period: period)
+                return resume.key
+            }()
+
             validationError = nil
             return RoutineDraft(
                 name: trimmedName,
@@ -198,7 +268,8 @@ final class RoutineFormState {
                 period: period,
                 groupID: groupID,
                 availabilityStartMinute: availabilityWindow?.start.minuteOfDay,
-                availabilityEndMinute: availabilityWindow?.end.minuteOfDay
+                availabilityEndMinute: availabilityWindow?.end.minuteOfDay,
+                pauseResumeDayKey: pauseResumeDayKey
             )
         } catch let error as RoutineValidationError {
             let formError = RoutineFormError.validation(error)

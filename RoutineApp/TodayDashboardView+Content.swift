@@ -24,6 +24,20 @@ extension TodayDashboardView {
                 enterRearrangeRoutinesMode()
             }
 
+            Divider()
+
+            if viewData.globalPause != nil {
+                Button("Resume All") {
+                    resumeAllRoutines()
+                }
+                .accessibilityIdentifier("today-dashboard-resume-all-button")
+            } else {
+                Button("Pause All…") {
+                    openGlobalPause()
+                }
+                .accessibilityIdentifier("today-dashboard-pause-all-button")
+            }
+
             Button("Settings") {
                 openSettings()
             }
@@ -79,6 +93,10 @@ extension TodayDashboardView {
             VStack(alignment: .leading, spacing: 24) {
                 dashboardHeader
 
+                if let globalPause = viewData.globalPause {
+                    globalPauseBanner(globalPause)
+                }
+
                 if showsSectionContent {
                     sectionsContent
                 } else {
@@ -90,6 +108,42 @@ extension TodayDashboardView {
             .padding(.top, 16)
             .padding(.bottom, 24)
         }
+    }
+
+    func globalPauseBanner(_ banner: GlobalPauseBannerViewData) -> some View {
+        HStack(spacing: 12) {
+            Text("All routines paused · resumes \(banner.resumeText)")
+                .font(.subheadline)
+                .foregroundStyle(Color.routineLabelPrimary)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button("Resume all") {
+                resumeAllRoutines()
+            }
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(Color.routineAccentActive)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.routineAccentActive.opacity(0.12))
+            )
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
+            .accessibilityIdentifier("today-dashboard-global-pause-resume-all-button")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.routineSurfaceElevated)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.routineDivider.opacity(0.5), lineWidth: 1)
+        }
+        .accessibilityIdentifier("today-dashboard-global-pause-banner")
     }
 
     var sectionsContent: some View {
@@ -104,7 +158,8 @@ extension TodayDashboardView {
                             .foregroundStyle(Color.routineLabelSecondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.vertical, 8)
-                    } else if collapsesCompleted || collapsesGoalMet || collapsesUnavailable {
+                    } else if collapsesCompleted || collapsesGoalMet || collapsesUnavailable ||
+                        section.routines.contains(where: \.isPaused) {
                         collapsedSectionContent(section)
                     } else {
                         VStack(spacing: 12) {
@@ -136,7 +191,13 @@ extension TodayDashboardView {
         if partition.collapsedRows.isEmpty == false {
             VStack(spacing: 8) {
                 ForEach(partition.collapsedRows) { row in
-                    if expandedCollapsedRoutineIDs.contains(row.id) {
+                    if case .paused = row.style {
+                        CollapsedRoutineRowView(
+                            viewData: row,
+                            onExpand: {},
+                            onResume: { resumeRoutine(routineID: row.id) }
+                        )
+                    } else if expandedCollapsedRoutineIDs.contains(row.id) {
                         routineCardView(for: row.routine, onCollapse: { collapse(row.id) })
                     } else {
                         CollapsedRoutineRowView(viewData: row, onExpand: { expand(row.id) })

@@ -51,6 +51,26 @@ extension TodayDashboardView {
         sheetPresentation = .settings
     }
 
+    func openGlobalPause() {
+        sheetPresentation = .globalPause
+    }
+
+    func resumeAllRoutines() {
+        do {
+            try RoutineManagementService(context: modelContext).clearGlobalPause()
+        } catch {
+            presentUpdateError(error)
+        }
+    }
+
+    func resumeRoutine(routineID: UUID) {
+        do {
+            try RoutineManagementService(context: modelContext).resumeRoutine(id: routineID)
+        } catch {
+            presentUpdateError(error)
+        }
+    }
+
     func openEditRoutine(routineID: UUID) {
         guard let row = managementRow(for: routineID) else {
             presentAlert(.routineNotFound)

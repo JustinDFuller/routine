@@ -26,7 +26,9 @@ enum ComponentPreviewFixtures {
         isAvailableNow: true,
         isCompletedToday: false,
         isTargetMet: false,
-        isOverTarget: false
+        isOverTarget: false,
+        isPaused: false,
+        pauseResumeText: nil
     )
 
     static let completedTodayCard = RoutineCardViewData(
@@ -48,7 +50,9 @@ enum ComponentPreviewFixtures {
         isAvailableNow: true,
         isCompletedToday: true,
         isTargetMet: false,
-        isOverTarget: false
+        isOverTarget: false,
+        isPaused: false,
+        pauseResumeText: nil
     )
 
     static let targetMetCard = RoutineCardViewData(
@@ -70,7 +74,9 @@ enum ComponentPreviewFixtures {
         isAvailableNow: true,
         isCompletedToday: false,
         isTargetMet: true,
-        isOverTarget: false
+        isOverTarget: false,
+        isPaused: false,
+        pauseResumeText: nil
     )
 
     static let overTargetCard = RoutineCardViewData(
@@ -92,7 +98,9 @@ enum ComponentPreviewFixtures {
         isAvailableNow: true,
         isCompletedToday: false,
         isTargetMet: true,
-        isOverTarget: true
+        isOverTarget: true,
+        isPaused: false,
+        pauseResumeText: nil
     )
 
     static let highTargetCard = RoutineCardViewData(
@@ -114,7 +122,9 @@ enum ComponentPreviewFixtures {
         isAvailableNow: true,
         isCompletedToday: true,
         isTargetMet: false,
-        isOverTarget: false
+        isOverTarget: false,
+        isPaused: false,
+        pauseResumeText: nil
     )
 
     static let unavailableCard = RoutineCardViewData(
@@ -136,7 +146,9 @@ enum ComponentPreviewFixtures {
         isAvailableNow: false,
         isCompletedToday: false,
         isTargetMet: false,
-        isOverTarget: false
+        isOverTarget: false,
+        isPaused: false,
+        pauseResumeText: nil
     )
 
     static let longNameCard = RoutineCardViewData(
@@ -158,7 +170,9 @@ enum ComponentPreviewFixtures {
         isAvailableNow: true,
         isCompletedToday: false,
         isTargetMet: false,
-        isOverTarget: false
+        isOverTarget: false,
+        isPaused: false,
+        pauseResumeText: nil
     )
 
     private static let unavailableCardAccessibilityLabel =

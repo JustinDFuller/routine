@@ -99,6 +99,28 @@ public struct RoutineCalendar: Sendable {
         return start...end
     }
 
+    public func periodStart(for period: RoutinePeriod, containing day: RoutineDay) -> RoutineDay {
+        currentPeriodRange(for: period, containing: day).lowerBound
+    }
+
+    public func advancingPeriodStart(_ start: RoutineDay, by count: Int, period: RoutinePeriod) -> RoutineDay {
+        let startDate = date(for: start)
+        let component: Calendar.Component = period == .weekly ? .weekOfYear : .month
+        guard let advanced = calendar.date(byAdding: component, value: count, to: startDate) else {
+            preconditionFailure("Unable to advance period start \(start.key) by \(count) \(period.rawValue).")
+        }
+        return periodStart(for: period, containing: day(containing: advanced))
+    }
+
+    public func periodCount(from start: RoutineDay, to end: RoutineDay, period: RoutinePeriod) -> Int {
+        guard start < end else { return 0 }
+        let startDate = date(for: start)
+        let endDate = date(for: end)
+        let component: Calendar.Component = period == .weekly ? .weekOfYear : .month
+        let components = calendar.dateComponents([component], from: startDate, to: endDate)
+        return max(0, components.value(for: component) ?? 0)
+    }
+
     public func daysInCurrentMonth(containing day: RoutineDay) -> [RoutineDay] {
         let range = currentMonthRange(containing: day)
         return Array(range.lowerBound.day...range.upperBound.day).compactMap { dayNumber in

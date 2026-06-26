@@ -65,6 +65,7 @@ enum ManageSheetPresentation: Identifiable, Equatable {
     case routine(RoutineFormPresentation)
     case group(GroupFormPresentation)
     case settings
+    case globalPause
 
     var id: String {
         switch self {
@@ -74,6 +75,8 @@ enum ManageSheetPresentation: Identifiable, Equatable {
             "group-\(presentation.id)"
         case .settings:
             "settings"
+        case .globalPause:
+            "global-pause"
         }
     }
 }
