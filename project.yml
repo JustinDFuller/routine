@@ -8,6 +8,7 @@ settings:
     MARKETING_VERSION: 1.0.0
     CURRENT_PROJECT_VERSION: 1
     SWIFT_VERSION: 6.0
+    DEVELOPMENT_TEAM: CX2KMQZQ7X
 packages:
   RoutineCore:
     path: RoutineCore
@@ -49,17 +50,16 @@ targets:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOL_EXTENSIONS: NO
-        PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routine
+        PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routines
         PRODUCT_NAME: Routine
         TARGETED_DEVICE_FAMILY: 1
         SWIFT_STRICT_CONCURRENCY: targeted
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: ""
     entitlements:
       path: RoutineApp/Routine.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.com.justinfuller.routine
+          - group.com.justinfuller.routines
     dependencies:
       - package: RoutineCore
         product: RoutineCore
@@ -79,7 +79,7 @@ targets:
     settings:
       base:
         GENERATE_INFOPLIST_FILE: true
-        PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routine.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routines.tests
         TEST_HOST: $(BUILT_PRODUCTS_DIR)/Routine.app/Routine
         BUNDLE_LOADER: $(TEST_HOST)
     dependencies:
@@ -94,7 +94,7 @@ targets:
     settings:
       base:
         GENERATE_INFOPLIST_FILE: true
-        PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routine.uitests
+        PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routines.uitests
     dependencies:
       - target: RoutineApp
 
@@ -107,7 +107,7 @@ targets:
     settings:
       base:
         GENERATE_INFOPLIST_FILE: true
-        PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routine.screenshottests
+        PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routines.screenshottests
     dependencies:
       - target: RoutineApp
 
@@ -131,18 +131,17 @@ targets:
     settings:
       base:
         ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOL_EXTENSIONS: NO
-        PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routine.widget
+        PRODUCT_BUNDLE_IDENTIFIER: com.justinfuller.routines.widget
         PRODUCT_NAME: RoutineWidget
         INFOPLIST_FILE: RoutineWidget/Info.plist
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: ""
         TARGETED_DEVICE_FAMILY: 1
         SWIFT_STRICT_CONCURRENCY: targeted
     entitlements:
       path: RoutineWidget/RoutineWidget.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.com.justinfuller.routine
+          - group.com.justinfuller.routines
     dependencies:
       - package: RoutineCore
         product: RoutineCore
