@@ -199,13 +199,13 @@ Persisted entities:
   A first-class display section with a stable ID, name, sort order, timestamps, and relationship to routines.
 
 - `Routine`
-  A user-defined activity with stable ID, name, target count, period raw value, group ID, sort order, timestamps, group relationship, and completions relationship.
+  A user-defined activity with stable ID, name, target count, period raw value, group ID, sort order, optional break resume day key, timestamps, group relationship, and completions relationship.
 
 - `RoutineCompletion`
   A completion record for one routine on one local calendar day, with a stable ID, routine ID, day key, unique routine-day key, timestamp, and routine relationship.
 
 - `AppMetadata`
-  Lightweight app facts such as starter data seed version.
+  Lightweight app facts such as starter data seed version and the optional global break resume day.
 
 Persistence rules:
 
@@ -228,6 +228,8 @@ Domain invariants:
 - A completion's day key is the source of truth for date identity.
 - A routine can have at most one completion per local calendar day.
 - A routine-day unique key enforces duplicate prevention at the data layer.
+- A break is active only while `today < resumeDay`; routine and global breaks use concrete resume day keys, not skip counts.
+- Breaks suppress remaining counts and widget selection, but they do not block deliberate completion.
 - Groups can be deleted only when empty.
 - Deleting a routine deletes its completion history after confirmation.
 - Reorder operations normalize affected sort orders to contiguous values.
@@ -269,13 +271,13 @@ Required services:
   Completes a routine for today, undoes today's completion, removes a specific historical completion, prevents duplicates, and saves explicitly.
 
 - `RoutineManagementService`
-  Creates, updates, deletes, moves, and reorders routines; creates, renames, deletes, and reorders groups; validates drafts; normalizes sort orders.
+  Creates, updates, deletes, moves, and reorders routines; creates, renames, deletes, and reorders groups; validates drafts; starts and clears routine or global breaks; normalizes sort orders.
 
 - `StarterDataService`
   Seeds starter groups and routines once, using `AppMetadata` to prevent reseeding after user edits or deletion.
 
 - `DashboardProjectionBuilder`
-  Converts groups, routines, completions, progress, and date labels into immutable dashboard view data.
+  Converts groups, routines, completions, break state, progress, and date labels into immutable dashboard view data.
 
 - `HistoryProjectionBuilder`
   Converts one routine and its completions into summary, month grid, and recent-completion view data.
@@ -327,13 +329,16 @@ Primary screens:
   Owns `NavigationStack`, route destinations, starter data seeding trigger, and app-level service construction.
 
 - `TodayDashboardView`
-  Default launch screen. Shows all grouped routines, handles one-tap completion, keeps unavailable routines visible with muted disabled completion state, opens history directly from routine cards, shows undo banner, owns routine/group management sheets and rearrange modes, and navigates to history.
+  Default launch screen. Shows all grouped routines, handles one-tap completion, keeps unavailable and on-break routines visible with compact expandable rows, opens history directly from routine cards, shows undo banner, owns routine/group/break management sheets and rearrange modes, and navigates to history.
 
 - `RoutineHistoryView`
   Routine-specific history screen with summary header, current-month calendar-like grid, recent completions, and destructive correction flow.
 
 - `AddEditRoutineView`
   Native form sheet with draft state for routine name, target count, period, group assignment, and optional local-time availability window.
+
+- `BreakView`
+  Native sheet for taking a break from one routine or all routines until a concrete resume date.
 
 - Group add/edit sheets
   Small native forms for creating, renaming, and deleting groups.
@@ -374,7 +379,7 @@ Routes:
 - Routine History is pushed from a routine's direct history path.
 - Add/Edit Routine is presented as a sheet from Today Dashboard.
 - Group add/edit is presented as a sheet from Today Dashboard.
-- The dashboard top bar uses a trailing `gearshape` menu for `Add Routine`, `Add Group`, `Edit`/`Done Editing`, `Rearrange Groups`, and `Rearrange Routines`.
+- The dashboard top bar uses a trailing `gearshape` menu for `Add Routine`, `Add Group`, `Edit`/`Done Editing`, `Rearrange Groups`, `Rearrange Routines`, and `Take a Break` or `Resume all`.
 - Rearrange modes stay on Today Dashboard and exit with a top-bar `Done` action.
 
 Navigation rules:
@@ -570,6 +575,10 @@ Required coverage:
 - Deleting a non-empty group is blocked by the service.
 - Creating and editing routines enforce target ranges and group membership.
 - Creating and editing routines persist all-day versus configured availability correctly and reject invalid equal start/end windows.
+- Break preset date calculations are covered for today, this week, this month, and explicit date.
+- Dashboard projections exclude routines on break from remaining counts, preserve expandability, and distinguish routine, global, and combined break sources.
+- Tracking service tests prove breaks do not throw completion errors while availability windows still do.
+- Widget selector tests prove routines on break are skipped until their resume day.
 - Moving routines within and across groups updates group IDs and contiguous sort order.
 - Reordering groups normalizes sort order.
 - Dashboard projection includes all routines, including completed and monthly routines.
@@ -948,6 +957,7 @@ The system design is satisfied when an implementation can demonstrate:
 - Undo removes today's completion.
 - History shows last-done context, current-month marks, and recent completions.
 - Historical completions can be removed after confirmation.
+- Taking a break from one routine or all routines removes those routines from dashboard urgency and widget suggestions until the resume date while keeping them visible and inspectable.
 - The Today Dashboard owns routine management through home-based menus, sheets, and rearrange modes.
 - Groups support add, rename, reorder, and empty-group deletion from dashboard-owned flows.
 - Current week progress uses a user-configurable start day (default Sunday), set via Settings.

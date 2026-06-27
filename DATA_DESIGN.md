@@ -101,6 +101,18 @@ A routine is a user-defined recurring activity with:
 
 A routine is not a scheduled task. It does not define required weekdays, due dates, reminders, streaks, scores, or recommended days.
 
+### Routine Break
+
+A routine break is a temporary "not expected right now" state with an exclusive resume day.
+
+Breaks do not change target counts, historical progress denominators, or the routine definition. They only affect dashboard urgency and widget selection:
+
+- A per-routine break stores `breakResumeDayKey` on the routine.
+- A global break stores one `resumeDayKey` in `AppMetadata` under `global.break`.
+- A break is active while `today < resumeDay`.
+- When both per-routine and global breaks are active, the effective resume day is the later date and the projected source is `both`.
+- Manual resume clears the relevant break key. Automatic resume happens because the active check becomes false on the resume day.
+
 ### Routine Group
 
 A routine group is a display-only section. It controls organization and visual grouping on the dashboard and dashboard-owned management modes.
@@ -228,6 +240,7 @@ final class Routine {
     var sortOrder: Int
     var availabilityStartMinute: Int?
     var availabilityEndMinute: Int?
+    var breakResumeDayKey: String?
     var createdAt: Date
     var updatedAt: Date
 
@@ -241,7 +254,12 @@ final class Routine {
         set { periodRawValue = newValue.rawValue }
     }
 
-    var availabilityWindow: RoutineAvailabilityWindow? { ... }
+    var availabilityWindow: RoutineAvailabilityWindow? {
+        try? validatedAvailabilityWindow(
+            startMinute: availabilityStartMinute,
+            endMinute: availabilityEndMinute
+        )
+    }
 
     init(
         id: UUID = UUID(),
@@ -252,6 +270,7 @@ final class Routine {
         group: RoutineGroup,
         availabilityStartMinute: Int? = nil,
         availabilityEndMinute: Int? = nil,
+        breakResumeDayKey: String? = nil,
         createdAt: Date = .now,
         updatedAt: Date = .now,
         completions: [RoutineCompletion] = []
@@ -278,6 +297,8 @@ Design notes:
 - `nil` and `nil` is the only canonical all-day state.
 - Partial persisted availability should be treated defensively as all-day in projections and tracking, but normal service and form saves must reject it.
 - `availabilityWindow` should return `nil` unless both persisted minutes form a valid configured window.
+- `breakResumeDayKey` is optional and stores the exclusive local resume day for a routine-only break.
+- Expired break keys may remain persisted, but projections treat them as inactive on and after the resume day.
 - `group` is optional at the SwiftData relationship level to support migration and framework behavior, but the app domain treats it as required.
 - Deleting a routine cascades to its completions. This matches the MVP decision that deleted routine history is intentionally removed after confirmation.
 
@@ -326,7 +347,9 @@ struct RoutineTimeOfDay: Equatable, Sendable {
     let hour: Int
     let minute: Int
 
-    var minuteOfDay: Int { ... }
+    var minuteOfDay: Int {
+        (hour * 60) + minute
+    }
 
     init?(hour: Int, minute: Int)
     init?(minuteOfDay: Int)
@@ -336,7 +359,9 @@ struct RoutineAvailabilityWindow: Equatable, Sendable {
     let start: RoutineTimeOfDay
     let end: RoutineTimeOfDay
 
-    var spansMidnight: Bool { ... }
+    var spansMidnight: Bool {
+        start.minuteOfDay > end.minuteOfDay
+    }
 
     func contains(minuteOfDay: Int) -> Bool
 }
@@ -523,6 +548,7 @@ Responsibilities:
 - Prevent duplicate completions.
 - Enforce configured availability windows for new same-day completions.
 - Save after successful mutations.
+- Do not reject completion solely because a routine is on break.
 
 Recommended interface:
 
@@ -570,6 +596,7 @@ Behavior:
 - If no completion exists, it evaluates the routine's availability window against the current local minute-of-day.
 - If the routine is outside its configured window, it throws a user-safe unavailable error and does not insert a completion.
 - If the routine is all-day or currently available, it inserts `RoutineCompletion`, saves, and returns `didInsert = true`.
+- A break suppresses dashboard urgency and widget selection, but a deliberate completion remains valid.
 - `undoToday` removes only the completion matching today's day key.
 - `removeCompletion` removes a specific historical completion after the view has already confirmed the destructive action.
 - All mutations save explicitly.
@@ -599,6 +626,10 @@ final class RoutineManagementService {
     func updateRoutine(id: UUID, with draft: RoutineDraft) throws
     func deleteRoutine(id: UUID) throws
     func moveRoutine(id: UUID, toGroupID: UUID, at index: Int) throws
+    func setRoutineBreak(id: UUID, resumeDay: RoutineDay) throws
+    func clearRoutineBreak(id: UUID) throws
+    func setGlobalBreak(resumeDay: RoutineDay) throws
+    func clearGlobalBreak() throws
 
     func createGroup(name: String) throws -> UUID
     func renameGroup(id: UUID, name: String) throws
@@ -617,6 +648,7 @@ struct RoutineDraft: Equatable, Sendable {
     var groupID: UUID
     var availabilityStartMinute: Int?
     var availabilityEndMinute: Int?
+    var breakResumeDayKey: String?
 }
 ```
 
@@ -640,6 +672,8 @@ Behavior:
 - Equal start/end availability minutes are invalid because all-day availability is represented by `nil`.
 - Service validation should reject partial availability values if the API surface can express them.
 - Group names should be unique after trimming and case-insensitive comparison to avoid accidental duplicate sections.
+- Creating and editing routine definitions should preserve existing routine break state but should not expose break controls in the definition form.
+- Starting a break stores a concrete resume day; skip counts are a UI preset concern only.
 - New routines are appended to the end of the selected group.
 - Moving routines updates group assignment and order.
 - Reordering routines renormalizes all affected routines to `0...n-1`.
@@ -849,6 +883,11 @@ struct TodayDashboardViewData: Equatable, Sendable {
     let dateLabel: String
     let sections: [RoutineSectionViewData]
     let isEmpty: Bool
+    let globalBreak: GlobalBreakBannerViewData?
+}
+
+struct GlobalBreakBannerViewData: Equatable, Sendable {
+    let resumeText: String
 }
 
 struct RoutineSectionViewData: Identifiable, Equatable, Sendable {
@@ -873,6 +912,9 @@ struct RoutineCardViewData: Identifiable, Equatable, Sendable {
     let isAvailableNow: Bool
     let isTargetMet: Bool
     let isOverTarget: Bool
+    let isOnBreak: Bool
+    let breakResumeText: String?
+    let breakSource: RoutineBreakSource?
 }
 
 struct ProgressRingViewData: Equatable, Sendable {
@@ -891,9 +933,13 @@ Rules:
 - Routines that are completed today may collapse into compact completed rows when the completed-collapse setting is enabled.
 - Routines whose period goal is met but which are not completed today may collapse into compact goal-met rows when the goal-met-collapse setting is enabled.
 - Incomplete unavailable routines remain visible in their normal group and order, present disabled completion state when expanded, and may collapse into compact clock rows on Today when the unavailable-collapse setting is enabled.
+- Routines on break remain visible in their normal group and order, are excluded from `remainingCount`, and may collapse into compact `Off until <date>` rows.
+- Global breaks show a dashboard banner with a `Resume all` action.
+- Routine-only break rows expose `Resume`; global or combined break rows expose `Resume all` or no row-level resume action.
+- Break compaction takes precedence over unavailable, completed, and goal-met compaction.
 - Unavailable compaction takes precedence over goal-met compaction for routines that are both unavailable and already at goal.
-- Section `remainingCount` includes incomplete routines that are currently available, not disabled unavailable routines.
-- Accessibility label includes routine name, availability state when relevant, completed-today state, count, and period.
+- Section `remainingCount` includes incomplete routines that are currently available and not on break.
+- Accessibility label includes routine name, break state when relevant, availability state when relevant, completed-today state, count, and period.
 
 ### History View Data
 
@@ -936,7 +982,7 @@ final class RoutineFormState {
     var availabilityStartMinute: Int?
     var availabilityEndMinute: Int?
 
-    var isValid: Bool { ... }
+    var isValid: Bool
     func makeDraft() throws -> RoutineDraft
 }
 ```
@@ -947,6 +993,7 @@ Benefits:
 - Validation can be shown before save.
 - Edit forms can initialize from persisted state and commit only on Save.
 - All-day mode can preserve temporary picker values in state while still emitting `nil` availability in the saved draft.
+- Breaks are managed by a separate dashboard sheet, not by `RoutineFormState`.
 
 ## Views
 
@@ -1296,7 +1343,8 @@ Notifications:
 
 Widgets:
 
-- Add shared read projections later if an app group is introduced.
+- Shared read projections skip routines that are completed today, target-met, unavailable now, or on break.
+- Widget refresh boundaries include availability edges, the next local midnight, and active break resume days.
 - Keep canonical data in SwiftData and expose widget-specific snapshots only when needed.
 
 Sync:

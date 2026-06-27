@@ -167,50 +167,104 @@ extension ModelContext {
         "\(routineID.uuidString)|\(dayKey)"
     }
 
-    func globalPause() -> GlobalPause? {
-        guard let metadata = try? metadata(key: AppMetadataKeys.globalPause) else {
+    func globalBreak(routineCalendar: RoutineCalendar) -> GlobalBreak? {
+        if let metadata = try? metadata(key: AppMetadataKeys.globalBreak),
+            let globalBreak = Self.decodeGlobalBreak(from: metadata.value, routineCalendar: routineCalendar)
+        {
+            return globalBreak
+        }
+
+        guard let legacyMetadata = try? metadata(key: AppMetadataKeys.legacyGlobalPause) else {
             return nil
         }
 
-        guard let data = metadata.value.data(using: .utf8),
-            let payload = try? JSONDecoder().decode(GlobalPausePayload.self, from: data),
+        return Self.decodeLegacyGlobalPause(from: legacyMetadata.value, routineCalendar: routineCalendar)
+    }
+
+    func setGlobalBreak(resumeDay: RoutineDay, now: Date = .now) throws {
+        let payload = GlobalBreakPayload(resumeDayKey: resumeDay.key)
+        guard let data = try? JSONEncoder().encode(payload),
+            let value = String(data: data, encoding: .utf8)
+        else {
+            throw PersistenceError.saveFailed("Unable to encode global break.")
+        }
+
+        if let existing = try? metadata(key: AppMetadataKeys.globalBreak) {
+            existing.value = value
+            existing.updatedAt = now
+        } else {
+            insert(AppMetadata(key: AppMetadataKeys.globalBreak, value: value, updatedAt: now))
+        }
+
+        if let legacy = try? metadata(key: AppMetadataKeys.legacyGlobalPause) {
+            delete(legacy)
+        }
+    }
+
+    func clearGlobalBreak(now: Date = .now) throws {
+        if let existing = try? metadata(key: AppMetadataKeys.globalBreak) {
+            existing.updatedAt = now
+            delete(existing)
+        }
+
+        if let legacy = try? metadata(key: AppMetadataKeys.legacyGlobalPause) {
+            legacy.updatedAt = now
+            delete(legacy)
+        }
+    }
+
+    private static func decodeGlobalBreak(
+        from value: String,
+        routineCalendar: RoutineCalendar
+    ) -> GlobalBreak? {
+        guard let data = value.data(using: .utf8),
+            let payload = try? JSONDecoder().decode(GlobalBreakPayload.self, from: data),
+            let resumeDay = RoutineDay(key: payload.resumeDayKey)
+        else {
+            return decodeLegacyGlobalPause(from: value, routineCalendar: routineCalendar)
+        }
+
+        return GlobalBreak(resumeDay: resumeDay)
+    }
+
+    private static func decodeLegacyGlobalPause(
+        from value: String,
+        routineCalendar: RoutineCalendar
+    ) -> GlobalBreak? {
+        guard let data = value.data(using: .utf8),
+            let payload = try? JSONDecoder().decode(LegacyGlobalPausePayload.self, from: data),
             let anchor = RoutineDay(key: payload.anchorDayKey)
         else {
             return nil
         }
 
-        return GlobalPause(anchor: anchor, skipPeriods: payload.skipPeriods)
-    }
+        let weeklyStart = routineCalendar.periodStart(for: .weekly, containing: anchor)
+        let monthlyStart = routineCalendar.periodStart(for: .monthly, containing: anchor)
+        let weeklyResume = routineCalendar.advancingPeriodStart(
+            weeklyStart,
+            by: payload.skipPeriods,
+            period: .weekly
+        )
+        let monthlyResume = routineCalendar.advancingPeriodStart(
+            monthlyStart,
+            by: payload.skipPeriods,
+            period: .monthly
+        )
 
-    func setGlobalPause(anchor: RoutineDay, skipPeriods: Int, now: Date = .now) throws {
-        let payload = GlobalPausePayload(anchorDayKey: anchor.key, skipPeriods: skipPeriods)
-        guard let data = try? JSONEncoder().encode(payload),
-            let value = String(data: data, encoding: .utf8)
-        else {
-            throw PersistenceError.saveFailed("Unable to encode global pause.")
-        }
-
-        if let existing = try? metadata(key: AppMetadataKeys.globalPause) {
-            existing.value = value
-            existing.updatedAt = now
-        } else {
-            insert(AppMetadata(key: AppMetadataKeys.globalPause, value: value, updatedAt: now))
-        }
-    }
-
-    func clearGlobalPause(now: Date = .now) throws {
-        guard let existing = try? metadata(key: AppMetadataKeys.globalPause) else {
-            return
-        }
-        delete(existing)
+        return GlobalBreak(resumeDay: max(weeklyResume, monthlyResume))
     }
 }
 
 private enum AppMetadataKeys {
-    static let globalPause = "global.pause"
+    static let globalBreak = "global.break"
+    static let legacyGlobalPause = "global.pause"
 }
 
-private struct GlobalPausePayload: Codable {
+private struct GlobalBreakPayload: Codable {
+    let resumeDayKey: String
+}
+
+private struct LegacyGlobalPausePayload: Codable {
     let anchorDayKey: String
     let skipPeriods: Int
 }

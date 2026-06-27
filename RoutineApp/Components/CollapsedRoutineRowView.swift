@@ -3,49 +3,62 @@ import SwiftUI
 struct CollapsedRoutineRowView: View {
     let viewData: CollapsedRoutineRowViewData
     let onExpand: () -> Void
-    let onResume: (() -> Void)?
+    let actionTitle: String?
+    let onAction: (() -> Void)?
 
     init(
         viewData: CollapsedRoutineRowViewData,
         onExpand: @escaping () -> Void,
-        onResume: (() -> Void)? = nil
+        actionTitle: String? = nil,
+        onAction: (() -> Void)? = nil
     ) {
         self.viewData = viewData
         self.onExpand = onExpand
-        self.onResume = onResume
+        self.actionTitle = actionTitle
+        self.onAction = onAction
     }
 
     var body: some View {
-        if case .paused = viewData.style {
-            pausedRow
+        if case .onBreak = viewData.style {
+            breakRow
         } else {
             expandableRow
         }
     }
 
-    private var pausedRow: some View {
+    private var breakRow: some View {
         HStack(spacing: 12) {
-            Image(systemName: "pause.circle")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(Color.routineLabelSecondary)
+            Button(action: onExpand) {
+                HStack(spacing: 12) {
+                    Image(systemName: "moon.circle")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(Color.routineLabelSecondary)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(viewData.routine.name)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.routineLabelSecondary)
-                    .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(viewData.routine.name)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Color.routineLabelSecondary)
+                            .lineLimit(1)
 
-                if let resumeText = viewData.routine.pauseResumeText {
-                    Text("Resumes \(resumeText)")
-                        .font(.caption)
+                        if let resumeText = viewData.routine.breakResumeText {
+                            Text("Off until \(resumeText)")
+                                .font(.caption)
+                                .foregroundStyle(Color.routineLabelSecondary)
+                        }
+                    }
+
+                    Spacer(minLength: 0)
+
+                    DoubleChevron(direction: .expand, spacing: 2)
+                        .font(.caption.weight(.semibold))
                         .foregroundStyle(Color.routineLabelSecondary)
                 }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
 
-            Spacer(minLength: 0)
-
-            if let onResume {
-                Button("Resume", action: onResume)
+            if let actionTitle, let onAction {
+                Button(actionTitle, action: onAction)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Color.routineAccentActive)
                     .padding(.horizontal, 10)
@@ -55,7 +68,7 @@ struct CollapsedRoutineRowView: View {
                             .fill(Color.routineAccentActive.opacity(0.12))
                     )
                     .accessibilityIdentifier(
-                        "routine-paused-resume-\(viewData.routine.name.routineAccessibilityIdentifierComponent)"
+                        "routine-break-action-\(viewData.routine.name.routineAccessibilityIdentifierComponent)"
                     )
             }
         }
@@ -71,9 +84,7 @@ struct CollapsedRoutineRowView: View {
                 .stroke(Color.routineDivider.opacity(0.35), lineWidth: 1)
         }
         .accessibilityLabel(viewData.routine.accessibilityLabel)
-        .accessibilityIdentifier(
-            "routine-paused-row-\(viewData.routine.name.routineAccessibilityIdentifierComponent)"
-        )
+        .accessibilityIdentifier(accessibilityIdentifier)
     }
 
     private var expandableRow: some View {
@@ -115,8 +126,8 @@ struct CollapsedRoutineRowView: View {
 
     private var iconName: String {
         switch viewData.style {
-        case .paused:
-            "pause.circle"
+        case .onBreak:
+            "moon.circle"
         case .unavailable:
             "clock"
         case .completed:
@@ -128,7 +139,7 @@ struct CollapsedRoutineRowView: View {
 
     private var iconColor: Color {
         switch viewData.style {
-        case .paused, .unavailable, .goalMet:
+        case .onBreak, .unavailable, .goalMet:
             .routineLabelSecondary
         case .completed:
             .routineAccentComplete
@@ -139,8 +150,8 @@ struct CollapsedRoutineRowView: View {
         let name = viewData.routine.name.routineAccessibilityIdentifierComponent
 
         return switch viewData.style {
-        case .paused:
-            "routine-paused-row-\(name)"
+        case .onBreak:
+            "routine-break-row-\(name)"
         case .unavailable:
             "routine-unavailable-row-\(name)"
         case .completed:

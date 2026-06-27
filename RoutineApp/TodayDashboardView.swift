@@ -132,8 +132,12 @@ struct TodayDashboardView: View {
                 )
             case .settings:
                 SettingsView()
-            case .globalPause:
-                GlobalPauseView()
+            case .breakSheet(let presentation):
+                BreakView(
+                    presentation: presentation,
+                    routineCalendar: routineCalendar,
+                    now: runtime.now
+                )
             }
         }
         .safeAreaInset(edge: .bottom) {

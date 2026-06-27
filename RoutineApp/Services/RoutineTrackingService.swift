@@ -19,7 +19,6 @@ struct UndoResult: Equatable, Sendable {
 enum RoutineTrackingError: LocalizedError, Equatable {
     case unavailable(routineName: String, windowText: String)
     case futureDay(routineName: String)
-    case paused(routineName: String, resumeText: String)
 
     var errorDescription: String? {
         switch self {
@@ -27,8 +26,6 @@ enum RoutineTrackingError: LocalizedError, Equatable {
             "\(routineName) is unavailable now. It can only be completed \(windowText)."
         case .futureDay(let routineName):
             "\(routineName) cannot be completed for a future day."
-        case .paused(let routineName, let resumeText):
-            "\(routineName) is paused. It resumes \(resumeText)."
         }
     }
 }
@@ -77,22 +74,6 @@ final class RoutineTrackingService {
         }
 
         if day == today {
-            let perRoutineResume = routine.pauseResumeDayKey.flatMap(RoutineDay.init(key:))
-            let globalPause = context.globalPause()
-            let resumeDay = RoutinePause.resumeDay(
-                perRoutineResume: perRoutineResume,
-                global: globalPause,
-                period: routine.period,
-                calendar: routineCalendar
-            )
-            if RoutinePause.isPaused(resumeDay: resumeDay, today: today) {
-                let resumeText =
-                    resumeDay.map {
-                        routineCalendar.relativeLabel(for: $0, today: today)
-                    } ?? "soon"
-                throw RoutineTrackingError.paused(routineName: routine.name, resumeText: resumeText)
-            }
-
             let currentMinuteOfDay = routineCalendar.minuteOfDay(containing: now)
             if let availabilityWindow = routine.availabilityWindow {
                 guard availabilityWindow.contains(minuteOfDay: currentMinuteOfDay) else {

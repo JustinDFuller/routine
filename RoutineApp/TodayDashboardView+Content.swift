@@ -26,16 +26,16 @@ extension TodayDashboardView {
 
             Divider()
 
-            if viewData.globalPause != nil {
-                Button("Resume All") {
+            if viewData.globalBreak != nil {
+                Button("Resume all") {
                     resumeAllRoutines()
                 }
                 .accessibilityIdentifier("today-dashboard-resume-all-button")
             } else {
-                Button("Pause All…") {
-                    openGlobalPause()
+                Button("Take a Break") {
+                    openGlobalBreak()
                 }
-                .accessibilityIdentifier("today-dashboard-pause-all-button")
+                .accessibilityIdentifier("today-dashboard-take-break-button")
             }
 
             Button("Settings") {
@@ -93,8 +93,8 @@ extension TodayDashboardView {
             VStack(alignment: .leading, spacing: 24) {
                 dashboardHeader
 
-                if let globalPause = viewData.globalPause {
-                    globalPauseBanner(globalPause)
+                if let globalBreak = viewData.globalBreak {
+                    globalBreakBanner(globalBreak)
                 }
 
                 if showsSectionContent {
@@ -110,9 +110,9 @@ extension TodayDashboardView {
         }
     }
 
-    func globalPauseBanner(_ banner: GlobalPauseBannerViewData) -> some View {
+    func globalBreakBanner(_ banner: GlobalBreakBannerViewData) -> some View {
         HStack(spacing: 12) {
-            Text("All routines paused · resumes \(banner.resumeText)")
+            Text("All routines off until \(banner.resumeText)")
                 .font(.subheadline)
                 .foregroundStyle(Color.routineLabelPrimary)
                 .multilineTextAlignment(.leading)
@@ -131,7 +131,7 @@ extension TodayDashboardView {
             )
             .frame(minWidth: 44, minHeight: 44)
             .contentShape(Rectangle())
-            .accessibilityIdentifier("today-dashboard-global-pause-resume-all-button")
+            .accessibilityIdentifier("today-dashboard-global-break-resume-all-button")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
@@ -143,7 +143,7 @@ extension TodayDashboardView {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(Color.routineDivider.opacity(0.5), lineWidth: 1)
         }
-        .accessibilityIdentifier("today-dashboard-global-pause-banner")
+        .accessibilityIdentifier("today-dashboard-global-break-banner")
     }
 
     var sectionsContent: some View {
@@ -158,8 +158,9 @@ extension TodayDashboardView {
                             .foregroundStyle(Color.routineLabelSecondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.vertical, 8)
-                    } else if collapsesCompleted || collapsesGoalMet || collapsesUnavailable ||
-                        section.routines.contains(where: \.isPaused) {
+                    } else if collapsesCompleted || collapsesGoalMet || collapsesUnavailable
+                        || section.routines.contains(where: \.isOnBreak)
+                    {
                         collapsedSectionContent(section)
                     } else {
                         VStack(spacing: 12) {
@@ -191,11 +192,12 @@ extension TodayDashboardView {
         if partition.collapsedRows.isEmpty == false {
             VStack(spacing: 8) {
                 ForEach(partition.collapsedRows) { row in
-                    if case .paused = row.style {
+                    if case .onBreak = row.style {
                         CollapsedRoutineRowView(
                             viewData: row,
-                            onExpand: {},
-                            onResume: { resumeRoutine(routineID: row.id) }
+                            onExpand: { expand(row.id) },
+                            actionTitle: breakRowActionTitle(for: row.routine),
+                            onAction: breakRowAction(for: row.routine)
                         )
                     } else if expandedCollapsedRoutineIDs.contains(row.id) {
                         routineCardView(for: row.routine, onCollapse: { collapse(row.id) })
@@ -222,6 +224,7 @@ extension TodayDashboardView {
                     openHistory(for: routine.id)
                 }
                 : nil,
+            onBreak: routineBreakAction(for: routine),
             onCollapse: onCollapse
         )
     }
@@ -415,6 +418,38 @@ extension TodayDashboardView {
 
         return {
             openEditRoutine(routineID: routineID)
+        }
+    }
+
+    func routineBreakAction(for routine: RoutineCardViewData) -> (() -> Void)? {
+        guard mode == .tracking, routine.isOnBreak == false else {
+            return nil
+        }
+
+        return {
+            openRoutineBreak(routineID: routine.id, routineName: routine.name)
+        }
+    }
+
+    func breakRowActionTitle(for routine: RoutineCardViewData) -> String? {
+        switch routine.breakSource {
+        case .routine:
+            "Resume"
+        case .global, .both:
+            "Resume all"
+        case nil:
+            nil
+        }
+    }
+
+    func breakRowAction(for routine: RoutineCardViewData) -> (() -> Void)? {
+        switch routine.breakSource {
+        case .routine:
+            return { resumeRoutine(routineID: routine.id) }
+        case .global, .both:
+            return { resumeAllRoutines() }
+        case nil:
+            return nil
         }
     }
 }

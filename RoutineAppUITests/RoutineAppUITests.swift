@@ -112,6 +112,47 @@ final class RoutineAppUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["5 per week"].waitForExistence(timeout: 5))
     }
 
+    func testGlobalTakeBreakAndResumeAllFlow() {
+        let app = makeApp()
+        app.launch()
+
+        openManagementMenu(in: app)
+        app.buttons["today-dashboard-take-break-button"].tap()
+
+        XCTAssertTrue(app.navigationBars["Take a Break"].waitForExistence(timeout: 5))
+        app.buttons["break-confirm-button"].tap()
+
+        XCTAssertTrue(identifiedElement("today-dashboard-global-break-banner", in: app).waitForExistence(timeout: 5))
+        XCTAssertTrue(identifiedElement("routine-break-row-morning-yoga", in: app).waitForExistence(timeout: 5))
+
+        app.buttons["today-dashboard-global-break-resume-all-button"].tap()
+
+        XCTAssertTrue(
+            identifiedElement("routine-card-primary-morning-yoga", in: app).waitForExistence(timeout: 5)
+        )
+    }
+
+    func testRoutineTakeBreakAndResumeFlow() {
+        let app = makeApp()
+        app.launch()
+
+        let takeBreakButton = app.buttons["routine-card-take-break-morning-yoga"]
+        XCTAssertTrue(takeBreakButton.waitForExistence(timeout: 5))
+        takeBreakButton.tap()
+
+        XCTAssertTrue(app.navigationBars["Take Break"].waitForExistence(timeout: 5))
+        app.buttons["break-confirm-button"].tap()
+
+        XCTAssertFalse(identifiedElement("today-dashboard-global-break-banner", in: app).exists)
+        XCTAssertTrue(identifiedElement("routine-break-row-morning-yoga", in: app).waitForExistence(timeout: 5))
+
+        app.buttons["routine-break-action-morning-yoga"].tap()
+
+        XCTAssertTrue(
+            identifiedElement("routine-card-primary-morning-yoga", in: app).waitForExistence(timeout: 5)
+        )
+    }
+
     func testHistoryDeletionRequiresConfirmationAndRefreshesState() {
         let app = makeApp(
             additionalLaunchArguments: ["-routine-open-morning-yoga-history-with-completion"]

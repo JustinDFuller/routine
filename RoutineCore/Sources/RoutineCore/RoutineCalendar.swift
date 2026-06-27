@@ -178,7 +178,7 @@ public struct RoutineCalendar: Sendable {
         return formatter
     }
 
-    private func date(for day: RoutineDay) -> Date {
+    public func date(for day: RoutineDay) -> Date {
         var components = DateComponents()
         components.year = day.year
         components.month = day.month

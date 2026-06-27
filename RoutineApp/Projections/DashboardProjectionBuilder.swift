@@ -37,12 +37,18 @@ final class DashboardProjectionBuilder {
         now: Date = .now
     ) -> TodayDashboardViewData {
         let today = routineCalendar.today(now: now)
-        let globalPause = context.globalPause()
+        let storedGlobalBreak = context.globalBreak(routineCalendar: routineCalendar)
+        let globalBreak: GlobalBreak? =
+            if RoutineBreak.isActive(resumeDay: storedGlobalBreak?.resumeDay, today: today) {
+                storedGlobalBreak
+            } else {
+                nil
+            }
         let buildContext = DashboardBuildContext(
             completionDaysByRoutineID: completionDaysByRoutineID(from: completions),
             today: today,
             currentMinuteOfDay: routineCalendar.minuteOfDay(containing: now),
-            globalPause: globalPause
+            globalBreak: globalBreak
         )
         let routinesByGroupID = Dictionary(grouping: routines, by: \.groupID)
 
@@ -69,25 +75,9 @@ final class DashboardProjectionBuilder {
             )
         }
 
-        let globalPauseBanner = globalPause.map { pause -> GlobalPauseBannerViewData in
-            let allPeriods: [RoutinePeriod] = [.weekly, .monthly]
-            let resumeDays = allPeriods.compactMap { period -> RoutineDay? in
-                RoutinePause.resumeDay(
-                    perRoutineResume: nil,
-                    global: pause,
-                    period: period,
-                    calendar: routineCalendar
-                )
-            }
-            let latestResume =
-                resumeDays.max()
-                ?? routineCalendar.advancingPeriodStart(
-                    routineCalendar.periodStart(for: .weekly, containing: today),
-                    by: pause.skipPeriods,
-                    period: .weekly
-                )
-            return GlobalPauseBannerViewData(
-                resumeText: routineCalendar.relativeLabel(for: latestResume, today: today)
+        let globalBreakBanner = globalBreak.map { globalBreak -> GlobalBreakBannerViewData in
+            GlobalBreakBannerViewData(
+                resumeText: routineCalendar.relativeLabel(for: globalBreak.resumeDay, today: today)
             )
         }
 
@@ -95,7 +85,7 @@ final class DashboardProjectionBuilder {
             title: "Today",
             sections: sections,
             isEmpty: routines.isEmpty,
-            globalPause: globalPauseBanner
+            globalBreak: globalBreakBanner
         )
     }
 }
@@ -175,7 +165,7 @@ extension DashboardProjectionBuilder {
                 completionDays: buildContext.completionDaysByRoutineID[routine.id] ?? [],
                 today: buildContext.today,
                 currentMinuteOfDay: buildContext.currentMinuteOfDay,
-                globalPause: buildContext.globalPause
+                globalBreak: buildContext.globalBreak
             )
         }
 
@@ -183,7 +173,7 @@ extension DashboardProjectionBuilder {
             id: id,
             name: name,
             remainingCount: cards.filter {
-                $0.isPaused == false
+                $0.isOnBreak == false
                     && $0.isCompletedToday == false
                     && $0.isTargetMet == false
                     && $0.isAvailableNow
@@ -197,7 +187,7 @@ extension DashboardProjectionBuilder {
         completionDays: [RoutineDay],
         today: RoutineDay,
         currentMinuteOfDay: Int,
-        globalPause: GlobalPause?
+        globalBreak: GlobalBreak?
     ) -> RoutineCardViewData {
         let progress = progressCalculator.progress(
             period: routine.period,
@@ -211,15 +201,16 @@ extension DashboardProjectionBuilder {
             for: routine,
             currentMinuteOfDay: currentMinuteOfDay
         )
-        let perRoutineResume = routine.pauseResumeDayKey.flatMap(RoutineDay.init(key:))
-        let resumeDay = RoutinePause.resumeDay(
+        let perRoutineResume = routine.breakResumeDayKey.flatMap(RoutineDay.init(key:))
+        let breakStatus = RoutineBreak.status(
             perRoutineResume: perRoutineResume,
-            global: globalPause,
-            period: routine.period,
-            calendar: routineCalendar
+            global: globalBreak,
+            today: today
         )
-        let isPaused = RoutinePause.isPaused(resumeDay: resumeDay, today: today)
-        let pauseResumeText = resumeDay.map { routineCalendar.relativeLabel(for: $0, today: today) }
+        let breakResumeText = breakStatus.map {
+            routineCalendar.relativeLabel(for: $0.resumeDay, today: today)
+        }
+        let breakAccessibilityPhrase = breakResumeText.map { "off until \($0)" }
 
         return RoutineCardViewData(
             id: routine.id,
@@ -230,11 +221,14 @@ extension DashboardProjectionBuilder {
             lastDoneText: lastDoneText,
             availabilityText: availabilityState.text,
             accessibilityLabel: accessibilityLabel(
-                routineName: routine.name,
-                unavailableAccessibilityPhrase: availabilityState.unavailableAccessibilityPhrase,
-                progress: progress,
-                periodText: periodText,
-                lastDoneText: lastDoneText
+                for: RoutineCardAccessibilityContext(
+                    routineName: routine.name,
+                    breakAccessibilityPhrase: breakAccessibilityPhrase,
+                    unavailableAccessibilityPhrase: availabilityState.unavailableAccessibilityPhrase,
+                    progress: progress,
+                    periodText: periodText,
+                    lastDoneText: lastDoneText
+                )
             ),
             unavailableAccessibilityPhrase: availabilityState.unavailableAccessibilityPhrase,
             progressRing: ProgressRingViewData(
@@ -247,8 +241,9 @@ extension DashboardProjectionBuilder {
             isCompletedToday: progress.isCompletedToday,
             isTargetMet: progress.isTargetMet,
             isOverTarget: progress.isOverTarget,
-            isPaused: isPaused,
-            pauseResumeText: isPaused ? pauseResumeText : nil
+            isOnBreak: breakStatus != nil,
+            breakResumeText: breakResumeText,
+            breakSource: breakStatus?.source
         )
     }
 
@@ -293,31 +288,31 @@ extension DashboardProjectionBuilder {
         }
     }
 
-    fileprivate func accessibilityLabel(
-        routineName: String,
-        unavailableAccessibilityPhrase: String?,
-        progress: RoutineProgress,
-        periodText: String,
-        lastDoneText: String
-    ) -> String {
+    fileprivate func accessibilityLabel(for context: RoutineCardAccessibilityContext) -> String {
         let completionText =
-            if progress.isCompletedToday {
+            if context.progress.isCompletedToday {
                 "completed today"
             } else {
                 "not completed today"
             }
 
         let unavailableText =
-            if let unavailableAccessibilityPhrase {
+            if let unavailableAccessibilityPhrase = context.unavailableAccessibilityPhrase {
                 "\(unavailableAccessibilityPhrase), "
+            } else {
+                ""
+            }
+        let breakText =
+            if let breakAccessibilityPhrase = context.breakAccessibilityPhrase {
+                "\(breakAccessibilityPhrase), "
             } else {
                 ""
             }
 
         return
-            "\(routineName), \(unavailableText)\(completionText), "
-            + "\(progress.completedCount) of \(progress.targetCount) this \(periodText), "
-            + accessibilityLastDoneText(for: lastDoneText)
+            "\(context.routineName), \(breakText)\(unavailableText)\(completionText), "
+            + "\(context.progress.completedCount) of \(context.progress.targetCount) this \(context.periodText), "
+            + accessibilityLastDoneText(for: context.lastDoneText)
     }
 
     fileprivate func accessibilityLastDoneText(for lastDoneText: String) -> String {
@@ -353,7 +348,16 @@ private struct DashboardBuildContext {
     let completionDaysByRoutineID: [UUID: [RoutineDay]]
     let today: RoutineDay
     let currentMinuteOfDay: Int
-    let globalPause: GlobalPause?
+    let globalBreak: GlobalBreak?
+}
+
+private struct RoutineCardAccessibilityContext {
+    let routineName: String
+    let breakAccessibilityPhrase: String?
+    let unavailableAccessibilityPhrase: String?
+    let progress: RoutineProgress
+    let periodText: String
+    let lastDoneText: String
 }
 
 private struct RoutineAvailabilityState {

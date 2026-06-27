@@ -51,13 +51,19 @@ extension TodayDashboardView {
         sheetPresentation = .settings
     }
 
-    func openGlobalPause() {
-        sheetPresentation = .globalPause
+    func openGlobalBreak() {
+        sheetPresentation = .breakSheet(BreakSheetPresentation(target: .all))
+    }
+
+    func openRoutineBreak(routineID: UUID, routineName: String) {
+        sheetPresentation = .breakSheet(
+            BreakSheetPresentation(target: .routine(id: routineID, name: routineName))
+        )
     }
 
     func resumeAllRoutines() {
         do {
-            try RoutineManagementService(context: modelContext).clearGlobalPause()
+            try RoutineManagementService(context: modelContext).clearGlobalBreak()
         } catch {
             presentUpdateError(error)
         }
@@ -65,7 +71,7 @@ extension TodayDashboardView {
 
     func resumeRoutine(routineID: UUID) {
         do {
-            try RoutineManagementService(context: modelContext).resumeRoutine(id: routineID)
+            try RoutineManagementService(context: modelContext).clearRoutineBreak(id: routineID)
         } catch {
             presentUpdateError(error)
         }

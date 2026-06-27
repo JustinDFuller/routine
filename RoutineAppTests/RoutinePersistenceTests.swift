@@ -197,6 +197,43 @@ final class RoutinePersistenceTests: XCTestCase {
         XCTAssertNoThrow(try context.ensureNoCompletion(routineID: otherRoutine.id, dayKey: day.key))
     }
 
+    func testGlobalBreakRoundTripsResumeDayKey() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let resumeDay = try makeDay(year: 2026, month: 6, day: 29)
+
+        try context.setGlobalBreak(resumeDay: resumeDay)
+
+        XCTAssertEqual(context.globalBreak(routineCalendar: calendar), GlobalBreak(resumeDay: resumeDay))
+    }
+
+    func testGlobalBreakDecodesLegacyCurrentBranchPayload() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let legacyPayload = #"{"anchorDayKey":"2026-06-22","skipPeriods":1}"#
+        context.insert(AppMetadata(key: "global.pause", value: legacyPayload))
+
+        let globalBreak = context.globalBreak(routineCalendar: calendar)
+
+        XCTAssertEqual(globalBreak, GlobalBreak(resumeDay: try makeDay(year: 2026, month: 7, day: 1)))
+    }
+
+    func testClearingGlobalBreakRemovesCurrentAndLegacyPayloads() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        try context.setGlobalBreak(resumeDay: try makeDay(year: 2026, month: 6, day: 29))
+        context.insert(
+            AppMetadata(
+                key: "global.pause",
+                value: #"{"anchorDayKey":"2026-06-22","skipPeriods":1}"#
+            )
+        )
+
+        try context.clearGlobalBreak()
+
+        XCTAssertNil(context.globalBreak(routineCalendar: calendar))
+    }
+
     func testSaveRoutineChangesMapsThrownSaveFailure() throws {
         let context = try makeContext()
         let originalSave = RoutinePersistenceSaveExecutor.save
@@ -344,6 +381,14 @@ final class RoutinePersistenceTests: XCTestCase {
 
     private func makeDay(year: Int, month: Int, day: Int) throws -> RoutineDay {
         try XCTUnwrap(RoutineDay(year: year, month: month, day: day))
+    }
+
+    private func makeCalendar() -> RoutineCalendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.locale = Locale(identifier: "en_US_POSIX")
+        calendar.timeZone = TimeZone(identifier: "America/New_York") ?? .gmt
+        calendar.firstWeekday = 2
+        return RoutineCalendar(calendar: calendar)
     }
 }
 

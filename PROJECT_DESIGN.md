@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**M20 - Next Post-Launch Follow-On**
+**M21 - Next Post-Launch Follow-On**
 
 The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -108,7 +108,8 @@ Core invariants that require automated coverage when touched:
 | DONE | M17 - Check-In Notifications | The app schedules local morning/afternoon/evening check-in notifications with progress-aware, non-spammy content that goes quiet once all goals for the period are met. |
 | DONE | M18 - Production Launch Readiness | Release assets/docs are aligned, widget completion/handoff flows are covered, and internal-TestFlight operator workflows are documented and scripted. |
 | DONE | M19 - Separate Goal-Met Collapse Preference | Today collapse settings independently control completed-today, goal-met, and unavailable compact rows while preserving unavailable precedence. |
-| CURRENT | M20 - Next Post-Launch Follow-On | The next post-launch dogfooding refinement is identified and scoped before implementation. |
+| DONE | M20 - Date-Based Breaks | Temporary breaks use resume dates instead of skipped periods, stay visible on Today, and no longer behave like disabled routine definitions. |
+| CURRENT | M21 - Next Post-Launch Follow-On | The next post-launch dogfooding refinement is identified and scoped before implementation. |
 
 ## Milestones
 
@@ -947,7 +948,7 @@ Required tests:
 - Widget completion inserts once, reloads timelines, and stores handoff state only for a real new completion.
 - Duplicate widget completion remains a no-op and does not recreate pending banner state.
 - App-side handoff restores the completion banner only when the completed routine still exists.
-- Widget timeline refresh boundaries continue to follow `NextRoutineSelector.nextRefreshBoundary(...)`.
+- Widget timeline refresh boundaries continue to follow `NextRoutineSelector.nextRefreshBoundary`.
 
 Completion update:
 
@@ -1005,13 +1006,61 @@ Completion note:
 
 - Passed targeted `xcodebuild test` for `RoutineAppTests/AppBootstrapTests`, `RoutineAppTests/RoutineDebugLaunchConfigurationTests`, and `RoutineAppTests/DashboardProjectionBuilderTests` on `platform=iOS Simulator,name=iPhone 17 Pro Max`; also passed `./Scripts/check-format.sh`, `./Scripts/lint.sh`, and `./Scripts/build-ios.sh`. Targeted UI-test attempts for the new `RoutineAppUITests` goal-met collapse scenarios stalled in simulator launch, and `./Scripts/validate.sh` reached `PASS generate-project`, `PASS test-ios-script-tests`, and `PASS test-core` before stalling in `./Scripts/test-ios.sh`, matching the existing local simulator runner blocker rather than exposing a code failure in this milestone.
 
-### M20 - Next Post-Launch Follow-On
+### M20 - Date-Based Breaks
+
+Status: `DONE`
+
+Goal: replace skip-period pause behavior with date-based breaks that mean "not expected right now" while keeping routines visible, inspectable, and easy to resume.
+
+Dependencies: M15, M16.
+
+Primary references: [PRODUCT_BRIEF.md](PRODUCT_BRIEF.md) Today Dashboard and routine tracking behavior; [VISUAL_DESIGN.md](VISUAL_DESIGN.md) dashboard row states and management menu actions; [DATA_DESIGN.md](DATA_DESIGN.md) routine break state, projection rules, and widget selection; [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md) dashboard invariants, persistence compatibility, and testing strategy.
+
+Deliverables:
+
+- Replace routine and global pause language with break language across product, data, visual, and system specs.
+- Store global break state as a `resumeDayKey` payload with decode fallback for the existing `global.pause` branch payload.
+- Keep per-routine break state as an exclusive resume day and remove break controls from Add/Edit Routine.
+- Add a dedicated break sheet with `Today`, `This week`, `This month`, and `Until date` presets plus `Start Break` confirmation.
+- Keep routines on break out of remaining counts and widget suggestions while leaving them visible as compact `Off until <date>` rows that can expand into full cards.
+- Track break source precedence for routine, global, and combined breaks so row actions offer `Resume` only when it does real work and otherwise offer `Resume all`.
+- Stop treating breaks as a completion error while preserving availability-window completion blocking.
+- Add domain, persistence, dashboard, tracking, widget, UI, and copy coverage for the new break behavior.
+
+Validation:
+
+- Run targeted `xcodebuild test` coverage for `RoutineAppTests/DashboardProjectionBuilderBreakTests`, `RoutineAppTests/RoutineTrackingServiceBreakTests`, `RoutineAppTests/RoutinePersistenceTests`, `RoutineAppTests/NextRoutineSelectorTests`, `RoutineAppTests/RoutineFormStateBreakTests`, and `RoutineAppTests/UserFacingCopyTests`.
+- Run `./Scripts/check-format.sh`.
+- Run `./Scripts/lint.sh`.
+- Run `./Scripts/build-ios.sh`.
+- Run `./Scripts/validate.sh` as the final broad validation entrypoint.
+
+Required tests:
+
+- Break status activates only before the stored resume day and uses the later resume day when routine and global breaks overlap.
+- Global break persistence round-trips the new payload and decodes the legacy current-branch payload conservatively.
+- Dashboard remaining counts exclude routines on break, break rows compact ahead of other row states, and global break banners disappear on the resume day.
+- Routine completion still succeeds during a break, while availability windows continue to block out-of-window completion attempts.
+- Widget next-routine selection skips active breaks and refreshes when a break ends.
+- UI coverage verifies global `Take a Break` plus `Resume all` and routine `Take Break` plus `Resume`.
+- Edited user-facing Swift files do not introduce literal three-period ellipses in string literals.
+
+Completion update:
+
+- Mark this milestone `DONE`.
+- Mark M21 `CURRENT`.
+
+Completion note:
+
+- Passed targeted `xcodebuild test` for `RoutineAppTests/DashboardProjectionBuilderBreakTests`, `RoutineAppTests/RoutineTrackingServiceBreakTests`, `RoutineAppTests/RoutinePersistenceTests`, `RoutineAppTests/NextRoutineSelectorTests`, and `RoutineAppTests/RoutineFormStateBreakTests`, and `RoutineAppTests/UserFacingCopyTests` on `platform=iOS Simulator,name=iPhone 17 Pro Max`; also passed `./Scripts/check-format.sh`, `./Scripts/lint.sh`, and `./Scripts/build-ios.sh`. `./Scripts/validate.sh` reached `PASS generate-project`, `PASS test-ios-script-tests`, and `PASS test-core` before stalling again inside `./Scripts/test-ios.sh`, and it emitted no skip lines before the stall, so the remaining broad iOS test gate is still blocked by the local simulator runner behavior rather than by a surfaced code failure in this milestone.
+
+### M21 - Next Post-Launch Follow-On
 
 Status: `CURRENT`
 
 Goal: define and scope the next post-launch dogfooding refinement before implementation starts.
 
-Dependencies: M19.
+Dependencies: M20.
 
 Primary references: to be selected with the next scoped follow-on.
 

@@ -99,7 +99,7 @@ extension ManageProjectionBuilder {
             groupID: routine.groupID,
             availabilityStartMinute: routine.availabilityStartMinute,
             availabilityEndMinute: routine.availabilityEndMinute,
-            pauseResumeDayKey: routine.pauseResumeDayKey,
+            breakResumeDayKey: routine.breakResumeDayKey,
             summaryText: summaryText(
                 targetCount: routine.targetCount,
                 period: routine.period

@@ -65,7 +65,7 @@ enum ManageSheetPresentation: Identifiable, Equatable {
     case routine(RoutineFormPresentation)
     case group(GroupFormPresentation)
     case settings
-    case globalPause
+    case breakSheet(BreakSheetPresentation)
 
     var id: String {
         switch self {
@@ -75,8 +75,35 @@ enum ManageSheetPresentation: Identifiable, Equatable {
             "group-\(presentation.id)"
         case .settings:
             "settings"
-        case .globalPause:
-            "global-pause"
+        case .breakSheet(let presentation):
+            "break-\(presentation.id)"
+        }
+    }
+}
+
+struct BreakSheetPresentation: Equatable, Sendable {
+    enum Target: Equatable, Sendable {
+        case all
+        case routine(id: UUID, name: String)
+    }
+
+    let target: Target
+
+    var id: String {
+        switch target {
+        case .all:
+            "all"
+        case .routine(let id, _):
+            id.uuidString
+        }
+    }
+
+    var title: String {
+        switch target {
+        case .all:
+            "Take a Break"
+        case .routine:
+            "Take Break"
         }
     }
 }

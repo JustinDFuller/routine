@@ -80,7 +80,7 @@ class ProjectionBuilderTestCase: XCTestCase {
             period: seed.period,
             availabilityStartMinute: seed.availabilityStartMinute,
             availabilityEndMinute: seed.availabilityEndMinute,
-            pauseResumeDayKey: seed.pauseResumeDayKey,
+            breakResumeDayKey: seed.breakResumeDayKey,
             sortOrder: seed.sortOrder,
             group: group,
             createdAt: createdAt,

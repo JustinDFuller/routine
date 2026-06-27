@@ -5,10 +5,10 @@ struct TodayDashboardViewData: Equatable, Sendable {
     let title: String
     let sections: [RoutineSectionViewData]
     let isEmpty: Bool
-    let globalPause: GlobalPauseBannerViewData?
+    let globalBreak: GlobalBreakBannerViewData?
 }
 
-struct GlobalPauseBannerViewData: Equatable, Sendable {
+struct GlobalBreakBannerViewData: Equatable, Sendable {
     let resumeText: String
 }
 
@@ -24,16 +24,16 @@ struct RoutineSectionViewData: Identifiable, Equatable, Sendable {
         collapseUnavailableToday: Bool,
         routines: [RoutineCardViewData]
     ) -> RoutineSectionDisplayPartition {
-        let collapsedPaused: [CollapsedRoutineRowViewData] =
+        let collapsedBreaks: [CollapsedRoutineRowViewData] =
             routines.compactMap { routine in
-                guard routine.isPaused else { return nil }
-                return CollapsedRoutineRowViewData(routine: routine, style: .paused)
+                guard routine.isOnBreak else { return nil }
+                return CollapsedRoutineRowViewData(routine: routine, style: .onBreak)
             }
         let collapsedUnavailable: [CollapsedRoutineRowViewData] =
             collapseUnavailableToday
             ? routines.compactMap { routine in
                 guard
-                    routine.isPaused == false,
+                    routine.isOnBreak == false,
                     routine.isCompletedToday == false,
                     routine.isAvailableNow == false
                 else {
@@ -46,7 +46,7 @@ struct RoutineSectionViewData: Identifiable, Equatable, Sendable {
         let collapsedCompleted: [CollapsedRoutineRowViewData] =
             collapseCompletedToday
             ? routines.compactMap { routine in
-                guard routine.isPaused == false, routine.isCompletedToday else {
+                guard routine.isOnBreak == false, routine.isCompletedToday else {
                     return nil
                 }
 
@@ -57,7 +57,7 @@ struct RoutineSectionViewData: Identifiable, Equatable, Sendable {
             collapseGoalMetToday
             ? routines.compactMap { routine in
                 guard
-                    routine.isPaused == false,
+                    routine.isOnBreak == false,
                     routine.isCompletedToday == false,
                     routine.isTargetMet,
                     routine.isAvailableNow
@@ -69,7 +69,7 @@ struct RoutineSectionViewData: Identifiable, Equatable, Sendable {
             }
             : []
         let collapsedRoutineIDs = Set(
-            collapsedPaused.map(\.id)
+            collapsedBreaks.map(\.id)
                 + collapsedUnavailable.map(\.id)
                 + collapsedCompleted.map(\.id)
                 + collapsedGoalMet.map(\.id)
@@ -78,7 +78,7 @@ struct RoutineSectionViewData: Identifiable, Equatable, Sendable {
 
         return RoutineSectionDisplayPartition(
             fullCards: fullCards,
-            collapsedRows: collapsedPaused + collapsedUnavailable + collapsedCompleted + collapsedGoalMet
+            collapsedRows: collapsedBreaks + collapsedUnavailable + collapsedCompleted + collapsedGoalMet
         )
     }
 }
@@ -90,7 +90,7 @@ struct RoutineSectionDisplayPartition: Equatable, Sendable {
 
 struct CollapsedRoutineRowViewData: Identifiable, Equatable, Sendable {
     enum Style: Equatable, Sendable {
-        case paused
+        case onBreak
         case unavailable
         case completed
         case goalMet
@@ -117,8 +117,9 @@ struct RoutineCardViewData: Identifiable, Equatable, Sendable {
     let isCompletedToday: Bool
     let isTargetMet: Bool
     let isOverTarget: Bool
-    let isPaused: Bool
-    let pauseResumeText: String?
+    let isOnBreak: Bool
+    let breakResumeText: String?
+    let breakSource: RoutineBreakSource?
 
     init(
         id: UUID,
@@ -135,8 +136,9 @@ struct RoutineCardViewData: Identifiable, Equatable, Sendable {
         isCompletedToday: Bool,
         isTargetMet: Bool,
         isOverTarget: Bool,
-        isPaused: Bool = false,
-        pauseResumeText: String? = nil
+        isOnBreak: Bool = false,
+        breakResumeText: String? = nil,
+        breakSource: RoutineBreakSource? = nil
     ) {
         self.id = id
         self.name = name
@@ -152,8 +154,9 @@ struct RoutineCardViewData: Identifiable, Equatable, Sendable {
         self.isCompletedToday = isCompletedToday
         self.isTargetMet = isTargetMet
         self.isOverTarget = isOverTarget
-        self.isPaused = isPaused
-        self.pauseResumeText = pauseResumeText
+        self.isOnBreak = isOnBreak
+        self.breakResumeText = breakResumeText
+        self.breakSource = breakSource
     }
 }
 
@@ -239,7 +242,7 @@ struct ManageRoutineRowViewData: Identifiable, Equatable, Sendable {
     let groupID: UUID
     let availabilityStartMinute: Int?
     let availabilityEndMinute: Int?
-    let pauseResumeDayKey: String?
+    let breakResumeDayKey: String?
     let summaryText: String
 
     init(
@@ -250,7 +253,7 @@ struct ManageRoutineRowViewData: Identifiable, Equatable, Sendable {
         groupID: UUID,
         availabilityStartMinute: Int?,
         availabilityEndMinute: Int?,
-        pauseResumeDayKey: String? = nil,
+        breakResumeDayKey: String? = nil,
         summaryText: String
     ) {
         self.id = id
@@ -260,7 +263,7 @@ struct ManageRoutineRowViewData: Identifiable, Equatable, Sendable {
         self.groupID = groupID
         self.availabilityStartMinute = availabilityStartMinute
         self.availabilityEndMinute = availabilityEndMinute
-        self.pauseResumeDayKey = pauseResumeDayKey
+        self.breakResumeDayKey = breakResumeDayKey
         self.summaryText = summaryText
     }
 }

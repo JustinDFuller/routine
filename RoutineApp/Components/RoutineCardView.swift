@@ -5,6 +5,7 @@ struct RoutineCardView: View {
     let onTap: () -> Void
     let onEdit: (() -> Void)?
     let onHistory: (() -> Void)?
+    let onBreak: (() -> Void)?
     let onCollapse: (() -> Void)?
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -14,12 +15,14 @@ struct RoutineCardView: View {
         onTap: @escaping () -> Void,
         onEdit: (() -> Void)?,
         onHistory: (() -> Void)?,
+        onBreak: (() -> Void)? = nil,
         onCollapse: (() -> Void)? = nil
     ) {
         self.viewData = viewData
         self.onTap = onTap
         self.onEdit = onEdit
         self.onHistory = onHistory
+        self.onBreak = onBreak
         self.onCollapse = onCollapse
     }
 
@@ -137,6 +140,22 @@ struct RoutineCardView: View {
                     "routine-card-history-\(viewData.name.routineAccessibilityIdentifierComponent)"
                 )
                 .padding(.trailing, onCollapse == nil ? 8 : 0)
+            }
+
+            if let onBreak {
+                Button(action: onBreak) {
+                    Image(systemName: "moon.circle")
+                        .font(.system(size: 22, weight: .regular))
+                        .foregroundStyle(Color.routineLabelSecondary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Take Break")
+                .accessibilityHint("Starts a break for \(viewData.name).")
+                .accessibilityIdentifier(
+                    "routine-card-take-break-\(viewData.name.routineAccessibilityIdentifierComponent)"
+                )
             }
 
             if let onCollapse {

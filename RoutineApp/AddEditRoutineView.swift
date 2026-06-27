@@ -111,8 +111,6 @@ struct AddEditRoutineView: View {
                     }
                 }
 
-                pauseSection
-
                 if case .edit = presentation {
                     Section {
                         Button("Delete Routine", role: .destructive) {
@@ -168,35 +166,6 @@ struct AddEditRoutineView: View {
                 }
             }
             .tint(Color.routineAccentActive)
-        }
-    }
-
-    @ViewBuilder
-    private var pauseSection: some View {
-        Section {
-            Toggle("Pause this routine", isOn: $formState.isPausedRoutine)
-                .accessibilityIdentifier("routine-form-pause-toggle")
-
-            if formState.isPausedRoutine {
-                Stepper(
-                    value: $formState.pauseSkipPeriods,
-                    in: formState.pauseSkipRange
-                ) {
-                    HStack {
-                        Text("Skip")
-                        Spacer()
-                        Text(formState.pauseSkipLabel)
-                            .foregroundStyle(Color.routineLabelSecondary)
-                    }
-                }
-                .accessibilityIdentifier("routine-form-pause-stepper")
-            }
-        } header: {
-            Text("Pause")
-        } footer: {
-            if let label = formState.pauseResumeLabel {
-                Text("Resumes \(label)")
-            }
         }
     }
 

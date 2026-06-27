@@ -323,6 +323,7 @@ The gear menu is the only top-level management entry. It should expose:
 - `Edit` or `Done Editing`
 - `Rearrange Groups`
 - `Rearrange Routines`
+- `Take a Break` when no global break is active, or `Resume all` when all routines are on break
 
 Normal dashboard mode should stay focused on tracking. Management controls are available on demand rather than always competing with completion affordances.
 
@@ -341,6 +342,8 @@ Recommended behavior:
 - `Rearrange Routines` enters a visible drag-and-drop mode for routines grouped by their current group, also with a clear `Done` exit
 
 Routine history remains directly available from each routine card, and same-day undo remains available from the transient undo banner and from history correction.
+
+Breaks are temporary dashboard state, not routine-definition state. A global break opens from the gear menu, and a routine break opens from a routine-level `Take Break` action.
 
 #### Content structure
 
@@ -448,6 +451,15 @@ The dashboard must clearly distinguish at least these states:
 - If the routine is already completed today, the card may still open history even when the current time is outside the window
 - Do not use strikethrough
 
+##### On break
+
+- Routines on break remain visible in their normal group and order.
+- By default, they collapse into compact rows that read `Off until <date>`.
+- Expanding a compact break row reveals the normal full card so history and edit access remain available.
+- A routine-only break row exposes `Resume`.
+- Under a global break, row-level resume should be hidden or replaced with `Resume all` so the user is not offered a no-op routine-only action.
+- Break rows use muted contrast similar to unavailable rows, but they should read as optional for now rather than disabled forever.
+
 ##### Period target met
 
 - Ring reads visually complete
@@ -508,7 +520,8 @@ Every routine needs a visible path to history without interfering with one-tap c
 Recommended pattern:
 
 - Provide a trailing calendar/history button on every routine card
-- Tapping that button opens the routine history screen directly
+- Provide a routine-level `Take Break` action that opens the break sheet for that routine
+- Tapping the history button opens the routine history screen directly
 
 Editing belongs to dashboard Edit mode, and deletion belongs in the edit sheet, not daily use.
 
@@ -707,6 +720,8 @@ MVP fields:
 - Frequency period: `Weekly` or `Monthly`
 - Group assignment
 - Availability: `Available all day` toggle plus start and end time when the toggle is off
+
+Break controls do not belong in Add/Edit Routine. They use a dedicated break sheet from Today so a temporary break is not confused with changing the routine definition.
 
 Preferred control patterns:
 

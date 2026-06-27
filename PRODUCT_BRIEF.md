@@ -97,6 +97,7 @@ The MVP is optimized for one person who wants a practical personal tracker on an
 - Let the user review past completions in a calendar/history view.
 - Offer local morning, afternoon, and evening check-in notifications that stay quiet once goals are met.
 - Show the next ready routine in a Home Screen widget, with tap-through to Today and one-tap completion.
+- Let the user take a temporary break from one routine or all routines until a concrete resume date.
 
 ## Core Product Behavior
 
@@ -107,6 +108,7 @@ The MVP is optimized for one person who wants a practical personal tracker on an
 - Tapping an already completed routine should not create a second completion.
 - After a completion, the app should present an immediate undo affordance.
 - The user must also be able to remove a mistaken completion from the routine history.
+- A routine that is on break is still completable if the user deliberately opens it; the break suppresses urgency, not completion rights.
 
 ### Progress rules
 
@@ -120,6 +122,8 @@ The MVP is optimized for one person who wants a practical personal tracker on an
 - All routines remain visible on the main dashboard.
 - Monthly routines are not hidden or collapsed by default.
 - Groups are display-only sections in the MVP and do not carry their own completion logic.
+- Routines on break remain visible as compact `Off until <date>` rows, are excluded from remaining counts, and resume automatically on the stored resume date.
+- A global break applies to all routines until its stored resume date and should be resumable from a global `Resume all` action.
 
 ## Interface Overview
 
@@ -171,6 +175,7 @@ Secondary interaction on an already completed item:
 Secondary interaction from the routine row:
 
 - A dedicated History affordance opens routine history without interfering with one-tap completion
+- A dedicated `Take Break` routine action opens a break sheet without moving break controls into the routine definition form
 - Routine editing remains available from dashboard Edit mode, not from a routine action sheet
 
 ### 3. Routine History / Calendar View
@@ -203,6 +208,7 @@ Capabilities:
 - Choose weekly or monthly frequency
 - Assign or change group
 - Reorder routines
+- Take a break from all routines from the dashboard gear menu
 - Delete a routine
 
 The setup flow should be simple and utilitarian rather than highly guided.

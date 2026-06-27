@@ -42,21 +42,20 @@ enum NextRoutineSelector {
         let currentMinuteOfDay = calendar.minuteOfDay(containing: now)
         let progressCalculator = ProgressCalculator(routineCalendar: calendar)
         let completionDaysByRoutineID = completionDaysByRoutineID(from: completions)
-        let globalPause = context.globalPause()
+        let globalBreak = context.globalBreak(routineCalendar: calendar)
 
         for routine in orderedRoutines {
             guard isAvailableNow(routine: routine, currentMinuteOfDay: currentMinuteOfDay) else {
                 continue
             }
 
-            let perRoutineResume = routine.pauseResumeDayKey.flatMap(RoutineDay.init(key:))
-            let resumeDay = RoutinePause.resumeDay(
+            let perRoutineResume = routine.breakResumeDayKey.flatMap(RoutineDay.init(key:))
+            let breakStatus = RoutineBreak.status(
                 perRoutineResume: perRoutineResume,
-                global: globalPause,
-                period: routine.period,
-                calendar: calendar
+                global: globalBreak,
+                today: today
             )
-            guard RoutinePause.isPaused(resumeDay: resumeDay, today: today) == false else {
+            guard breakStatus == nil else {
                 continue
             }
 
@@ -85,7 +84,7 @@ enum NextRoutineSelector {
         let routines = try fetchRoutines(context)
         let today = calendar.today(now: now)
         let currentMinuteOfDay = calendar.minuteOfDay(containing: now)
-        let globalPause = context.globalPause()
+        let globalBreak = context.globalBreak(routineCalendar: calendar)
 
         var candidates: [Date] = []
         if let midnight = calendar.calendar.date(byAdding: .day, value: 1, to: calendar.calendar.startOfDay(for: now)) {
@@ -101,15 +100,14 @@ enum NextRoutineSelector {
                 }
             }
 
-            let perRoutineResume = routine.pauseResumeDayKey.flatMap(RoutineDay.init(key:))
-            let resumeDay = RoutinePause.resumeDay(
+            let perRoutineResume = routine.breakResumeDayKey.flatMap(RoutineDay.init(key:))
+            let breakStatus = RoutineBreak.status(
                 perRoutineResume: perRoutineResume,
-                global: globalPause,
-                period: routine.period,
-                calendar: calendar
+                global: globalBreak,
+                today: today
             )
-            if let resumeDay, RoutinePause.isPaused(resumeDay: resumeDay, today: today) {
-                if let resumeDate = date(forMinuteOfDay: 0, on: resumeDay, calendar: calendar) {
+            if let breakStatus {
+                if let resumeDate = date(forMinuteOfDay: 0, on: breakStatus.resumeDay, calendar: calendar) {
                     candidates.append(resumeDate)
                 }
             }

@@ -3,7 +3,7 @@ import XCTest
 
 @testable import RoutineCore
 
-final class RoutinePauseTests: XCTestCase {
+final class RoutineBreakTests: XCTestCase {
     private func makeCalendar(firstWeekday: Int = 2) -> RoutineCalendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.locale = Locale(identifier: "en_US_POSIX")
@@ -115,103 +115,131 @@ final class RoutinePauseTests: XCTestCase {
         XCTAssertEqual(calendar.periodCount(from: from, to: to, period: .monthly), 0)
     }
 
-    // MARK: - RoutinePause.resumeDay
+    // MARK: - RoutineBreak.status
 
-    func testResumeDayNilWhenNeitherPerRoutineNorGlobalSet() throws {
-        let calendar = makeCalendar()
-        let result = RoutinePause.resumeDay(
-            perRoutineResume: nil,
-            global: nil,
-            period: .weekly,
-            calendar: calendar
-        )
+    func testStatusNilWhenNeitherPerRoutineNorGlobalSet() throws {
+        let today = try day(2026, 6, 24)
+        let result = RoutineBreak.status(perRoutineResume: nil, global: nil, today: today)
         XCTAssertNil(result)
     }
 
-    func testResumeDayReturnsPerRoutineWhenOnlyPerRoutineSet() throws {
-        let calendar = makeCalendar()
+    func testStatusReturnsRoutineSourceWhenOnlyRoutineBreakIsActive() throws {
+        let today = try day(2026, 6, 24)
         let perRoutineDay = try day(2026, 6, 29)
-        let result = RoutinePause.resumeDay(
+        let result = RoutineBreak.status(
             perRoutineResume: perRoutineDay,
             global: nil,
-            period: .weekly,
-            calendar: calendar
+            today: today
         )
-        XCTAssertEqual(result, perRoutineDay)
+        XCTAssertEqual(result, RoutineBreakStatus(resumeDay: perRoutineDay, source: .routine))
     }
 
-    func testResumeDayReturnsGlobalResumeDayWhenOnlyGlobalSet() throws {
-        let calendar = makeCalendar(firstWeekday: 2)
-        let anchor = try day(2026, 6, 22)
-        let global = GlobalPause(anchor: anchor, skipPeriods: 1)
-        let result = RoutinePause.resumeDay(
-            perRoutineResume: nil,
-            global: global,
-            period: .weekly,
-            calendar: calendar
-        )
-        XCTAssertEqual(result, try day(2026, 6, 29))
-    }
-
-    func testResumeDayReturnsMaxOfPerRoutineAndGlobal() throws {
-        let calendar = makeCalendar(firstWeekday: 2)
-        let anchor = try day(2026, 6, 22)
-        let global = GlobalPause(anchor: anchor, skipPeriods: 1)
-
-        let laterPerRoutine = try day(2026, 7, 6)
-        let resultLater = RoutinePause.resumeDay(
-            perRoutineResume: laterPerRoutine,
-            global: global,
-            period: .weekly,
-            calendar: calendar
-        )
-        XCTAssertEqual(resultLater, try day(2026, 7, 6))
-
-        let earlierPerRoutine = try day(2026, 6, 22)
-        let resultEarlier = RoutinePause.resumeDay(
-            perRoutineResume: earlierPerRoutine,
-            global: global,
-            period: .weekly,
-            calendar: calendar
-        )
-        XCTAssertEqual(resultEarlier, try day(2026, 6, 29))
-    }
-
-    func testResumeDayForMonthlyRoutineUsesMonthPeriods() throws {
-        let calendar = makeCalendar()
-        let anchor = try day(2026, 6, 1)
-        let global = GlobalPause(anchor: anchor, skipPeriods: 2)
-        let result = RoutinePause.resumeDay(
-            perRoutineResume: nil,
-            global: global,
-            period: .monthly,
-            calendar: calendar
-        )
-        XCTAssertEqual(result, try day(2026, 8, 1))
-    }
-
-    // MARK: - RoutinePause.isPaused
-
-    func testIsPausedReturnsFalseWhenResumeDayIsNil() throws {
+    func testStatusReturnsGlobalSourceWhenOnlyGlobalBreakIsActive() throws {
         let today = try day(2026, 6, 24)
-        XCTAssertFalse(RoutinePause.isPaused(resumeDay: nil, today: today))
+        let globalResume = try day(2026, 7, 1)
+        let result = RoutineBreak.status(
+            perRoutineResume: nil,
+            global: GlobalBreak(resumeDay: globalResume),
+            today: today
+        )
+        XCTAssertEqual(result, RoutineBreakStatus(resumeDay: globalResume, source: .global))
     }
 
-    func testIsPausedReturnsTrueWhenTodayIsBeforeResumeDay() throws {
+    func testStatusReturnsBothWithLaterResumeDayWhenBothBreaksAreActive() throws {
+        let today = try day(2026, 6, 24)
+        let routineResume = try day(2026, 7, 6)
+        let globalResume = try day(2026, 7, 1)
+        let result = RoutineBreak.status(
+            perRoutineResume: routineResume,
+            global: GlobalBreak(resumeDay: globalResume),
+            today: today
+        )
+        XCTAssertEqual(result, RoutineBreakStatus(resumeDay: routineResume, source: .both))
+    }
+
+    func testStatusIgnoresInactiveRoutineBreakButKeepsActiveGlobalBreak() throws {
+        let today = try day(2026, 6, 24)
+        let inactiveRoutineResume = try day(2026, 6, 24)
+        let globalResume = try day(2026, 7, 1)
+        let result = RoutineBreak.status(
+            perRoutineResume: inactiveRoutineResume,
+            global: GlobalBreak(resumeDay: globalResume),
+            today: today
+        )
+        XCTAssertEqual(result, RoutineBreakStatus(resumeDay: globalResume, source: .global))
+    }
+
+    // MARK: - RoutineBreak.isActive
+
+    func testIsActiveReturnsFalseWhenResumeDayIsNil() throws {
+        let today = try day(2026, 6, 24)
+        XCTAssertFalse(RoutineBreak.isActive(resumeDay: nil, today: today))
+    }
+
+    func testIsActiveReturnsTrueWhenTodayIsBeforeResumeDay() throws {
         let today = try day(2026, 6, 24)
         let resumeDay = try day(2026, 6, 29)
-        XCTAssertTrue(RoutinePause.isPaused(resumeDay: resumeDay, today: today))
+        XCTAssertTrue(RoutineBreak.isActive(resumeDay: resumeDay, today: today))
     }
 
-    func testIsPausedReturnsFalseWhenTodayEqualsResumeDay() throws {
+    func testIsActiveReturnsFalseWhenTodayEqualsResumeDay() throws {
         let today = try day(2026, 6, 29)
         let resumeDay = try day(2026, 6, 29)
-        XCTAssertFalse(RoutinePause.isPaused(resumeDay: resumeDay, today: today))
+        XCTAssertFalse(RoutineBreak.isActive(resumeDay: resumeDay, today: today))
     }
 
-    func testIsPausedReturnsFalseWhenTodayIsAfterResumeDay() throws {
+    func testIsActiveReturnsFalseWhenTodayIsAfterResumeDay() throws {
         let today = try day(2026, 7, 1)
         let resumeDay = try day(2026, 6, 29)
-        XCTAssertFalse(RoutinePause.isPaused(resumeDay: resumeDay, today: today))
+        XCTAssertFalse(RoutineBreak.isActive(resumeDay: resumeDay, today: today))
+    }
+
+    // MARK: - RoutineBreak.resumeDay
+
+    func testTodayPresetResumesTomorrow() throws {
+        let calendar = makeCalendar(firstWeekday: 2)
+        let today = try day(2026, 6, 24)
+        let resumeDay = RoutineBreak.resumeDay(for: .today, today: today, calendar: calendar)
+        XCTAssertEqual(resumeDay, try day(2026, 6, 25))
+    }
+
+    func testThisWeekPresetResumesOnNextWeekStart() throws {
+        let calendar = makeCalendar(firstWeekday: 2)
+        let today = try day(2026, 6, 24)
+        let resumeDay = RoutineBreak.resumeDay(for: .thisWeek, today: today, calendar: calendar)
+        XCTAssertEqual(resumeDay, try day(2026, 6, 29))
+    }
+
+    func testThisMonthPresetResumesOnFirstDayOfNextMonth() throws {
+        let calendar = makeCalendar()
+        let today = try day(2026, 6, 24)
+        let resumeDay = RoutineBreak.resumeDay(for: .thisMonth, today: today, calendar: calendar)
+        XCTAssertEqual(resumeDay, try day(2026, 7, 1))
+    }
+
+    func testUntilDatePresetUsesExplicitDate() throws {
+        let calendar = makeCalendar()
+        let today = try day(2026, 6, 24)
+        let explicitDate = calendar.date(for: try day(2026, 7, 4))
+        let resumeDay = RoutineBreak.resumeDay(
+            for: .untilDate,
+            today: today,
+            calendar: calendar,
+            explicitDate: explicitDate
+        )
+        XCTAssertEqual(resumeDay, try day(2026, 7, 4))
+    }
+
+    func testUntilDatePresetClampsTodayToTomorrow() throws {
+        let calendar = makeCalendar()
+        let today = try day(2026, 6, 24)
+        let explicitDate = calendar.date(for: today)
+        let resumeDay = RoutineBreak.resumeDay(
+            for: .untilDate,
+            today: today,
+            calendar: calendar,
+            explicitDate: explicitDate
+        )
+        XCTAssertEqual(resumeDay, try day(2026, 6, 25))
     }
 }

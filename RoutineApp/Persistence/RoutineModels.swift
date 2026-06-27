@@ -38,7 +38,7 @@ final class Routine {
     var periodRawValue: String
     var availabilityStartMinute: Int?
     var availabilityEndMinute: Int?
-    var pauseResumeDayKey: String?
+    var breakResumeDayKey: String?
     var groupID: UUID
     var sortOrder: Int
     var createdAt: Date
@@ -68,7 +68,7 @@ final class Routine {
         period: RoutinePeriod,
         availabilityStartMinute: Int? = nil,
         availabilityEndMinute: Int? = nil,
-        pauseResumeDayKey: String? = nil,
+        breakResumeDayKey: String? = nil,
         sortOrder: Int,
         group: RoutineGroup,
         createdAt: Date = .now,
@@ -81,7 +81,7 @@ final class Routine {
         self.periodRawValue = period.rawValue
         self.availabilityStartMinute = availabilityStartMinute
         self.availabilityEndMinute = availabilityEndMinute
-        self.pauseResumeDayKey = pauseResumeDayKey
+        self.breakResumeDayKey = breakResumeDayKey
         self.groupID = group.id
         self.sortOrder = sortOrder
         self.group = group

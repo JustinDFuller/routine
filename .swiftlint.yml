@@ -29,6 +29,9 @@ opt_in_rules:
 
 reporter: "xcode"
 
+opening_brace:
+  ignore_multiline_statement_conditions: true
+
 line_length:
   warning: 120
   error: 160
