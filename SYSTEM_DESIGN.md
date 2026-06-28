@@ -34,7 +34,7 @@ Out of scope for the MVP:
 - Cloud sync, accounts, sharing, or collaboration.
 - Per-routine notifications, watch app, or lock screen surfaces.
 - Analytics, telemetry, remote logging, or crash-reporting SDKs.
-- Smart scheduling, recommendations, streaks, scoring, or gamification.
+- Smart scheduling, recommendations, scoring, or gamification. Quiet derived streak counts are in scope; persisted streak fields, gamified streak styling, and celebration effects are not.
 - Public App Store launch workflow as a required path.
 
 Operational constraints:
@@ -80,13 +80,13 @@ Layers:
    Native UI surfaces for the Today Dashboard, Routine History, Add/Edit Routine, group editing, reusable cards, progress rings, banners, and empty states.
 
 3. View state and projections
-   Lightweight immutable view data plus small observable form or screen state objects. These convert persisted models and domain values into UI-ready strings, flags, accessibility labels, and drawing inputs.
+   Lightweight immutable view data plus small observable form or screen state objects. These convert persisted models and domain values into UI-ready strings, flags, accessibility labels, and drawing inputs. Streak text for dashboard cards and history summaries is computed here by calling `StreakCalculator` and encoded into the view data.
 
 4. Domain services
    Object-oriented services that enforce user-intent operations such as completing a routine, undoing today, removing a completion, creating routines, editing routines, deleting routines, moving routines, managing groups, seeding starter data, and producing user-safe error outcomes.
 
 5. Domain values
-   Small value types and enums for routine period, routine day, progress, calendar calculations, validation results, routes, and view data. Pure domain logic belongs here when it can be independent of SwiftUI and SwiftData.
+   Small value types and enums for routine period, routine day, progress, streak calculations, calendar calculations, validation results, routes, and view data. Pure domain logic belongs here when it can be independent of SwiftUI and SwiftData. Streak calculation lives in this layer via `StreakCalculator` in the RoutineCore module — not in persistence or services.
 
 6. Persistence models
    SwiftData `@Model` classes that store canonical data only: routine groups, routines, routine completions, and app metadata.
@@ -210,7 +210,7 @@ Persisted entities:
 Persistence rules:
 
 - Store canonical data only.
-- Do not persist dashboard progress, last-done labels, target-met state, remaining counts, or accessibility text.
+- Do not persist dashboard progress, last-done labels, target-met state, remaining counts, streak counts, or accessibility text.
 - Use SwiftData's default local app-container storage for MVP.
 - Use one shared `ModelContainer` for the app.
 - Keep persistence access on the main actor for the MVP.
@@ -275,10 +275,10 @@ Required services:
   Seeds starter groups and routines once, using `AppMetadata` to prevent reseeding after user edits or deletion.
 
 - `DashboardProjectionBuilder`
-  Converts groups, routines, completions, progress, and date labels into immutable dashboard view data.
+  Converts groups, routines, completions, progress, and date labels into immutable dashboard view data. Must recompute streak counts via `StreakCalculator` after every completion, undo, and history correction because streaks are derived, not persisted.
 
 - `HistoryProjectionBuilder`
-  Converts one routine and its completions into summary, month grid, and recent-completion view data.
+  Converts one routine and its completions into summary, month grid, and recent-completion view data. Must recompute streak counts via `StreakCalculator` after every completion, undo, and history correction.
 
 - `ManageProjectionBuilder`
   Converts groups and routines into dashboard-owned management view data without dashboard progress concerns.
@@ -884,7 +884,7 @@ Implementation guidance:
 - Use footnote/caption treatment for metadata.
 - Keep routine cards comfortable for thumb use.
 - Avoid strikethrough for completed routines.
-- Avoid motivational language, celebration effects, streaks, badges, or gamified styling.
+- Avoid motivational language, celebration effects, gamified streak styling, flames, trophies, badges, or score-oriented design.
 - Keep monthly routines visible by default.
 - Keep completed routines visible and readable.
 
@@ -972,4 +972,4 @@ These are intentionally not part of MVP implementation, but the architecture sho
 - Per-routine reminder notifications, layered on top of the daily check-in system, through separate reminder settings.
 - Cloud sync after reviewing SwiftData/CloudKit constraints, conflict handling, uniqueness, and deletion semantics.
 - Multiple completions per day by replacing the routine-day uniqueness policy with a more flexible completion limit.
-- Richer analytics through derived query services, not persisted streaks or scores unless product scope changes.
+- Richer analytics through derived query services. Derived (non-persisted) streak counts are explicitly sanctioned; persisted streak fields or scores are appropriate only if a later measured performance problem requires a cache.

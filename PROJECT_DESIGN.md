@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**M20 - Next Post-Launch Follow-On**
+**M20 - Routine Streaks**
 
 The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -108,7 +108,7 @@ Core invariants that require automated coverage when touched:
 | DONE | M17 - Check-In Notifications | The app schedules local morning/afternoon/evening check-in notifications with progress-aware, non-spammy content that goes quiet once all goals for the period are met. |
 | DONE | M18 - Production Launch Readiness | Release assets/docs are aligned, widget completion/handoff flows are covered, and internal-TestFlight operator workflows are documented and scripted. |
 | DONE | M19 - Separate Goal-Met Collapse Preference | Today collapse settings independently control completed-today, goal-met, and unavailable compact rows while preserving unavailable precedence. |
-| CURRENT | M20 - Next Post-Launch Follow-On | The next post-launch dogfooding refinement is identified and scoped before implementation. |
+| CURRENT | M20 - Routine Streaks | Quiet derived streak counts appear on full dashboard cards and in the routine history summary. |
 
 ## Milestones
 
@@ -1005,19 +1005,42 @@ Completion note:
 
 - Passed targeted `xcodebuild test` for `RoutineAppTests/AppBootstrapTests`, `RoutineAppTests/RoutineDebugLaunchConfigurationTests`, and `RoutineAppTests/DashboardProjectionBuilderTests` on `platform=iOS Simulator,name=iPhone 17 Pro Max`; also passed `./Scripts/check-format.sh`, `./Scripts/lint.sh`, and `./Scripts/build-ios.sh`. Targeted UI-test attempts for the new `RoutineAppUITests` goal-met collapse scenarios stalled in simulator launch, and `./Scripts/validate.sh` reached `PASS generate-project`, `PASS test-ios-script-tests`, and `PASS test-core` before stalling in `./Scripts/test-ios.sh`, matching the existing local simulator runner blocker rather than exposing a code failure in this milestone.
 
-### M20 - Next Post-Launch Follow-On
+### M20 - Routine Streaks
 
 Status: `CURRENT`
 
-Goal: define and scope the next post-launch dogfooding refinement before implementation starts.
+Goal: implement quiet routine streaks as a derived consistency metric across dashboard cards and routine history.
 
 Dependencies: M19.
 
-Primary references: to be selected with the next scoped follow-on.
+Primary references: [PRODUCT_BRIEF.md](PRODUCT_BRIEF.md), [VISUAL_DESIGN.md](VISUAL_DESIGN.md), [DATA_DESIGN.md](DATA_DESIGN.md), [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md).
 
 Deliverables:
 
-- Choose the next concrete post-launch milestone before implementation begins.
+- Add a pure `StreakCalculator` (or `ProgressCalculator` extension) to the RoutineCore module that computes streak counts from completion history and `RoutineCalendar` period ranges.
+- Extend `RoutineCardViewData` with an optional `streakText` field populated by `DashboardProjectionBuilder`.
+- Extend `RoutineHistoryViewData` with `streakSummaryText` and `streakAccessibilityText` fields populated by `HistoryProjectionBuilder`.
+- Render `streakText` quietly on full dashboard cards; omit it from compact collapsed rows (completed-today, goal-met, unavailable).
+- Render `streakSummaryText` more explicitly in the history summary header.
+- Include streak text in the combined VoiceOver accessibility labels for cards and the history summary.
+- Add focused `RoutineCoreTests` covering streak calculation edge cases.
+
+Required tests:
+
+- Weekly streaks with each configured week-start day (Sunday, Monday, Saturday).
+- Monthly streaks across month boundaries and year boundaries.
+- Missed-period reset: a single missed finalized period resets the count to zero.
+- Current in-progress period is excluded until it closes.
+- Over-target periods count once toward the streak.
+- Duplicate-day completions are deduped before evaluating period targets.
+- Historical-correction recomputation: removing a completion retroactively reduces or resets the streak.
+
+Validation:
+
+- Run `./Scripts/check-format.sh`.
+- Run `./Scripts/lint.sh`.
+- Run `./Scripts/build-ios.sh`.
+- Run `./Scripts/validate.sh`.
 
 ## MVP Completion Criteria
 

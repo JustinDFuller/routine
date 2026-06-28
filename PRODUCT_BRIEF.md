@@ -4,12 +4,13 @@
 
 Routine is a personal iPhone app for tracking a flexible, recurring routine. It is designed first for a single user who wants to dogfood the app on their own phone, iterate quickly, and focus on usefulness over completeness.
 
-The MVP should make it fast to answer four questions:
+The MVP should make it fast to answer five questions:
 
 1. What have I already done today?
 2. What have I not done today?
 3. How am I progressing against this week or month?
 4. When did I last do this?
+5. Has this routine been met across consecutive weeks or months?
 
 The product should feel visual first, not text heavy. Text is necessary for labels and dates, but status should be communicated primarily through visual controls and progress indicators.
 
@@ -61,7 +62,7 @@ Help the user consistently keep up with their routine by making completion track
 
 - Smart scheduling or app-generated "recommended today" logic
 - Per-routine reminders or notification quick actions
-- Streak systems, scores, or gamification
+- Scores, achievements, public sharing, analytics, or gamified reward systems
 - Watch app or lock screen surfaces
 - Sharing, collaboration, or multi-user support
 - Cloud sync
@@ -114,6 +115,14 @@ The MVP is optimized for one person who wants a practical personal tracker on an
 - Monthly routines count completions in the current calendar month.
 - "Remaining today" means not yet completed today.
 - The app does not decide which routines are required on a specific day, but routines may optionally limit when they can be completed.
+
+### Streak rules
+
+- A streak is the count of consecutive finalized periods (weeks or months) in which the routine met its target count.
+- A missed finalized period — one that closed without meeting the target — resets the streak count to zero.
+- The current in-progress period is excluded from the streak count until it closes; its target-met state is shown separately.
+- Periods in which the target was exceeded count once toward the streak, not more.
+- Duplicate completions on the same day are deduped before evaluating period target counts.
 
 ### Visibility rules
 

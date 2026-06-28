@@ -87,7 +87,7 @@ Accidental input is expected. Undo should be immediate after completion, and his
 
 ### 4. Calm, not motivational
 
-The app should feel useful and satisfying, but never judgmental, celebratory, streak-driven, or score-oriented.
+The app should feel useful and satisfying, but never judgmental, celebratory, or score-oriented. A quiet derived streak count is acceptable; gamified streak styling, flames, trophies, or celebration effects are not.
 
 ### 5. Native where native works
 
@@ -234,7 +234,7 @@ Launcher icon guidance:
 - The app launcher icon is separate from interface iconography and should be designed as its own artifact.
 - It should be a polished MVP launcher icon for personal dogfooding readiness, not the start of a full brand system.
 - It should follow the product's visual mood: dark, grounded, warm, tactile, calm, and not gamified.
-- Avoid custom icon packs, mascots, gamified badges, streak or flame imagery, and dense UI screenshot-style compositions.
+- Avoid custom icon packs, mascots, gamified badges, flame or trophy imagery, and dense UI screenshot-style compositions. Plain streak text is permitted; badge or flame icons are not.
 
 ### Motion
 
@@ -379,6 +379,12 @@ Each routine card should contain five pieces of information:
 When a routine has a configured availability window and is currently unavailable, add a compact sixth metadata element:
 
 6. Availability label
+
+When a routine has a non-zero streak, add a quiet seventh metadata element on the full card only:
+
+7. Streak text, such as `3 weeks in a row` or `2 months in a row`
+
+Streak text must not appear in compact collapsed rows (completed-today, goal-met, or unavailable). It belongs only on full expanded cards where there is visual space to keep it unobtrusive.
 
 Recommended visual layout:
 
@@ -601,6 +607,9 @@ The top of the history screen should include:
 - Larger progress ring or progress summary
 - Last completed date in explicit language
 - Current period count versus target
+- Streak summary, shown more explicitly than on dashboard cards, such as `3 weeks in a row`, `2 months in a row`, or `No streak yet`
+
+The streak summary in the history header should be readable at a glance. It is a factual consistency metric, not a motivational score, so it should use plain secondary text or a quiet label — no flames, counters styled as scores, or reward imagery.
 
 Recommended last-done phrasing:
 
@@ -911,8 +920,10 @@ Requirements:
 
 Recommended VoiceOver phrasing example:
 
-- `Morning Yoga, completed today, 3 of 5 this week`
+- `Morning Yoga, completed today, 3 of 5 this week, 4 weeks in a row`
 - `Wake Up Early, unavailable now, available 12:00 AM to 6:45 AM, not completed today, 0 of 5 this week`
+
+When a routine has a non-zero streak, the visible streak text on the full card must be included in the combined card accessibility label, appended after the period progress. The history summary screen's streak label must similarly be included in its combined summary accessibility label so VoiceOver users receive the same consistency context as sighted users.
 
 The dashboard should remain understandable when:
 
@@ -934,17 +945,21 @@ Prefer:
 - `5 per week`
 - `Last done yesterday`
 - `No completions yet`
+- `3 weeks in a row`
+- `2 months in a row`
+- `No streak yet`
+- `Goal met this week`
 
 Avoid:
 
-- `Streak`
 - `Score`
 - `Fail`
 - `Perfect`
 - `Crush your goals`
 - `Stay on track`
+- Flame, trophy, or badge copy paired with streak counts
 
-The product should sound practical, not motivational.
+The product should sound practical, not motivational. Neutral streak copy — plain consecutive-period counts — is acceptable. Celebratory or evaluative framing is not.
 
 ## Explicit Non-Goals for MVP Design
 
@@ -953,7 +968,6 @@ The visual design should not imply or prepare for features that the MVP does not
 Do not design around:
 
 - Notifications
-- Streaks
 - Achievements
 - Smart scheduling
 - Recommended-today logic
@@ -962,7 +976,7 @@ Do not design around:
 - Sharing
 - Analytics dashboards
 
-The design should stay focused on the four questions defined in the product brief.
+The design should stay focused on the five questions defined in the product brief. Quiet derived streak counts are in scope; gamified streak styling, flames, trophies, badges, scores, and celebration effects are not.
 
 ## Acceptance Criteria
 

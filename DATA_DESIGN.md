@@ -99,7 +99,7 @@ A routine is a user-defined recurring activity with:
 - A user-defined order inside that group
 - Completion history
 
-A routine is not a scheduled task. It does not define required weekdays, due dates, reminders, streaks, scores, or recommended days.
+A routine is not a scheduled task. It does not define required weekdays, due dates, reminders, scores, or recommended days. A routine's completion history may yield a derived streak count, but the streak is not a persisted attribute of the routine.
 
 ### Routine Group
 
@@ -509,6 +509,41 @@ Rules:
 - A target-met routine remains actionable if it has not been completed today.
 - Overage is not gamified and does not create badges or celebration styling.
 
+### RoutineStreak
+
+`RoutineStreak` is a derived value owned by the RoutineCore module. It is never persisted.
+
+```swift
+struct RoutineStreak: Equatable, Sendable {
+    let count: Int
+    let period: RoutinePeriod
+}
+```
+
+A `StreakCalculator` (or an extension on `ProgressCalculator`) computes this value from a routine's completion history and its `RoutineCalendar`:
+
+```swift
+struct StreakCalculator {
+    let routineCalendar: RoutineCalendar
+
+    func streak(
+        for routine: Routine,
+        completions: [RoutineCompletion],
+        today: RoutineDay
+    ) -> RoutineStreak
+}
+```
+
+Rules:
+
+- The streak is the count of consecutive finalized periods (weeks or months, matching the routine's `period`) in which the unique completion day count met or exceeded the routine's `targetCount`.
+- "Finalized" means the period has fully closed before the current in-progress period. The period that contains `today` is excluded from the count until it closes.
+- A missed finalized period resets the streak count to zero.
+- Periods in which the unique completion count exceeds the target count once; there is no bonus for overachievement.
+- Duplicate completions on the same `dayKey` are deduped using the same `Set`/`uniqueSortedDays` idiom already used by `ProgressCalculator`.
+- Period ranges are derived from `RoutineCalendar.currentPeriodRange` and the configured `firstWeekday` (week start), so the streak respects the user's configured week-start day.
+- `StreakCalculator` is pure: it has no SwiftUI, SwiftData, or UIKit dependencies and can run in `RoutineCoreTests` on Ubuntu.
+
 ## Domain Services And Methods
 
 Domain services should be small, explicit, and organized around user intent.
@@ -820,10 +855,18 @@ struct RoutineHistoryViewData: Equatable, Sendable {
     let routineName: String
     let frequencySummary: String
     let progress: RoutineProgress
+    let streakSummaryText: String?
+    let streakAccessibilityText: String?
     let monthDays: [HistoryCalendarDay]
     let recentCompletions: [CompletionListItem]
 }
 ```
+
+Rules:
+
+- `streakSummaryText` is `nil` when the streak count is zero; otherwise it is a plain human-readable phrase such as `3 weeks in a row` or `2 months in a row`.
+- `streakAccessibilityText` mirrors `streakSummaryText` and is included in the history summary's combined VoiceOver label when non-nil.
+- `HistoryProjectionBuilder` computes both fields from `StreakCalculator` on every projection build, after any completion, undo, or historical correction.
 
 The recent completions list should sort by `dayKey` descending, then `completedAt` descending.
 
@@ -865,6 +908,7 @@ struct RoutineCardViewData: Identifiable, Equatable, Sendable {
     let countText: String
     let periodText: String
     let lastDoneText: String
+    let streakText: String?
     let availabilityText: String?
     let accessibilityLabel: String
     let unavailableAccessibilityPhrase: String?
@@ -893,7 +937,9 @@ Rules:
 - Incomplete unavailable routines remain visible in their normal group and order, present disabled completion state when expanded, and may collapse into compact clock rows on Today when the unavailable-collapse setting is enabled.
 - Unavailable compaction takes precedence over goal-met compaction for routines that are both unavailable and already at goal.
 - Section `remainingCount` includes incomplete routines that are currently available, not disabled unavailable routines.
-- Accessibility label includes routine name, availability state when relevant, completed-today state, count, and period.
+- `streakText` is `nil` when the streak count is zero; otherwise it is a plain phrase such as `3 weeks in a row`. It is rendered on the full expanded card only and omitted from compact collapsed rows.
+- `DashboardProjectionBuilder` computes `streakText` from `StreakCalculator` on every projection build.
+- Accessibility label includes routine name, availability state when relevant, completed-today state, count, period, and streak text when non-nil.
 
 ### History View Data
 
@@ -1307,7 +1353,8 @@ Sync:
 Richer analytics:
 
 - Add derived query services over `RoutineCompletion`.
-- Do not store streaks or scores unless the product explicitly adds them.
+- Derived (non-persisted) streak counts are explicitly sanctioned: `StreakCalculator` in the RoutineCore module computes streak counts from completion history without any persistent model fields.
+- Do not persist streak counts or scores unless a later measured performance problem requires a cache.
 
 ## Acceptance Criteria
 
