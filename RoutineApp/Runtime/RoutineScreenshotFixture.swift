@@ -4,6 +4,7 @@ import SwiftData
 
 enum RoutineScreenshotFixture: String, Equatable, Sendable {
     case fullApp = "full-app"
+    case baseline = "baseline"
 }
 
 @MainActor
@@ -20,6 +21,8 @@ final class RoutineScreenshotFixtureSeeder {
         switch fixture {
         case .fullApp:
             try seedFullApp(now: now)
+        case .baseline:
+            try seedBaseline(now: now)
         }
     }
 
@@ -155,6 +158,53 @@ final class RoutineScreenshotFixtureSeeder {
         }
 
         return date
+    }
+
+    private func seedBaseline(now: Date) throws {
+        try RoutineStoreResetService.resetAllData(in: context)
+
+        let morning = RoutineGroup(
+            id: BaselineSeed.morningGroupID,
+            name: "Morning",
+            sortOrder: 0,
+            createdAt: now,
+            updatedAt: now
+        )
+        context.insert(morning)
+
+        let movement = RoutineGroup(
+            id: BaselineSeed.movementGroupID,
+            name: "Movement",
+            sortOrder: 1,
+            createdAt: now,
+            updatedAt: now
+        )
+        context.insert(movement)
+
+        context.insert(
+            Routine(
+                id: BaselineSeed.morningYogaID,
+                name: "Morning yoga",
+                targetCount: 5,
+                period: .weekly,
+                sortOrder: 0,
+                group: morning,
+                createdAt: now,
+                updatedAt: now
+            ))
+        context.insert(
+            Routine(
+                id: BaselineSeed.walkTheDogID,
+                name: "Walk the dog",
+                targetCount: 5,
+                period: .weekly,
+                sortOrder: 0,
+                group: movement,
+                createdAt: now,
+                updatedAt: now
+            ))
+
+        try context.saveRoutineChanges()
     }
 }
 
@@ -450,6 +500,20 @@ private struct FixtureCompletionSeed {
     let day: Int
     let hour: Int
     let minute: Int
+}
+
+private enum BaselineSeed {
+    static let morningGroupID = uuid("00000000-0000-0000-0000-000000000101")
+    static let movementGroupID = uuid("00000000-0000-0000-0000-000000000102")
+    static let morningYogaID = uuid("00000000-0000-0000-0000-000000000103")
+    static let walkTheDogID = uuid("00000000-0000-0000-0000-000000000104")
+
+    private static func uuid(_ rawValue: String) -> UUID {
+        guard let id = UUID(uuidString: rawValue) else {
+            preconditionFailure("Expected valid baseline fixture UUID \(rawValue).")
+        }
+        return id
+    }
 }
 
 private enum ScreenshotFixtureSeedError: Error {

@@ -46,9 +46,6 @@ struct RoutineDebugLaunchConfiguration: Equatable, Sendable {
         #if DEBUG
             let usesSeededInMemoryStore = arguments.contains("-routine-use-in-memory-store")
             let usesEmptyInMemoryStore = arguments.contains("-routine-empty-in-memory-store")
-            let starterSeedVersion =
-                Self.argumentValue(after: "-routine-starter-seed-version", in: arguments)
-                ?? StarterDataService.seedMetadataValue
 
             self.init(
                 storeMode: usesSeededInMemoryStore || usesEmptyInMemoryStore ? .inMemory : .persistent,
@@ -57,8 +54,6 @@ struct RoutineDebugLaunchConfiguration: Equatable, Sendable {
                 runtime: RoutineRuntimeConfiguration(
                     fixedNow: Self.fixedNow(in: arguments, calendar: calendar),
                     disablesAnimations: arguments.contains("-routine-disable-animations"),
-                    skipsStarterSeeding: usesEmptyInMemoryStore,
-                    starterSeedVersion: starterSeedVersion,
                     screenshotFixture: Self.screenshotFixture(in: arguments),
                     forcedColorScheme: Self.forcedColorScheme(in: arguments)
                 ),

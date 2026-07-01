@@ -14,6 +14,9 @@ extension RoutineAppUITests {
 
         if seeded {
             app.launchArguments.append("-routine-use-in-memory-store")
+            if additionalLaunchArguments.contains("-routine-screenshot-fixture") == false {
+                app.launchArguments.append(contentsOf: ["-routine-screenshot-fixture", "baseline"])
+            }
         }
 
         app.launchArguments.append(contentsOf: additionalLaunchArguments)

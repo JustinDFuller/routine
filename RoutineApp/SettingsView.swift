@@ -3,6 +3,10 @@ import SwiftData
 import SwiftUI
 import UIKit
 
+private enum SettingsDestination: Hashable {
+    case factoryReset
+}
+
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -52,11 +56,25 @@ struct SettingsView: View {
                 }
 
                 checkInSection
+
+                Section {
+                    NavigationLink(value: SettingsDestination.factoryReset) {
+                        Text("Factory Reset")
+                            .foregroundStyle(.red)
+                    }
+                    .accessibilityIdentifier("settings-factory-reset-link")
+                }
             }
             .scrollContentBackground(.hidden)
             .background(Color.routineCanvas.ignoresSafeArea())
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(for: SettingsDestination.self) { destination in
+                switch destination {
+                case .factoryReset:
+                    FactoryResetView()
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") {
