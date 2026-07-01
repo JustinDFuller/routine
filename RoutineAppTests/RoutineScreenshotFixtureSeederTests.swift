@@ -25,7 +25,7 @@ final class RoutineScreenshotFixtureSeederTests: ProjectionBuilderTestCase {
         )
         context.insert(
             AppMetadata(
-                key: StarterDataService.seedMetadataKey,
+                key: "stale.metadata.key",
                 value: "stale",
                 updatedAt: now
             )

@@ -154,6 +154,10 @@ final class CheckInScheduler {
         Self.logger.debug("scheduled identifier=\(occurrence.identifier, privacy: .public)")
     }
 
+    func cancelAll() async {
+        await cancelPendingCheckIns()
+    }
+
     private func cancelPendingCheckIns() async {
         let pending = await notificationCenter.pendingNotificationRequests()
         let staleIdentifiers =

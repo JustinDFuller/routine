@@ -524,14 +524,42 @@ extension RoutineAppUITests {
         openManagementMenu(in: app)
         app.buttons["today-dashboard-settings-button"].tap()
 
-        let goalMetToggle = identifiedElement("settings-collapse-goal-met-toggle", in: app)
+        let goalMetToggle = app.switches["settings-collapse-goal-met-toggle"]
         XCTAssertTrue(goalMetToggle.waitForExistence(timeout: 5))
-        goalMetToggle.tap()
+        goalMetToggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
         app.buttons["settings-done-button"].tap()
 
         XCTAssertTrue(
             identifiedElement("routine-card-history-water-plants", in: app).waitForExistence(timeout: 5)
         )
         XCTAssertFalse(goalMetRow.waitForExistence(timeout: 2))
+    }
+
+    func testFactoryResetWithAllSelectionsShowsEmptyDashboard() {
+        let app = makeApp()
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["Morning yoga"].waitForExistence(timeout: 5))
+
+        openManagementMenu(in: app)
+        app.buttons["today-dashboard-settings-button"].tap()
+
+        let factoryResetLink = identifiedElement("settings-factory-reset-link", in: app)
+        XCTAssertTrue(factoryResetLink.waitForExistence(timeout: 5))
+        factoryResetLink.tap()
+
+        let resetButton = identifiedElement("factory-reset-reset-button", in: app)
+        XCTAssertTrue(resetButton.waitForExistence(timeout: 5))
+        resetButton.tap()
+
+        let resetSheet = app.sheets["Reset selected data?"]
+        XCTAssertTrue(resetSheet.waitForExistence(timeout: 5))
+        resetSheet.buttons["Reset"].tap()
+
+        XCTAssertTrue(app.buttons["settings-done-button"].waitForExistence(timeout: 5))
+        app.buttons["settings-done-button"].tap()
+
+        XCTAssertTrue(dashboardTitle(in: app).waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["No groups yet"].waitForExistence(timeout: 5))
     }
 }

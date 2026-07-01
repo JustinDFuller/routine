@@ -41,11 +41,6 @@ struct RootView: View {
                         screenshotFixture,
                         now: runtime.now
                     )
-                } else if runtime.skipsStarterSeeding == false {
-                    try StarterDataService(
-                        context: modelContext,
-                        seedMetadataValue: runtime.starterSeedVersion
-                    ).seedIfNeeded(now: runtime.now)
                 }
 
                 try applyDebugLaunchRouteIfNeeded()
@@ -53,7 +48,7 @@ struct RootView: View {
                 presentCheckInOnboardingPromptIfNeeded()
             } catch {
                 Self.starterDataLogger.error(
-                    "Starter data setup failed at launch: \(String(describing: error), privacy: .private)")
+                    "Launch setup failed: \(String(describing: error), privacy: .private)")
                 seedErrorIsPresented = true
             }
         }
@@ -66,7 +61,7 @@ struct RootView: View {
                 await syncCheckIns()
             }
         }
-        .alert("Could not set up starter routines.", isPresented: $seedErrorIsPresented) {
+        .alert("Could not load initial data.", isPresented: $seedErrorIsPresented) {
             Button("OK", role: .cancel) {}
         } message: {
             Text("You can still use Routine.")

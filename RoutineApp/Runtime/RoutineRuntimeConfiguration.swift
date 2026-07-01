@@ -18,23 +18,17 @@ struct RoutineRuntimeConfiguration: Equatable, Sendable {
 
     let fixedNow: Date?
     let disablesAnimations: Bool
-    let skipsStarterSeeding: Bool
-    let starterSeedVersion: String
     let screenshotFixture: RoutineScreenshotFixture?
     let forcedColorScheme: ForcedColorScheme?
 
     init(
         fixedNow: Date? = nil,
         disablesAnimations: Bool = false,
-        skipsStarterSeeding: Bool = false,
-        starterSeedVersion: String = StarterDataService.seedMetadataValue,
         screenshotFixture: RoutineScreenshotFixture? = nil,
         forcedColorScheme: ForcedColorScheme? = nil
     ) {
         self.fixedNow = fixedNow
         self.disablesAnimations = disablesAnimations
-        self.skipsStarterSeeding = skipsStarterSeeding
-        self.starterSeedVersion = starterSeedVersion
         self.screenshotFixture = screenshotFixture
         self.forcedColorScheme = forcedColorScheme
     }
