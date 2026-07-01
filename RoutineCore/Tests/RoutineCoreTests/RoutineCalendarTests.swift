@@ -87,6 +87,58 @@ final class RoutineCalendarTests: XCTestCase {
         XCTAssertEqual(range, expectedStart...expectedEnd)
     }
 
+    func testPreviousPeriodRangeReturnsWeekImmediatelyBeforeForEachConfiguredWeekStart() throws {
+        let today = try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 10))
+
+        let mondayCalendar = testRoutineCalendar(firstWeekday: 2)
+        let currentMondayWeek = mondayCalendar.currentWeekRange(containing: today)
+        let previousMondayWeek = mondayCalendar.previousPeriodRange(for: .weekly, before: currentMondayWeek)
+        let expectedPreviousMondayStart = try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 3))
+        let expectedPreviousMondayEnd = try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 9))
+        XCTAssertEqual(previousMondayWeek, expectedPreviousMondayStart...expectedPreviousMondayEnd)
+        XCTAssertEqual(currentMondayWeek.lowerBound, try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 10)))
+
+        let sundayCalendar = testRoutineCalendar(firstWeekday: 1)
+        let currentSundayWeek = sundayCalendar.currentWeekRange(containing: today)
+        let previousSundayWeek = sundayCalendar.previousPeriodRange(for: .weekly, before: currentSundayWeek)
+        let expectedPreviousSundayStart = try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 2))
+        let expectedPreviousSundayEnd = try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 8))
+        XCTAssertEqual(previousSundayWeek, expectedPreviousSundayStart...expectedPreviousSundayEnd)
+        XCTAssertEqual(currentSundayWeek.lowerBound, try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 9)))
+
+        let saturdayCalendar = testRoutineCalendar(firstWeekday: 7)
+        let currentSaturdayWeek = saturdayCalendar.currentWeekRange(containing: today)
+        let previousSaturdayWeek = saturdayCalendar.previousPeriodRange(for: .weekly, before: currentSaturdayWeek)
+        let expectedPreviousSaturdayStart = try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 1))
+        let expectedPreviousSaturdayEnd = try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 7))
+        XCTAssertEqual(previousSaturdayWeek, expectedPreviousSaturdayStart...expectedPreviousSaturdayEnd)
+        XCTAssertEqual(currentSaturdayWeek.lowerBound, try XCTUnwrap(RoutineDay(year: 2024, month: 6, day: 8)))
+    }
+
+    func testPreviousPeriodRangeReturnsPriorMonthAcrossMonthBoundary() throws {
+        let calendar = testRoutineCalendar()
+        let today = try XCTUnwrap(RoutineDay(year: 2025, month: 4, day: 10))
+        let currentMonth = calendar.currentMonthRange(containing: today)
+        let expectedStart = try XCTUnwrap(RoutineDay(year: 2025, month: 3, day: 1))
+        let expectedEnd = try XCTUnwrap(RoutineDay(year: 2025, month: 3, day: 31))
+
+        let previousMonth = calendar.previousPeriodRange(for: .monthly, before: currentMonth)
+
+        XCTAssertEqual(previousMonth, expectedStart...expectedEnd)
+    }
+
+    func testPreviousPeriodRangeReturnsPriorDecemberAcrossYearBoundary() throws {
+        let calendar = testRoutineCalendar()
+        let today = try XCTUnwrap(RoutineDay(year: 2025, month: 1, day: 15))
+        let currentMonth = calendar.currentMonthRange(containing: today)
+        let expectedStart = try XCTUnwrap(RoutineDay(year: 2024, month: 12, day: 1))
+        let expectedEnd = try XCTUnwrap(RoutineDay(year: 2024, month: 12, day: 31))
+
+        let previousMonth = calendar.previousPeriodRange(for: .monthly, before: currentMonth)
+
+        XCTAssertEqual(previousMonth, expectedStart...expectedEnd)
+    }
+
     func testCurrentMonthRangeCoversExpectedMonthLengths() throws {
         let calendar = testRoutineCalendar()
         let januaryStart = try XCTUnwrap(RoutineDay(year: 2025, month: 1, day: 1))

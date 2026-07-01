@@ -284,12 +284,21 @@ struct RoutineHistoryView: View {
         }
     }
 
+    private func streakDisplayText(for viewData: RoutineHistoryViewData) -> String {
+        viewData.streakSummaryText ?? "No streak yet"
+    }
+
+    private func streakAccessibilityDisplayText(for viewData: RoutineHistoryViewData) -> String {
+        viewData.streakAccessibilityText ?? "No streak yet"
+    }
+
     private func summaryAccessibilityLabel(for viewData: RoutineHistoryViewData) -> String {
         [
             viewData.routineName,
             viewData.frequencySummary,
             currentPeriodProgressText(for: viewData.progress),
-            lastDoneDisplayText(for: viewData.lastDoneText)
+            lastDoneDisplayText(for: viewData.lastDoneText),
+            streakAccessibilityDisplayText(for: viewData)
         ].joined(separator: ", ")
     }
 
@@ -453,6 +462,11 @@ struct RoutineHistoryView: View {
                 .foregroundStyle(Color.routineLabelPrimary)
 
             Text(lastDoneDisplayText(for: viewData.lastDoneText))
+                .font(.body)
+                .foregroundStyle(Color.routineLabelSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(streakDisplayText(for: viewData))
                 .font(.body)
                 .foregroundStyle(Color.routineLabelSecondary)
                 .fixedSize(horizontal: false, vertical: true)

@@ -185,13 +185,20 @@ struct RoutineCardView: View {
 
     @ViewBuilder
     private var metadataContent: some View {
-        if let availabilityText = viewData.availabilityText {
+        if viewData.streakText == nil, viewData.availabilityText == nil {
+            primaryMetadataContent
+        } else {
             VStack(alignment: .leading, spacing: 6) {
                 primaryMetadataContent
-                availabilityLabel(availabilityText)
+
+                if let streakText = viewData.streakText {
+                    streakLabel(streakText)
+                }
+
+                if let availabilityText = viewData.availabilityText {
+                    availabilityLabel(availabilityText)
+                }
             }
-        } else {
-            primaryMetadataContent
         }
     }
 
@@ -246,6 +253,13 @@ struct RoutineCardView: View {
         Text(text)
             .font(.caption)
             .foregroundStyle(isUnavailable ? Color.routineLabelPrimary : Color.routineLabelSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func streakLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.caption)
+            .foregroundStyle(Color.routineLabelSecondary)
             .fixedSize(horizontal: false, vertical: true)
     }
 }

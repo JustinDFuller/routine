@@ -11,11 +11,13 @@ final class DashboardProjectionBuilder {
     private let context: ModelContext
     private let routineCalendar: RoutineCalendar
     private let progressCalculator: ProgressCalculator
+    private let streakCalculator: StreakCalculator
 
     init(context: ModelContext, routineCalendar: RoutineCalendar = .current) {
         self.context = context
         self.routineCalendar = routineCalendar
         progressCalculator = ProgressCalculator(routineCalendar: routineCalendar)
+        streakCalculator = StreakCalculator(routineCalendar: routineCalendar)
     }
 
     func build(now: Date = .now) throws -> TodayDashboardViewData {
@@ -177,6 +179,13 @@ extension DashboardProjectionBuilder {
         )
         let periodText = periodUnitText(for: routine.period)
         let lastDoneText = routineCalendar.relativeLabel(for: progress.lastCompletedDay, today: today)
+        let streak = streakCalculator.streak(
+            period: routine.period,
+            targetCount: routine.targetCount,
+            completionDays: completionDays,
+            today: today
+        )
+        let cardStreakText = streakText(for: streak)
         let availabilityState = availabilityState(
             for: routine,
             currentMinuteOfDay: currentMinuteOfDay
@@ -189,13 +198,14 @@ extension DashboardProjectionBuilder {
             countText: "\(progress.completedCount)/\(routine.targetCount)",
             periodText: periodText,
             lastDoneText: lastDoneText,
+            streakText: cardStreakText,
             availabilityText: availabilityState.text,
             accessibilityLabel: accessibilityLabel(
                 routineName: routine.name,
                 unavailableAccessibilityPhrase: availabilityState.unavailableAccessibilityPhrase,
                 progress: progress,
-                periodText: periodText,
-                lastDoneText: lastDoneText
+                lastDoneText: lastDoneText,
+                streakText: cardStreakText
             ),
             unavailableAccessibilityPhrase: availabilityState.unavailableAccessibilityPhrase,
             progressRing: ProgressRingViewData(
@@ -252,13 +262,20 @@ extension DashboardProjectionBuilder {
         }
     }
 
+    fileprivate func streakText(for streak: RoutineStreak) -> String? {
+        guard streak.count >= 1 else { return nil }
+        let unit = periodUnitText(for: streak.period)
+        return "\(streak.count) \(unit)\(streak.count == 1 ? "" : "s") in a row"
+    }
+
     fileprivate func accessibilityLabel(
         routineName: String,
         unavailableAccessibilityPhrase: String?,
         progress: RoutineProgress,
-        periodText: String,
-        lastDoneText: String
+        lastDoneText: String,
+        streakText: String?
     ) -> String {
+        let periodText = periodUnitText(for: progress.period)
         let completionText =
             if progress.isCompletedToday {
                 "completed today"
@@ -273,10 +290,18 @@ extension DashboardProjectionBuilder {
                 ""
             }
 
+        let streakSuffix =
+            if let streakText {
+                ", \(streakText)"
+            } else {
+                ""
+            }
+
         return
             "\(routineName), \(unavailableText)\(completionText), "
             + "\(progress.completedCount) of \(progress.targetCount) this \(periodText), "
             + accessibilityLastDoneText(for: lastDoneText)
+            + streakSuffix
     }
 
     fileprivate func accessibilityLastDoneText(for lastDoneText: String) -> String {

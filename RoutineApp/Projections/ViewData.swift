@@ -90,6 +90,7 @@ struct RoutineCardViewData: Identifiable, Equatable, Sendable {
     let countText: String
     let periodText: String
     let lastDoneText: String
+    let streakText: String?
     let availabilityText: String?
     let accessibilityLabel: String
     let unavailableAccessibilityPhrase: String?
@@ -127,6 +128,8 @@ struct RoutineHistoryViewData: Equatable, Sendable {
     let routineName: String
     let frequencySummary: String
     let progress: RoutineProgress
+    let streakSummaryText: String?
+    let streakAccessibilityText: String?
     let lastDoneText: String
     let weeks: [HistoryCalendarWeek]
     let recentCompletions: [CompletionListItem]
