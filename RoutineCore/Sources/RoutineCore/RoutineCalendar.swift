@@ -58,6 +58,17 @@ public struct RoutineCalendar: Sendable {
         }
     }
 
+    public func previousPeriodRange(
+        for period: RoutinePeriod,
+        before range: ClosedRange<RoutineDay>
+    ) -> ClosedRange<RoutineDay> {
+        guard let priorDate = calendar.date(byAdding: .day, value: -1, to: date(for: range.lowerBound)) else {
+            preconditionFailure("Unable to compute previous period range before \(range.lowerBound.key)")
+        }
+
+        return currentPeriodRange(for: period, containing: day(containing: priorDate))
+    }
+
     public func currentWeekRange(containing day: RoutineDay) -> ClosedRange<RoutineDay> {
         let date = date(for: day)
         let offset = weekdayOffset(for: day)

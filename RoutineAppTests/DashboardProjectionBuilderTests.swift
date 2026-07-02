@@ -131,12 +131,71 @@ final class DashboardProjectionBuilderTests: ProjectionBuilderTestCase {
             "Yesterday, not completed today, 1 of 1 this week, last done yesterday"
         )
         XCTAssertEqual(cardsByName["Recent"]?.lastDoneText, "3d ago")
+        XCTAssertEqual(cardsByName["Recent"]?.streakText, "1 week in a row")
         XCTAssertEqual(
             cardsByName["Recent"]?.accessibilityLabel,
-            "Recent, not completed today, 0 of 1 this week, last done 3 days ago"
+            "Recent, not completed today, 0 of 1 this week, last done 3 days ago, 1 week in a row"
         )
         XCTAssertEqual(cardsByName["CurrentYear"]?.lastDoneText, "Jan 2")
         XCTAssertEqual(cardsByName["PriorYear"]?.lastDoneText, "Jun 2, 2025")
+
+        XCTAssertNil(cardsByName["Never"]?.streakText)
+        XCTAssertEqual(
+            cardsByName["Never"]?.accessibilityLabel,
+            "Never, not completed today, 0 of 1 this week, no completions yet"
+        )
+    }
+
+    func testBuildProducesStreakTextAndAccessibilityPhraseForConsecutiveMetWeeks() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let now = makeDate(year: 2026, month: 6, day: 10, hour: 9, minute: 0, calendar: calendar.calendar)
+
+        let group = insertGroup(name: "Health", sortOrder: 0, into: context)
+        let routine = insertRoutine(
+            seed: RoutineTestSeed(name: "Streaky", targetCount: 2, period: .weekly, sortOrder: 0),
+            group: group,
+            into: context
+        )
+
+        // Week -1: Jun 1 - Jun 7 (met)
+        insertCompletion(
+            routine: routine,
+            day: try makeDay(year: 2026, month: 6, day: 2),
+            completedAt: makeDate(year: 2026, month: 6, day: 2, calendar: calendar.calendar),
+            into: context
+        )
+        insertCompletion(
+            routine: routine,
+            day: try makeDay(year: 2026, month: 6, day: 3),
+            completedAt: makeDate(year: 2026, month: 6, day: 3, calendar: calendar.calendar),
+            into: context
+        )
+        // Week -2: May 25 - May 31 (met)
+        insertCompletion(
+            routine: routine,
+            day: try makeDay(year: 2026, month: 5, day: 26),
+            completedAt: makeDate(year: 2026, month: 5, day: 26, calendar: calendar.calendar),
+            into: context
+        )
+        insertCompletion(
+            routine: routine,
+            day: try makeDay(year: 2026, month: 5, day: 27),
+            completedAt: makeDate(year: 2026, month: 5, day: 27, calendar: calendar.calendar),
+            into: context
+        )
+        // Week -3: May 18 - May 24 (missed, no completions)
+
+        try saveChanges(in: context)
+
+        let viewData = try DashboardProjectionBuilder(context: context, routineCalendar: calendar).build(now: now)
+        let card = try XCTUnwrap(viewData.sections.first?.routines.first)
+
+        XCTAssertEqual(card.streakText, "2 weeks in a row")
+        XCTAssertEqual(
+            card.accessibilityLabel,
+            "Streaky, not completed today, 0 of 2 this week, last done 7 days ago, 2 weeks in a row"
+        )
     }
 
     func testBuildProducesTargetMetAndOverTargetProgressData() throws {
@@ -177,6 +236,7 @@ final class DashboardProjectionBuilderTests: ProjectionBuilderTestCase {
             countText: "1/2",
             periodText: "week",
             lastDoneText: "Today",
+            streakText: nil,
             availabilityText: nil,
             accessibilityLabel: "Second Completed, completed today, 1 of 2 this week, last done Today",
             unavailableAccessibilityPhrase: nil,
@@ -296,6 +356,7 @@ final class DashboardProjectionBuilderTests: ProjectionBuilderTestCase {
             countText: "3/3",
             periodText: "week",
             lastDoneText: "Yesterday",
+            streakText: nil,
             availabilityText: "Available 12:00 AM-6:45 AM",
             accessibilityLabel: "Unavailable Goal Met, not completed today, 3 of 3 this week, last done yesterday",
             unavailableAccessibilityPhrase: "unavailable now, available 12:00 AM to 6:45 AM",
@@ -330,6 +391,7 @@ final class DashboardProjectionBuilderTests: ProjectionBuilderTestCase {
             countText: "1/4",
             periodText: "week",
             lastDoneText: "Today",
+            streakText: nil,
             availabilityText: "Available 12:00 AM-6:45 AM",
             accessibilityLabel: "Completed Unavailable, completed today, 1 of 4 this week, last done today",
             unavailableAccessibilityPhrase: "unavailable now, available 12:00 AM to 6:45 AM",

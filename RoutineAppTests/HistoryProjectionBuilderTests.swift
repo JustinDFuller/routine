@@ -110,6 +110,60 @@ final class HistoryProjectionBuilderTests: ProjectionBuilderTestCase {
         XCTAssertEqual(viewData.progress.completedCount, 2)
         XCTAssertTrue(viewData.progress.isCompletedToday)
         XCTAssertEqual(viewData.lastDoneText, "Today")
+        XCTAssertNil(viewData.streakSummaryText)
+        XCTAssertNil(viewData.streakAccessibilityText)
+    }
+
+    func testBuildProducesStreakSummaryAndAccessibilityTextForConsecutiveMetWeeks() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let group = insertGroup(name: "History", sortOrder: 0, into: context)
+        let routine = insertRoutine(
+            seed: RoutineTestSeed(name: "Streaky", targetCount: 2, period: .weekly, sortOrder: 0),
+            group: group,
+            into: context
+        )
+        let now = makeDate(year: 2026, month: 6, day: 10, hour: 9, minute: 0, calendar: calendar.calendar)
+
+        // Week -1: Jun 1 - Jun 7 (met)
+        insertCompletion(
+            routine: routine,
+            day: try makeDay(year: 2026, month: 6, day: 2),
+            completedAt: makeDate(year: 2026, month: 6, day: 2, calendar: calendar.calendar),
+            into: context
+        )
+        insertCompletion(
+            routine: routine,
+            day: try makeDay(year: 2026, month: 6, day: 3),
+            completedAt: makeDate(year: 2026, month: 6, day: 3, calendar: calendar.calendar),
+            into: context
+        )
+        // Week -2: May 25 - May 31 (met)
+        insertCompletion(
+            routine: routine,
+            day: try makeDay(year: 2026, month: 5, day: 26),
+            completedAt: makeDate(year: 2026, month: 5, day: 26, calendar: calendar.calendar),
+            into: context
+        )
+        insertCompletion(
+            routine: routine,
+            day: try makeDay(year: 2026, month: 5, day: 27),
+            completedAt: makeDate(year: 2026, month: 5, day: 27, calendar: calendar.calendar),
+            into: context
+        )
+        // Week -3: May 18 - May 24 (missed, no completions)
+
+        try saveChanges(in: context)
+
+        let viewData = try foundViewData(
+            from: HistoryProjectionBuilder(context: context, routineCalendar: calendar).build(
+                routineID: routine.id,
+                now: now
+            )
+        )
+
+        XCTAssertEqual(viewData.streakSummaryText, "2 weeks in a row")
+        XCTAssertEqual(viewData.streakAccessibilityText, "2 weeks in a row")
     }
 
     func testBuildUsingProvidedModelsRefreshesAfterCompletionRemoval() throws {

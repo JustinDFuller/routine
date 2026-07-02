@@ -11,11 +11,13 @@ final class HistoryProjectionBuilder {
     private let context: ModelContext
     private let routineCalendar: RoutineCalendar
     private let progressCalculator: ProgressCalculator
+    private let streakCalculator: StreakCalculator
 
     init(context: ModelContext, routineCalendar: RoutineCalendar = .current) {
         self.context = context
         self.routineCalendar = routineCalendar
         progressCalculator = ProgressCalculator(routineCalendar: routineCalendar)
+        streakCalculator = StreakCalculator(routineCalendar: routineCalendar)
     }
 
     func build(routineID: UUID, now: Date = .now) throws -> RoutineHistoryProjection {
@@ -115,6 +117,17 @@ extension HistoryProjectionBuilder {
         }
     }
 
+    fileprivate func streakSummaryText(for streak: RoutineStreak) -> String? {
+        guard streak.count >= 1 else { return nil }
+
+        switch streak.period {
+        case .weekly:
+            return "\(streak.count) week\(streak.count == 1 ? "" : "s") in a row"
+        case .monthly:
+            return "\(streak.count) month\(streak.count == 1 ? "" : "s") in a row"
+        }
+    }
+
     fileprivate func makeViewData(
         routine: Routine,
         completions: [RoutineCompletion],
@@ -129,6 +142,13 @@ extension HistoryProjectionBuilder {
             today: today
         )
         let completedDays = Set(completionDays)
+        let streak = streakCalculator.streak(
+            period: routine.period,
+            targetCount: routine.targetCount,
+            completionDays: completionDays,
+            today: today
+        )
+        let resolvedStreakSummaryText = streakSummaryText(for: streak)
 
         return RoutineHistoryViewData(
             routineID: routine.id,
@@ -138,6 +158,8 @@ extension HistoryProjectionBuilder {
                 period: routine.period
             ),
             progress: progress,
+            streakSummaryText: resolvedStreakSummaryText,
+            streakAccessibilityText: resolvedStreakSummaryText,
             lastDoneText: routineCalendar.relativeLabel(for: progress.lastCompletedDay, today: today),
             weeks: buildWeeks(
                 today: today,
