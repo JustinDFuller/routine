@@ -37,9 +37,9 @@ struct UndoBannerView: View {
         }
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.routineDivider.opacity(0.5), lineWidth: 1)
+                .stroke(Color.routineAccentActive.opacity(0.4), lineWidth: 1)
         }
-        .shadow(color: Color.black.opacity(0.12), radius: 10, y: 4)
+        .shadow(color: Color.black.opacity(0.18), radius: 16, y: 6)
     }
 }
 

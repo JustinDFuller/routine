@@ -48,7 +48,7 @@
 
   /* Elevation — Routine is mostly flat (border-defined). The single
      real shadow is the transient undo banner. */
-  --shadow-banner: 0 4px 10px rgba(0, 0, 0, 0.12);
+  --shadow-banner: 0 6px 16px rgba(0, 0, 0, 0.18);
   --shadow-menu: 0 12px 32px rgba(0, 0, 0, 0.28);
 
   /* Motion — confirm state, never entertain */
