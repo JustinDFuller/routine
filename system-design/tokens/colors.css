@@ -88,6 +88,8 @@
   --tint-active-soft: color-mix(in srgb, var(--routine-accent-active) 12%, transparent);
   /* hairline at 50% — used on sheets, banner, history cards */
   --border-hairline-soft: color-mix(in srgb, var(--routine-divider) 50%, transparent);
+  /* undo banner accent edge */
+  --border-banner-accent: color-mix(in srgb, var(--routine-accent-active) 40%, transparent);
   /* completed calendar day fill */
   --calendar-day-complete: color-mix(in srgb, var(--routine-accent-complete) 22%, transparent);
 }

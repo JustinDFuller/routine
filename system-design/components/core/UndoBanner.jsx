@@ -18,7 +18,7 @@ export function UndoBanner({ message = "Completed routine", actionTitle = "Undo"
         background: "var(--surface-sheet)",
         borderRadius: "var(--radius-sheet)",
         boxShadow: "var(--shadow-banner)",
-        border: "1px solid var(--border-hairline-soft)",
+        border: "1px solid var(--border-banner-accent)",
         ...style,
       }}
     >
