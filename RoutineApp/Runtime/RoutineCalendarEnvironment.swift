@@ -13,6 +13,7 @@ enum RoutineSettingsKeys {
     static let checkInEveningEnabled = "settings.checkin.evening.enabled"
     static let checkInEveningMinute = "settings.checkin.evening.minute"
     static let checkInOnboardingShown = "settings.checkin.onboardingShown"
+    static let openAppOnWidgetCompletion = RoutineWidgetBridge.openAppOnWidgetCompletionKey
 }
 
 private struct RoutineCalendarKey: EnvironmentKey {

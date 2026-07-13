@@ -24,6 +24,9 @@ struct SettingsView: View {
     @AppStorage(RoutineSettingsKeys.checkInEveningEnabled) private var checkInEveningEnabled = false
     @AppStorage(RoutineSettingsKeys.checkInEveningMinute) private var checkInEveningMinute = 1_080
 
+    @AppStorage(RoutineSettingsKeys.openAppOnWidgetCompletion, store: RoutineWidgetBridge.appGroupDefaults)
+    private var openAppOnWidgetCompletion = true
+
     @State private var isNotificationAccessDenied = false
 
     var body: some View {
@@ -56,6 +59,21 @@ struct SettingsView: View {
                 }
 
                 checkInSection
+
+                Section {
+                    Toggle("Open app when completing from widget", isOn: $openAppOnWidgetCompletion)
+                        .accessibilityIdentifier("settings-widget-open-app-toggle")
+                        .onChange(of: openAppOnWidgetCompletion) {
+                            RoutineWidgetBridge.reloadAllTimelines()
+                        }
+                } header: {
+                    Text("Widget")
+                } footer: {
+                    Text(
+                        "When off, tapping Done on the widget completes the routine and updates "
+                            + "the widget without opening Routine."
+                    )
+                }
 
                 Section {
                     NavigationLink(value: SettingsDestination.factoryReset) {
