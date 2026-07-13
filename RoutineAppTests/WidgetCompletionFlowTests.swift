@@ -97,6 +97,59 @@ final class WidgetCompletionFlowTests: ProjectionBuilderTestCase {
         XCTAssertEqual(try fetchCompletions(in: context).count, 1)
     }
 
+    func testCompleteRoutineSkipsPendingBannerWhenOpenAppOnCompletionIsDisabled() throws {
+        let defaults = makeDefaults(suffix: "open-app-disabled")
+        defaults.set(false, forKey: RoutineWidgetBridge.openAppOnWidgetCompletionKey)
+        let context = try makeContext()
+        let group = insertGroup(name: "Morning", sortOrder: 0, into: context)
+        let routine = insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 5, period: .weekly, sortOrder: 0),
+            group: group,
+            into: context
+        )
+        try saveChanges(in: context)
+
+        var reloadCount = 0
+        RoutineWidgetBridge.reloadAllTimelines = {
+            reloadCount += 1
+        }
+
+        CompleteRoutineIntent.completeRoutine(
+            routineID: routine.id.uuidString,
+            makeContext: { context },
+            userDefaults: defaults
+        )
+
+        XCTAssertEqual(reloadCount, 1)
+        XCTAssertNil(defaults.string(forKey: RoutineWidgetBridge.completedRoutineIDKey))
+        XCTAssertEqual(try fetchCompletions(in: context).count, 1)
+    }
+
+    func testCompleteRoutineIntentsHaveFixedOpenAppWhenRunValues() throws {
+        XCTAssertTrue(CompleteRoutineIntent.openAppWhenRun)
+        XCTAssertFalse(CompleteRoutineSilentlyIntent.openAppWhenRun)
+    }
+
+    func testShouldOpenAppOnWidgetCompletionDefaultsToTrueWhenKeyIsAbsent() throws {
+        let defaults = makeDefaults(suffix: "should-open-default")
+
+        XCTAssertTrue(RoutineWidgetBridge.shouldOpenAppOnWidgetCompletion(userDefaults: defaults))
+    }
+
+    func testShouldOpenAppOnWidgetCompletionReflectsStoredValue() throws {
+        let defaults = makeDefaults(suffix: "should-open-stored")
+
+        defaults.set(false, forKey: RoutineWidgetBridge.openAppOnWidgetCompletionKey)
+        XCTAssertFalse(RoutineWidgetBridge.shouldOpenAppOnWidgetCompletion(userDefaults: defaults))
+
+        defaults.set(true, forKey: RoutineWidgetBridge.openAppOnWidgetCompletionKey)
+        XCTAssertTrue(RoutineWidgetBridge.shouldOpenAppOnWidgetCompletion(userDefaults: defaults))
+    }
+
+    func testShouldOpenAppOnWidgetCompletionDefaultsToTrueWhenUserDefaultsIsNil() throws {
+        XCTAssertTrue(RoutineWidgetBridge.shouldOpenAppOnWidgetCompletion(userDefaults: nil))
+    }
+
     func testRestorationClearsInvalidStoredIdentifier() throws {
         let defaults = makeDefaults(suffix: "invalid-pending")
         let context = try makeContext()

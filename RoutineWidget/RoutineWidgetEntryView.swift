@@ -139,19 +139,27 @@ private struct DoneButton: View {
     let accentColor: Color
 
     var body: some View {
-        Button(intent: CompleteRoutineIntent(routineID: routineID)) {
-            Text("Done")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Color.routineCanvas)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 5)
-                .frame(maxWidth: .infinity)
-                .background(
-                    Capsule(style: .continuous)
-                        .fill(accentColor)
-                )
+        Group {
+            if RoutineWidgetBridge.shouldOpenAppOnWidgetCompletion() {
+                Button(intent: CompleteRoutineIntent(routineID: routineID)) { label }
+            } else {
+                Button(intent: CompleteRoutineSilentlyIntent(routineID: routineID)) { label }
+            }
         }
         .buttonStyle(.plain)
+    }
+
+    private var label: some View {
+        Text("Done")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Color.routineCanvas)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 5)
+            .frame(maxWidth: .infinity)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(accentColor)
+            )
     }
 }
 

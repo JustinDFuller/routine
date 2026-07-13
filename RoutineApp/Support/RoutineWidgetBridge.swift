@@ -9,10 +9,25 @@ struct WidgetCompletionRestoration: Equatable, Sendable {
 
 enum RoutineWidgetBridge {
     static let completedRoutineIDKey = "widgetCompletedRoutineID"
+    static let openAppOnWidgetCompletionKey = "settings.openAppOnWidgetCompletion"
+
+    nonisolated(unsafe) static let appGroupDefaults: UserDefaults =
+        UserDefaults(suiteName: RoutineModelContainer.appGroupID) ?? .standard
 
     @MainActor
     static var reloadAllTimelines: @MainActor () -> Void = {
         WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    static func shouldOpenAppOnWidgetCompletion(
+        userDefaults: UserDefaults? = UserDefaults(suiteName: RoutineModelContainer.appGroupID)
+    ) -> Bool {
+        guard let userDefaults,
+            userDefaults.object(forKey: openAppOnWidgetCompletionKey) != nil
+        else {
+            return true
+        }
+        return userDefaults.bool(forKey: openAppOnWidgetCompletionKey)
     }
 
     static func recordCompletedRoutineID(
