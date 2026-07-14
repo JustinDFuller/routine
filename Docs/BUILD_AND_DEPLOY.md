@@ -30,7 +30,7 @@ export APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 
 - `make build-ios` — builds for whatever generic simulator or device destination is available. Skips cleanly with no error if none is installed.
 - `make run-ios` — builds and runs on a booted (or auto-selected) simulator.
-- `make deploy-device` — builds and installs on a connected physical iPhone via `xcrun devicectl`, then launches the app. Skips cleanly if no connected iPhone is found; set `IOS_DEVICE_ID` to target a specific device. Set `ROUTINE_DEPLOY_DEVICE_LAUNCH=0` to install without launching.
+- `make deploy-device` — builds and installs on a specific physical iPhone (hard-coded default UDID; set `IOS_DEVICE_ID` to target a different device) via `xcrun devicectl`, then launches the app. Verifies the device is actually reachable before building and **errors out (exit 1)** if it is not connected. Set `ROUTINE_DEPLOY_DEVICE_LAUNCH=0` to install without launching.
 - `make release` — runs `release-preflight` (validate → build Release → archive → export) and then `upload-ios` (uploads `build/export/Routine.ipa` to App Store Connect via `xcrun altool`). Requires `CURRENT_PROJECT_VERSION` and the App Store Connect environment variables.
 - `make release-preflight` — the archive/export half of `release`, without uploading. Useful to confirm a build is producible before spending an upload.
 - `make upload-ios` — uploads an already-exported `build/export/Routine.ipa` on its own.

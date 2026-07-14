@@ -959,8 +959,10 @@ set -euo pipefail
 
 print -r -- "$*" >>"${FAKE_DEPLOY_XCRUN_LOG}"
 
-if [[ "$1" == "devicectl" && "$2" == "list" && "$3" == "devices" ]]; then
-    print -r -- "${FAKE_DEPLOY_DEVICECTL_LIST_JSON:-}"
+if [[ "$1" == "devicectl" && "$2" == "device" && "$3" == "info" && "$4" == "details" ]]; then
+    if [[ "${FAKE_DEPLOY_DEVICE_PROBE_FAILS:-0}" == "1" ]]; then
+        exit 1
+    fi
     exit 0
 fi
 
@@ -1013,39 +1015,39 @@ assert_equals "$(<"$deploy_device_generate_log")" "generate"
 explicit_deploy_xcodebuild_log="$(<"$deploy_device_xcodebuild_log")"
 explicit_deploy_xcrun_log="$(<"$deploy_device_xcrun_log")"
 assert_contains "$explicit_deploy_xcodebuild_log" "-quiet -project Routine.xcodeproj -scheme RoutineApp -configuration Debug -destination id=EXPLICIT-ID -derivedDataPath DerivedData/DeployDevice DEVELOPMENT_TEAM=CX2KMQZQ7X -allowProvisioningUpdates build"
-assert_not_contains "$explicit_deploy_xcrun_log" "devicectl list devices"
+assert_contains "$explicit_deploy_xcrun_log" "devicectl device info details --device EXPLICIT-ID"
 assert_contains "$explicit_deploy_xcrun_log" "devicectl device install app --device EXPLICIT-ID DerivedData/DeployDevice/Build/Products/Debug-iphoneos/Routine.app"
 assert_contains "$explicit_deploy_xcrun_log" "devicectl device process launch --device EXPLICIT-ID com.justinfuller.routine"
 
-no_match_devices_json='{"result":{"devices":[{"identifier":"WATCH-ID","hardwareProperties":{"reality":"physical","platform":"watchOS"},"connectionProperties":{"tunnelState":"connected"},"deviceProperties":{"name":"Watch"}},{"identifier":"DISCONNECTED-ID","hardwareProperties":{"reality":"physical","platform":"iOS"},"connectionProperties":{"tunnelState":"disconnected"},"deviceProperties":{"name":"Disconnected iPhone"}}]}}'
-
 : >"$deploy_device_xcodebuild_log"
 : >"$deploy_device_xcrun_log"
 : >"$deploy_device_generate_log"
-run_deploy_device_and_capture FAKE_DEPLOY_DEVICECTL_LIST_JSON="$no_match_devices_json"
+run_deploy_device_and_capture
 assert_equals "$?" "0"
 assert_equals "$(<"$deploy_device_generate_log")" "generate"
-assert_contains "$REPLY" "Skipping device deploy: no connected iPhone was found."
-no_match_deploy_xcrun_log="$(<"$deploy_device_xcrun_log")"
-assert_contains "$no_match_deploy_xcrun_log" "devicectl list devices --quiet --json-output -"
-if [[ "$no_match_deploy_xcrun_log" == *"install"* ]]; then
-    echo "Expected device-not-found skip path to avoid installing."
-    exit 1
-fi
-assert_equals "$(<"$deploy_device_xcodebuild_log")" ""
-
-mixed_devices_json='{"result":{"devices":[{"identifier":"WATCH-ID","hardwareProperties":{"reality":"physical","platform":"watchOS"},"connectionProperties":{"tunnelState":"connected"},"deviceProperties":{"name":"Watch"}},{"identifier":"DISCONNECTED-IPHONE-ID","hardwareProperties":{"reality":"physical","platform":"iOS"},"connectionProperties":{"tunnelState":"disconnected"},"deviceProperties":{"name":"Disconnected iPhone"}},{"identifier":"SIM-IPHONE-ID","hardwareProperties":{"reality":"simulated","platform":"iOS"},"connectionProperties":{"tunnelState":"connected"},"deviceProperties":{"name":"iPhone 17 Pro Max"}},{"identifier":"CONNECTED-IPHONE-ID","hardwareProperties":{"reality":"physical","platform":"iOS"},"connectionProperties":{"tunnelState":"connected"},"deviceProperties":{"name":"Justins iPhone"}}]}}'
+default_deploy_xcodebuild_log="$(<"$deploy_device_xcodebuild_log")"
+default_deploy_xcrun_log="$(<"$deploy_device_xcrun_log")"
+assert_contains "$default_deploy_xcodebuild_log" "-destination id=00008140-001661682EB8401C"
+assert_contains "$default_deploy_xcrun_log" "devicectl device info details --device 00008140-001661682EB8401C"
+assert_contains "$default_deploy_xcrun_log" "devicectl device install app --device 00008140-001661682EB8401C DerivedData/DeployDevice/Build/Products/Debug-iphoneos/Routine.app"
+assert_contains "$default_deploy_xcrun_log" "devicectl device process launch --device 00008140-001661682EB8401C com.justinfuller.routine"
 
 : >"$deploy_device_xcodebuild_log"
 : >"$deploy_device_xcrun_log"
 : >"$deploy_device_generate_log"
-run_deploy_device_and_capture FAKE_DEPLOY_DEVICECTL_LIST_JSON="$mixed_devices_json"
-assert_equals "$?" "0"
-discovered_deploy_xcodebuild_log="$(<"$deploy_device_xcodebuild_log")"
-discovered_deploy_xcrun_log="$(<"$deploy_device_xcrun_log")"
-assert_contains "$discovered_deploy_xcodebuild_log" "-destination id=CONNECTED-IPHONE-ID"
-assert_contains "$discovered_deploy_xcrun_log" "devicectl device install app --device CONNECTED-IPHONE-ID DerivedData/DeployDevice/Build/Products/Debug-iphoneos/Routine.app"
-assert_contains "$discovered_deploy_xcrun_log" "devicectl device process launch --device CONNECTED-IPHONE-ID com.justinfuller.routine"
+set +e
+run_deploy_device_and_capture FAKE_DEPLOY_DEVICE_PROBE_FAILS=1
+unreachable_deploy_exit_code=$?
+set -e
+assert_equals "$unreachable_deploy_exit_code" "1"
+assert_contains "$REPLY" "error: iPhone (00008140-001661682EB8401C) is not connected. Plug in and unlock, then retry."
+assert_equals "$(<"$deploy_device_generate_log")" "generate"
+assert_equals "$(<"$deploy_device_xcodebuild_log")" ""
+unreachable_deploy_xcrun_log="$(<"$deploy_device_xcrun_log")"
+if [[ "$unreachable_deploy_xcrun_log" == *"install"* ]]; then
+    echo "Expected unreachable-device path to avoid installing."
+    exit 1
+fi
 
 : >"$deploy_device_xcodebuild_log"
 : >"$deploy_device_xcrun_log"
