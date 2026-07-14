@@ -24,13 +24,12 @@ Before every upload:
 
 ## Upload
 
-Use Xcode Organizer as the canonical upload path for the first internal beta:
+Upload headlessly with `xcrun altool`, no Xcode GUI required. Complete the one-time setup in [SIGNING_AND_DEPLOY_SETUP.md](SIGNING_AND_DEPLOY_SETUP.md) first, then either:
 
-1. Open `Routine.xcodeproj` in Xcode with the correct signing account.
-2. Choose the archived `RoutineApp` build in Organizer.
-3. Distribute App.
-4. Select App Store Connect.
-5. Upload the build without changing the bundle IDs or App Group configuration.
+- Run everything in one step: `CURRENT_PROJECT_VERSION=<n> make release` (preflight + upload), or
+- Run `CURRENT_PROJECT_VERSION=<n> make release-preflight` followed by `make upload-ios` if you want to inspect the archive/export before uploading.
+
+Both require `APP_STORE_CONNECT_AUTH_KEY_PATH`, `APP_STORE_CONNECT_AUTH_KEY_ID`, and `APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID` set together in your shell. `upload-ios.sh` uploads `build/export/Routine.ipa` without changing the bundle IDs or App Group configuration. See [BUILD_AND_DEPLOY.md](BUILD_AND_DEPLOY.md) for the full command index.
 
 ## Internal Testing Setup
 

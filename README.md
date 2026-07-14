@@ -45,6 +45,9 @@ Use the scripts directly or the matching `make` targets:
 - Archive a Release build for distribution: `CURRENT_PROJECT_VERSION=2 ./Scripts/archive-ios.sh` or `CURRENT_PROJECT_VERSION=2 make archive-ios`
 - Export an `.ipa` from the most recent archive: `./Scripts/export-ios.sh` or `make export-ios`
 - Run the full release preflight before an internal beta upload: `CURRENT_PROJECT_VERSION=2 ./Scripts/release-preflight.sh` or `CURRENT_PROJECT_VERSION=2 make release-preflight`
+- Deploy to a connected physical iPhone: `./Scripts/deploy-device.sh` or `make deploy-device`
+- Upload an exported `.ipa` to App Store Connect: `./Scripts/upload-ios.sh` or `make upload-ios`
+- Preflight and upload in one step: `CURRENT_PROJECT_VERSION=2 make release`
 - Run iOS tests with an explicit destination: `IOS_TEST_DESTINATION='platform=iOS Simulator,name=iPhone 17' ./Scripts/test-ios.sh` or `IOS_TEST_DESTINATION='platform=iOS Simulator,name=iPhone 17' make test-ios`
 - Run the full local validation chain: `./Scripts/validate.sh` or `make validate`
 
@@ -64,18 +67,19 @@ Use [Docs/DOGFOODING_CHECKLIST.md](Docs/DOGFOODING_CHECKLIST.md) for the manual 
 
 ## Release Docs
 
+- Command index for building, running, and shipping without Xcode: [Docs/BUILD_AND_DEPLOY.md](Docs/BUILD_AND_DEPLOY.md)
+- One-time signing and deploy setup: [Docs/SIGNING_AND_DEPLOY_SETUP.md](Docs/SIGNING_AND_DEPLOY_SETUP.md)
 - Internal beta workflow: [Docs/TESTFLIGHT_RUNBOOK.md](Docs/TESTFLIGHT_RUNBOOK.md)
 - Public App Store follow-up: [Docs/APP_STORE_SUBMISSION_CHECKLIST.md](Docs/APP_STORE_SUBMISSION_CHECKLIST.md)
 
 ## Local iPhone Deployment
 
-1. Generate the project with `./Scripts/generate-project.sh`.
-2. Open `Routine.xcodeproj` in Xcode.
-3. Select the `RoutineApp` scheme and your connected iPhone.
-4. If Xcode requires a team, set your signing team locally in Xcode or validate the CLI build with `DEVELOPMENT_TEAM=YOURTEAMID ./Scripts/build-ios.sh`.
-5. Build and run from Xcode.
-6. Confirm the launcher icon appears on the Home Screen and in the App Library.
-7. Walk through the dogfooding checklist on the device. If no personal iPhone is available, run the same checks in Simulator and record the skipped physical-device items.
+Complete the one-time setup in [Docs/SIGNING_AND_DEPLOY_SETUP.md](Docs/SIGNING_AND_DEPLOY_SETUP.md), then:
+
+1. Connect your iPhone via USB (or Wi-Fi debugging) and trust the Mac if prompted.
+2. Run `make deploy-device`. This generates the project, builds for the connected device, installs it via `xcrun devicectl`, and launches it — no Xcode GUI required.
+3. Confirm the launcher icon appears on the Home Screen and in the App Library.
+4. Walk through the dogfooding checklist on the device. If no personal iPhone is available, run the same checks in Simulator and record the skipped physical-device items.
 
 ## TestFlight Distribution
 
@@ -86,13 +90,12 @@ Before the first archive, complete the Apple-side setup:
 3. Register the widget bundle ID `com.justinfuller.routine.widget` with App Groups enabled.
 4. Create the App Group `group.com.justinfuller.routine` and attach it to both bundle IDs.
 5. Create the App Store Connect app record for the iOS app bundle ID.
+6. Create an App Store Connect API key and export the auth-key environment variables, per [Docs/SIGNING_AND_DEPLOY_SETUP.md](Docs/SIGNING_AND_DEPLOY_SETUP.md).
 
-Then run release preflight with the next build number:
+Then build and upload with the next build number:
 
 1. Pick the next unique `CURRENT_PROJECT_VERSION`.
-2. Run `CURRENT_PROJECT_VERSION=2 make release-preflight`.
-3. Confirm the archive exists at `build/Routine.xcarchive` and the export exists at `build/export/Routine.ipa`.
-4. Upload from Xcode Organizer using the archived build. Treat Organizer as the canonical upload path for the first internal beta.
+2. Run `CURRENT_PROJECT_VERSION=2 make release`. This runs preflight (validate → build Release → archive → export) and then uploads `build/export/Routine.ipa` to App Store Connect headlessly via `xcrun altool`.
 
 The full operator checklist lives in [Docs/TESTFLIGHT_RUNBOOK.md](Docs/TESTFLIGHT_RUNBOOK.md).
 

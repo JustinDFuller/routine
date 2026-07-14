@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 workdir="$(mktemp -d)"
-trap 'rm -rf "$workdir" build/Routine.xcarchive build/export' EXIT
+trap 'rm -rf "$workdir" build/Routine.xcarchive build/export DerivedData/DeployDevice' EXIT
 
 assert_contains() {
     local haystack="$1"
@@ -915,6 +915,267 @@ assert_line_before "$shutdown_selected_xcrun_log" "simctl boot SHUTDOWN-NAMED" "
 assert_line_before "$shutdown_selected_xcrun_log" "simctl install SHUTDOWN-NAMED DerivedData/RunIOS/Build/Products/Debug-iphonesimulator/Routine.app" "simctl launch --terminate-running-process SHUTDOWN-NAMED com.justinfuller.routine"
 assert_contains "$shutdown_selected_open_log" "-a Simulator"
 
+deploy_device_dir="$workdir/deploy-device"
+mkdir -p "$deploy_device_dir"
+
+deploy_device_xcodebuild_log="$deploy_device_dir/xcodebuild.log"
+deploy_device_xcrun_log="$deploy_device_dir/xcrun.log"
+deploy_device_generate_log="$deploy_device_dir/generate.log"
+fake_deploy_xcodebuild="$deploy_device_dir/xcodebuild"
+fake_deploy_xcrun="$deploy_device_dir/xcrun"
+fake_deploy_generate="$deploy_device_dir/generate-project.sh"
+
+cat >"$fake_deploy_xcodebuild" <<'EOF'
+#!/bin/zsh
+set -euo pipefail
+
+print -r -- "$*" >>"${FAKE_DEPLOY_XCODEBUILD_LOG}"
+
+configuration="Debug"
+derived_data_path=""
+
+while (( $# > 0 )); do
+    case "$1" in
+        -configuration)
+            configuration="$2"
+            shift 2
+            ;;
+        -derivedDataPath)
+            derived_data_path="$2"
+            shift 2
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
+
+mkdir -p "${derived_data_path}/Build/Products/${configuration}-iphoneos/Routine.app"
+EOF
+
+cat >"$fake_deploy_xcrun" <<'EOF'
+#!/bin/zsh
+set -euo pipefail
+
+print -r -- "$*" >>"${FAKE_DEPLOY_XCRUN_LOG}"
+
+if [[ "$1" == "devicectl" && "$2" == "list" && "$3" == "devices" ]]; then
+    print -r -- "${FAKE_DEPLOY_DEVICECTL_LIST_JSON:-}"
+    exit 0
+fi
+
+exit 0
+EOF
+
+cat >"$fake_deploy_generate" <<'EOF'
+#!/bin/zsh
+set -euo pipefail
+
+print -r -- "generate" >>"${FAKE_DEPLOY_GENERATE_LOG}"
+EOF
+
+chmod +x "$fake_deploy_xcodebuild" "$fake_deploy_xcrun" "$fake_deploy_generate"
+
+run_deploy_device_and_capture() {
+    local output_file="$deploy_device_dir/output.txt"
+    local had_errexit=0
+    if [[ -o errexit ]]; then
+        had_errexit=1
+    fi
+
+    set +e
+    env \
+        -u DEVELOPMENT_TEAM \
+        -u IOS_DEVICE_ID \
+        -u ROUTINE_DEPLOY_DEVICE_LAUNCH \
+        FAKE_DEPLOY_XCODEBUILD_LOG="$deploy_device_xcodebuild_log" \
+        FAKE_DEPLOY_XCRUN_LOG="$deploy_device_xcrun_log" \
+        FAKE_DEPLOY_GENERATE_LOG="$deploy_device_generate_log" \
+        XCODEBUILD_BIN="$fake_deploy_xcodebuild" \
+        XCRUN_BIN="$fake_deploy_xcrun" \
+        GENERATE_PROJECT_SCRIPT="$fake_deploy_generate" \
+        "$@" \
+        ./Scripts/deploy-device.sh >"$output_file" 2>&1
+    local exit_code=$?
+    if (( had_errexit )); then
+        set -e
+    fi
+    REPLY="$(<"$output_file")"
+    return "$exit_code"
+}
+
+: >"$deploy_device_xcodebuild_log"
+: >"$deploy_device_xcrun_log"
+: >"$deploy_device_generate_log"
+run_deploy_device_and_capture IOS_DEVICE_ID=EXPLICIT-ID
+assert_equals "$?" "0"
+assert_equals "$(<"$deploy_device_generate_log")" "generate"
+explicit_deploy_xcodebuild_log="$(<"$deploy_device_xcodebuild_log")"
+explicit_deploy_xcrun_log="$(<"$deploy_device_xcrun_log")"
+assert_contains "$explicit_deploy_xcodebuild_log" "-quiet -project Routine.xcodeproj -scheme RoutineApp -configuration Debug -destination id=EXPLICIT-ID -derivedDataPath DerivedData/DeployDevice DEVELOPMENT_TEAM=CX2KMQZQ7X -allowProvisioningUpdates build"
+assert_not_contains "$explicit_deploy_xcrun_log" "devicectl list devices"
+assert_contains "$explicit_deploy_xcrun_log" "devicectl device install app --device EXPLICIT-ID DerivedData/DeployDevice/Build/Products/Debug-iphoneos/Routine.app"
+assert_contains "$explicit_deploy_xcrun_log" "devicectl device process launch --device EXPLICIT-ID com.justinfuller.routine"
+
+no_match_devices_json='{"result":{"devices":[{"identifier":"WATCH-ID","hardwareProperties":{"reality":"physical","platform":"watchOS"},"connectionProperties":{"tunnelState":"connected"},"deviceProperties":{"name":"Watch"}},{"identifier":"DISCONNECTED-ID","hardwareProperties":{"reality":"physical","platform":"iOS"},"connectionProperties":{"tunnelState":"disconnected"},"deviceProperties":{"name":"Disconnected iPhone"}}]}}'
+
+: >"$deploy_device_xcodebuild_log"
+: >"$deploy_device_xcrun_log"
+: >"$deploy_device_generate_log"
+run_deploy_device_and_capture FAKE_DEPLOY_DEVICECTL_LIST_JSON="$no_match_devices_json"
+assert_equals "$?" "0"
+assert_equals "$(<"$deploy_device_generate_log")" "generate"
+assert_contains "$REPLY" "Skipping device deploy: no connected iPhone was found."
+no_match_deploy_xcrun_log="$(<"$deploy_device_xcrun_log")"
+assert_contains "$no_match_deploy_xcrun_log" "devicectl list devices --quiet --json-output -"
+if [[ "$no_match_deploy_xcrun_log" == *"install"* ]]; then
+    echo "Expected device-not-found skip path to avoid installing."
+    exit 1
+fi
+assert_equals "$(<"$deploy_device_xcodebuild_log")" ""
+
+mixed_devices_json='{"result":{"devices":[{"identifier":"WATCH-ID","hardwareProperties":{"reality":"physical","platform":"watchOS"},"connectionProperties":{"tunnelState":"connected"},"deviceProperties":{"name":"Watch"}},{"identifier":"DISCONNECTED-IPHONE-ID","hardwareProperties":{"reality":"physical","platform":"iOS"},"connectionProperties":{"tunnelState":"disconnected"},"deviceProperties":{"name":"Disconnected iPhone"}},{"identifier":"SIM-IPHONE-ID","hardwareProperties":{"reality":"simulated","platform":"iOS"},"connectionProperties":{"tunnelState":"connected"},"deviceProperties":{"name":"iPhone 17 Pro Max"}},{"identifier":"CONNECTED-IPHONE-ID","hardwareProperties":{"reality":"physical","platform":"iOS"},"connectionProperties":{"tunnelState":"connected"},"deviceProperties":{"name":"Justins iPhone"}}]}}'
+
+: >"$deploy_device_xcodebuild_log"
+: >"$deploy_device_xcrun_log"
+: >"$deploy_device_generate_log"
+run_deploy_device_and_capture FAKE_DEPLOY_DEVICECTL_LIST_JSON="$mixed_devices_json"
+assert_equals "$?" "0"
+discovered_deploy_xcodebuild_log="$(<"$deploy_device_xcodebuild_log")"
+discovered_deploy_xcrun_log="$(<"$deploy_device_xcrun_log")"
+assert_contains "$discovered_deploy_xcodebuild_log" "-destination id=CONNECTED-IPHONE-ID"
+assert_contains "$discovered_deploy_xcrun_log" "devicectl device install app --device CONNECTED-IPHONE-ID DerivedData/DeployDevice/Build/Products/Debug-iphoneos/Routine.app"
+assert_contains "$discovered_deploy_xcrun_log" "devicectl device process launch --device CONNECTED-IPHONE-ID com.justinfuller.routine"
+
+: >"$deploy_device_xcodebuild_log"
+: >"$deploy_device_xcrun_log"
+: >"$deploy_device_generate_log"
+set +e
+run_deploy_device_and_capture DEVELOPMENT_TEAM=
+missing_team_deploy_exit_code=$?
+set -e
+assert_equals "$missing_team_deploy_exit_code" "1"
+assert_contains "$REPLY" "error: DEVELOPMENT_TEAM is required to deploy to a physical device."
+assert_equals "$(<"$deploy_device_generate_log")" ""
+
+: >"$deploy_device_xcodebuild_log"
+: >"$deploy_device_xcrun_log"
+: >"$deploy_device_generate_log"
+run_deploy_device_and_capture IOS_DEVICE_ID=NOLAUNCH-ID ROUTINE_DEPLOY_DEVICE_LAUNCH=0
+assert_equals "$?" "0"
+nolaunch_deploy_xcrun_log="$(<"$deploy_device_xcrun_log")"
+assert_contains "$nolaunch_deploy_xcrun_log" "devicectl device install app --device NOLAUNCH-ID"
+if [[ "$nolaunch_deploy_xcrun_log" == *"process launch"* ]]; then
+    echo "Expected ROUTINE_DEPLOY_DEVICE_LAUNCH=0 to skip launch."
+    exit 1
+fi
+
+: >"$deploy_device_xcodebuild_log"
+: >"$deploy_device_xcrun_log"
+: >"$deploy_device_generate_log"
+run_deploy_device_and_capture IOS_DEVICE_ID=RELEASE-ID ROUTINE_BUILD_CONFIGURATION=Release
+assert_equals "$?" "0"
+release_config_deploy_xcrun_log="$(<"$deploy_device_xcrun_log")"
+assert_contains "$release_config_deploy_xcrun_log" "devicectl device install app --device RELEASE-ID DerivedData/DeployDevice/Build/Products/Release-iphoneos/Routine.app"
+
+upload_ios_dir="$workdir/upload-ios"
+mkdir -p "$upload_ios_dir"
+
+upload_ios_xcrun_log="$upload_ios_dir/xcrun.log"
+fake_upload_xcrun="$upload_ios_dir/xcrun"
+
+cat >"$fake_upload_xcrun" <<'EOF'
+#!/bin/zsh
+set -euo pipefail
+
+print -r -- "$*" >>"${FAKE_UPLOAD_XCRUN_LOG}"
+EOF
+
+chmod +x "$fake_upload_xcrun"
+
+run_upload_ios_and_capture() {
+    local output_file="$upload_ios_dir/output.txt"
+    local had_errexit=0
+    if [[ -o errexit ]]; then
+        had_errexit=1
+    fi
+
+    set +e
+    env \
+        -u APP_STORE_CONNECT_AUTH_KEY_PATH \
+        -u APP_STORE_CONNECT_AUTH_KEY_ID \
+        -u APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID \
+        -u ROUTINE_UPLOAD_IPA_PATH \
+        FAKE_UPLOAD_XCRUN_LOG="$upload_ios_xcrun_log" \
+        XCRUN_BIN="$fake_upload_xcrun" \
+        "$@" \
+        ./Scripts/upload-ios.sh >"$output_file" 2>&1
+    local exit_code=$?
+    if (( had_errexit )); then
+        set -e
+    fi
+    REPLY="$(<"$output_file")"
+    return "$exit_code"
+}
+
+: >"$upload_ios_xcrun_log"
+set +e
+run_upload_ios_and_capture
+missing_auth_upload_exit_code=$?
+set -e
+assert_equals "$missing_auth_upload_exit_code" "1"
+assert_contains "$REPLY" "error: APP_STORE_CONNECT_AUTH_KEY_PATH, APP_STORE_CONNECT_AUTH_KEY_ID, and APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID are required to upload to App Store Connect."
+assert_equals "$(<"$upload_ios_xcrun_log")" ""
+
+: >"$upload_ios_xcrun_log"
+set +e
+run_upload_ios_and_capture APP_STORE_CONNECT_AUTH_KEY_ID=ABC1234567
+partial_auth_upload_exit_code=$?
+set -e
+assert_equals "$partial_auth_upload_exit_code" "1"
+assert_contains "$REPLY" "error: APP_STORE_CONNECT_AUTH_KEY_PATH, APP_STORE_CONNECT_AUTH_KEY_ID, and APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID must be set together."
+assert_equals "$(<"$upload_ios_xcrun_log")" ""
+
+upload_ipa_path="$upload_ios_dir/Routine.ipa"
+
+: >"$upload_ios_xcrun_log"
+set +e
+run_upload_ios_and_capture \
+    APP_STORE_CONNECT_AUTH_KEY_PATH=/tmp/AuthKey_TEST.p8 \
+    APP_STORE_CONNECT_AUTH_KEY_ID=ABC1234567 \
+    APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID=11111111-2222-3333-4444-555555555555 \
+    ROUTINE_UPLOAD_IPA_PATH="$upload_ipa_path"
+missing_ipa_upload_exit_code=$?
+set -e
+assert_equals "$missing_ipa_upload_exit_code" "1"
+assert_contains "$REPLY" "error: no exported .ipa found at $upload_ipa_path. Run ./Scripts/export-ios.sh first."
+assert_equals "$(<"$upload_ios_xcrun_log")" ""
+
+print -r -- "fake ipa" >"$upload_ipa_path"
+
+: >"$upload_ios_xcrun_log"
+run_upload_ios_and_capture \
+    APP_STORE_CONNECT_AUTH_KEY_PATH=/tmp/AuthKey_TEST.p8 \
+    APP_STORE_CONNECT_AUTH_KEY_ID=ABC1234567 \
+    APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID=11111111-2222-3333-4444-555555555555 \
+    ROUTINE_UPLOAD_IPA_PATH="$upload_ipa_path"
+assert_equals "$?" "0"
+assert_contains "$REPLY" "Uploaded $upload_ipa_path to App Store Connect."
+upload_log="$(<"$upload_ios_xcrun_log")"
+assert_contains "$upload_log" "altool --upload-package $upload_ipa_path --api-key ABC1234567 --api-issuer 11111111-2222-3333-4444-555555555555 --p8-file-path /tmp/AuthKey_TEST.p8"
+
+mkdir -p build/export
+print -r -- "fake ipa" >build/export/Routine.ipa
+
+: >"$upload_ios_xcrun_log"
+run_upload_ios_and_capture \
+    APP_STORE_CONNECT_AUTH_KEY_PATH=/tmp/AuthKey_TEST.p8 \
+    APP_STORE_CONNECT_AUTH_KEY_ID=ABC1234567 \
+    APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID=11111111-2222-3333-4444-555555555555
+assert_equals "$?" "0"
+default_path_upload_log="$(<"$upload_ios_xcrun_log")"
+assert_contains "$default_path_upload_log" "altool --upload-package build/export/Routine.ipa"
+
 screenshot_assets_dir="$workdir/screenshot-assets"
 mkdir -p "$screenshot_assets_dir"
 
@@ -1246,4 +1507,4 @@ promote_invocation="$(<"$capture_promote_log")"
 assert_contains "$promote_invocation" "promote --export-root $capture_screenshots_dir/raw/"
 assert_contains "$promote_invocation" "--canonical-root $capture_screenshots_dir/canonical --expected-count 36"
 
-echo "Scripts/build-ios.sh, Scripts/test-ios.sh, Scripts/validate.sh, Scripts/release-preflight.sh, Scripts/run-ios.sh, Scripts/archive-ios.sh, Scripts/export-ios.sh, Scripts/capture-screenshots.sh, and Scripts/screenshot-assets.py script tests passed."
+echo "Scripts/build-ios.sh, Scripts/test-ios.sh, Scripts/validate.sh, Scripts/release-preflight.sh, Scripts/run-ios.sh, Scripts/archive-ios.sh, Scripts/export-ios.sh, Scripts/deploy-device.sh, Scripts/upload-ios.sh, Scripts/capture-screenshots.sh, and Scripts/screenshot-assets.py script tests passed."

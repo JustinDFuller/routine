@@ -17,12 +17,7 @@ if [[ -z "$development_team" ]]; then
     exit 1
 fi
 
-if [[ -n "$auth_key_path$auth_key_id$auth_key_issuer_id" ]]; then
-    if [[ -z "$auth_key_path" || -z "$auth_key_id" || -z "$auth_key_issuer_id" ]]; then
-        echo "error: APP_STORE_CONNECT_AUTH_KEY_PATH, APP_STORE_CONNECT_AUTH_KEY_ID, and APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID must be set together." >&2
-        exit 1
-    fi
-fi
+routine_validate_app_store_connect_auth_key_trio "$auth_key_path" "$auth_key_id" "$auth_key_issuer_id" || exit 1
 
 archive_path="build/Routine.xcarchive"
 
