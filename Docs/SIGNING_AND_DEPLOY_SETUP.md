@@ -10,7 +10,7 @@ One-time, human-only setup for building, running, and shipping Routine entirely 
 ## App Store Connect API Key
 
 1. Sign in to [App Store Connect](https://appstoreconnect.apple.com) → Users and Access → Integrations → App Store Connect API.
-2. Create a new key with the **App Manager** role.
+2. Create a new key with the **Admin** role. Apple's cloud-managed signing (`-allowProvisioningUpdates` creating a new Distribution certificate) requires an Admin-role key; a lesser role such as App Manager fails with `Cloud signing permission error` / `403 FORBIDDEN_ERROR` on the first archive that needs a new certificate. A key's role can't be changed after creation — if you have a non-Admin key already, create a new one.
 3. Download the `.p8` file. Apple only lets you download it once.
 4. Record the **Key ID** and **Issuer ID** shown next to the key.
 5. Store the `.p8` outside the repository, e.g. `~/.appstoreconnect/private_keys/AuthKey_XXXX.p8`. `*.p8` is already git-ignored, but keeping it outside the repo entirely avoids any risk of committing it.
@@ -29,6 +29,10 @@ This is one-time Apple Developer / App Store Connect website setup, already docu
 - Register `com.justinfuller.routine.widget` with App Groups enabled.
 - Create `group.com.justinfuller.routines` and attach it to both bundle IDs.
 - Create the App Store Connect app record for `com.justinfuller.routine`.
+
+## Beta Xcode
+
+If a beta Xcode is installed and set as the active `xcode-select` toolchain (common if you're running beta seeds day-to-day), builds made with it are rejected by App Store Connect: `altool` fails with `Unsupported SDK or Xcode version` (error 90534), even after a successful archive/export. `archive-ios.sh`, `export-ios.sh`, and `upload-ios.sh` default `DEVELOPER_DIR` to `/Applications/Xcode.app/Contents/Developer` (the release Xcode) regardless of the system default, so this is handled automatically — no need to switch `xcode-select` or set `DEVELOPER_DIR` yourself unless the release Xcode lives somewhere else on this machine.
 
 ## Local Environment for Release Scripts
 

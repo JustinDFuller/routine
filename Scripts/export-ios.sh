@@ -4,6 +4,11 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# App Store Connect rejects archives built with a beta Xcode/SDK. Default to the
+# release Xcode here regardless of the system-wide `xcode-select` toolchain, which
+# stays on the beta for everyday development. Override with DEVELOPER_DIR if needed.
+export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
+
 source ./Scripts/xcode-destination-helpers.sh
 
 development_team="${DEVELOPMENT_TEAM-CX2KMQZQ7X}"

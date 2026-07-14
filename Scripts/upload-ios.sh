@@ -4,6 +4,12 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# altool refuses to upload archives built with a beta Xcode/SDK, and resolves via
+# whichever Xcode DEVELOPER_DIR points at. Default to the release Xcode here
+# regardless of the system-wide `xcode-select` toolchain, which stays on the beta
+# for everyday development. Override with DEVELOPER_DIR if needed.
+export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
+
 source ./Scripts/xcode-destination-helpers.sh
 
 xcrun_bin="${XCRUN_BIN:-xcrun}"
