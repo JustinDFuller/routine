@@ -59,7 +59,7 @@ targets:
       path: RoutineApp/Routine.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.com.justinfuller.routine
+          - group.com.justinfuller.routines
     dependencies:
       - package: RoutineCore
         product: RoutineCore
@@ -142,7 +142,7 @@ targets:
       path: RoutineWidget/RoutineWidget.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.com.justinfuller.routine
+          - group.com.justinfuller.routines
     dependencies:
       - package: RoutineCore
         product: RoutineCore

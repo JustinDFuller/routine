@@ -88,7 +88,7 @@ Before the first archive, complete the Apple-side setup:
 1. Enroll the Apple Developer membership for the team you plan to use.
 2. Register the app bundle ID `com.justinfuller.routine` with App Groups enabled.
 3. Register the widget bundle ID `com.justinfuller.routine.widget` with App Groups enabled.
-4. Create the App Group `group.com.justinfuller.routine` and attach it to both bundle IDs.
+4. Create the App Group `group.com.justinfuller.routines` and attach it to both bundle IDs.
 5. Create the App Store Connect app record for the iOS app bundle ID.
 6. Create an App Store Connect API key and export the auth-key environment variables, per [Docs/SIGNING_AND_DEPLOY_SETUP.md](Docs/SIGNING_AND_DEPLOY_SETUP.md).
 

@@ -9,7 +9,7 @@ Complete these once before the first archive:
 - Confirm the Apple Developer team membership that will sign and upload the build.
 - Register `com.justinfuller.routine` with App Groups enabled.
 - Register `com.justinfuller.routine.widget` with App Groups enabled.
-- Create `group.com.justinfuller.routine` and attach it to both bundle IDs.
+- Create `group.com.justinfuller.routines` and attach it to both bundle IDs.
 - Create the App Store Connect app record for `com.justinfuller.routine`.
 
 ## Preflight

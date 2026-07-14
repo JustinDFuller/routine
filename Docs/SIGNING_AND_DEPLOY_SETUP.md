@@ -27,7 +27,7 @@ This is one-time Apple Developer / App Store Connect website setup, already docu
 
 - Register `com.justinfuller.routine` with App Groups enabled.
 - Register `com.justinfuller.routine.widget` with App Groups enabled.
-- Create `group.com.justinfuller.routine` and attach it to both bundle IDs.
+- Create `group.com.justinfuller.routines` and attach it to both bundle IDs.
 - Create the App Store Connect app record for `com.justinfuller.routine`.
 
 ## Local Environment for Release Scripts
