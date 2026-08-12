@@ -8,6 +8,7 @@ struct RoutineTestSeed {
     let period: RoutinePeriod
     let availabilityStartMinute: Int?
     let availabilityEndMinute: Int?
+    let availabilityBlockMode: RoutineAvailabilityBlockMode
     let sortOrder: Int
 
     init(
@@ -17,6 +18,7 @@ struct RoutineTestSeed {
         period: RoutinePeriod,
         availabilityStartMinute: Int? = nil,
         availabilityEndMinute: Int? = nil,
+        availabilityBlockMode: RoutineAvailabilityBlockMode = .soft,
         sortOrder: Int
     ) {
         self.id = id
@@ -25,6 +27,7 @@ struct RoutineTestSeed {
         self.period = period
         self.availabilityStartMinute = availabilityStartMinute
         self.availabilityEndMinute = availabilityEndMinute
+        self.availabilityBlockMode = availabilityBlockMode
         self.sortOrder = sortOrder
     }
 }

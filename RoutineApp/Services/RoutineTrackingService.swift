@@ -76,7 +76,10 @@ final class RoutineTrackingService {
         if day == today {
             let currentMinuteOfDay = routineCalendar.minuteOfDay(containing: now)
             if let availabilityWindow = routine.availabilityWindow {
-                guard availabilityWindow.contains(minuteOfDay: currentMinuteOfDay) else {
+                let isUnavailable =
+                    routine.availabilityBlockMode == .hard
+                    && availabilityWindow.contains(minuteOfDay: currentMinuteOfDay) == false
+                if isUnavailable {
                     throw RoutineTrackingError.unavailable(
                         routineName: routine.name,
                         windowText: RoutineAvailabilityText.trackingWindowText(

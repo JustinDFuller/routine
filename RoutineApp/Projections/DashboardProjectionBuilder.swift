@@ -159,7 +159,9 @@ extension DashboardProjectionBuilder {
             id: id,
             name: name,
             remainingCount: cards.filter {
-                $0.isCompletedToday == false && $0.isTargetMet == false && $0.isAvailableNow
+                $0.isCompletedToday == false
+                    && $0.isTargetMet == false
+                    && $0.isCompletionBlockedByAvailability == false
             }.count,
             routines: cards
         )
@@ -215,6 +217,7 @@ extension DashboardProjectionBuilder {
                 showsTodayCheckmark: progress.isCompletedToday
             ),
             isAvailableNow: availabilityState.isAvailableNow,
+            isCompletionBlockedByAvailability: availabilityState.isCompletionBlockedByAvailability,
             isCompletedToday: progress.isCompletedToday,
             isTargetMet: progress.isTargetMet,
             isOverTarget: progress.isOverTarget
@@ -229,17 +232,22 @@ extension DashboardProjectionBuilder {
             return RoutineAvailabilityState(
                 text: nil,
                 unavailableAccessibilityPhrase: nil,
-                isAvailableNow: true
+                isAvailableNow: true,
+                isCompletionBlockedByAvailability: false
             )
         }
 
         let isAvailableNow = availabilityWindow.contains(minuteOfDay: currentMinuteOfDay)
+        let isCompletionBlockedByAvailability =
+            isAvailableNow == false && routine.availabilityBlockMode == .hard
+
         return RoutineAvailabilityState(
             text: isAvailableNow
                 ? nil
                 : RoutineAvailabilityText.cardLabel(
                     for: availabilityWindow,
                     isAvailableNow: isAvailableNow,
+                    blockMode: routine.availabilityBlockMode,
                     routineCalendar: routineCalendar
                 ),
             unavailableAccessibilityPhrase:
@@ -247,9 +255,11 @@ extension DashboardProjectionBuilder {
                 ? nil
                 : RoutineAvailabilityText.unavailableAccessibilityPhrase(
                     for: availabilityWindow,
+                    blockMode: routine.availabilityBlockMode,
                     routineCalendar: routineCalendar
                 ),
-            isAvailableNow: isAvailableNow
+            isAvailableNow: isAvailableNow,
+            isCompletionBlockedByAvailability: isCompletionBlockedByAvailability
         )
     }
 
@@ -343,4 +353,5 @@ private struct RoutineAvailabilityState {
     let text: String?
     let unavailableAccessibilityPhrase: String?
     let isAvailableNow: Bool
+    let isCompletionBlockedByAvailability: Bool
 }

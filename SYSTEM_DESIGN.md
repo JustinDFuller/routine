@@ -559,9 +559,9 @@ Required coverage:
 - Starter groups and routines are editable normal data.
 - Completing an incomplete routine inserts exactly one completion.
 - Repeating completion for the same routine/day is idempotent.
-- Completion outside a configured availability window is blocked with a user-safe error.
-- Duplicate completion remains idempotent even when the current time is outside the configured window.
-- Cross-midnight availability completion stores the current local calendar day.
+- Soft availability windows compact out-of-window routines but still allow completion.
+- Hard availability windows block a new same-day completion with a user-safe error.
+- Duplicate completion remains idempotent even when the current time is outside a hard window.
 - Undo today removes only today's completion.
 - Undo today with no completion is safe.
 - Historical completion removal deletes the selected completion and updates projections.
@@ -573,7 +573,7 @@ Required coverage:
 - Moving routines within and across groups updates group IDs and contiguous sort order.
 - Reordering groups normalizes sort order.
 - Dashboard projection includes all routines, including completed and monthly routines.
-- Dashboard projection marks unavailable configured routines, preserves card order, and excludes unavailable incomplete routines from remaining counts.
+- Dashboard projection marks soft and hard unavailable configured routines, keeps soft rows in remaining counts, and excludes hard-blocked incomplete routines.
 - History projection marks today, completed dates, completed today, and recent completions correctly.
 - Stale routine routes resolve to not-found behavior rather than crashes.
 - Persistence save failures are mapped to user-safe errors where failures can be simulated.
@@ -716,8 +716,9 @@ Required resilience behaviors:
 
 - Completion is idempotent for a routine/day.
 - Availability windows are evaluated in the user's current local calendar and timezone at the moment of projection or completion.
-- Cross-midnight availability windows still store completions on the actual local calendar day of the tap.
+- Soft windows compact presentation only; hard windows alone block a new same-day completion.
 - Undo today is safe if the completion has already been removed.
+- Historical calendar completion remains available outside soft and hard windows.
 - Historical removal targets a specific completion ID.
 - Dashboard state derives from the store after saves, not from untrusted cached counts.
 - Progress derives from day keys, not timestamps.
@@ -741,8 +742,8 @@ Migration posture:
 - Persist enum raw values as stable strings.
 - Keep IDs stable.
 - Do not persist derived state that would require backfills.
-- Add new optional routine availability minute fields through SwiftData lightweight migration first.
-- Add a custom SwiftData schema migration only if validation shows the optional-field migration is insufficient.
+- Add routine availability storage through SwiftData lightweight migration with a stored default that resolves legacy rows to the soft policy.
+- Add a custom SwiftData schema migration only if validation shows the lightweight migration is insufficient.
 
 Backup posture:
 

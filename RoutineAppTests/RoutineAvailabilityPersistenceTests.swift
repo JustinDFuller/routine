@@ -28,6 +28,7 @@ final class RoutineAvailabilityPersistenceTests: XCTestCase {
         XCTAssertEqual(fetchedRoutine.availabilityEndMinute, 405)
         XCTAssertEqual(fetchedRoutine.availabilityWindow?.start.minuteOfDay, 0)
         XCTAssertEqual(fetchedRoutine.availabilityWindow?.end.minuteOfDay, 405)
+        XCTAssertEqual(fetchedRoutine.availabilityBlockMode, .soft)
     }
 
     func testAllDayRoutinePersistsNilAvailabilityFields() throws {
@@ -49,6 +50,19 @@ final class RoutineAvailabilityPersistenceTests: XCTestCase {
         XCTAssertNil(fetchedRoutine.availabilityStartMinute)
         XCTAssertNil(fetchedRoutine.availabilityEndMinute)
         XCTAssertNil(fetchedRoutine.availabilityWindow)
+    }
+
+    func testRoutineAvailabilityBlockModeFallsBackToSoftForMalformedRawValue() throws {
+        let context = try makeContext()
+        let group = RoutineGroup(name: "Health", sortOrder: 0)
+        let routine = Routine(name: "Walk", targetCount: 3, period: .weekly, sortOrder: 0, group: group)
+        routine.availabilityBlockModeRawValue = "unexpected"
+
+        context.insert(group)
+        context.insert(routine)
+        try context.saveRoutineChanges()
+
+        XCTAssertEqual(try context.routine(id: routine.id).availabilityBlockMode, .soft)
     }
 
     private func makeContext() throws -> ModelContext {

@@ -76,7 +76,7 @@ struct AddEditRoutineView: View {
                     }
                 }
 
-                Section("Availability") {
+                Section {
                     Toggle("Available all day", isOn: $formState.isAvailableAllDay)
                         .accessibilityIdentifier("routine-form-availability-all-day-toggle")
 
@@ -100,6 +100,21 @@ struct AddEditRoutineView: View {
                             displayedComponents: .hourAndMinute
                         )
                         .accessibilityIdentifier("routine-form-availability-end-picker")
+
+                        Picker("Outside window", selection: $formState.availabilityBlockMode) {
+                            Text("Soft block").tag(RoutineAvailabilityBlockMode.soft)
+                            Text("Hard block").tag(RoutineAvailabilityBlockMode.hard)
+                        }
+                        .accessibilityIdentifier("routine-form-availability-block-mode-picker")
+                    }
+                } header: {
+                    Text("Availability")
+                } footer: {
+                    if formState.isAvailableAllDay == false {
+                        Text(
+                            "Soft block collapses this routine outside the window but still allows completion. "
+                                + "Hard block also prevents completion."
+                        )
                     }
                 }
 

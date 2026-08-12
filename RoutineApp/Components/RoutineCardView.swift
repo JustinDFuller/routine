@@ -23,12 +23,12 @@ struct RoutineCardView: View {
         self.onCollapse = onCollapse
     }
 
-    private var isUnavailable: Bool {
-        viewData.isCompletedToday == false && viewData.isAvailableNow == false
+    private var isCompletionBlockedByAvailability: Bool {
+        viewData.isCompletedToday == false && viewData.isCompletionBlockedByAvailability
     }
 
     private var ringAccentColor: Color {
-        if isUnavailable {
+        if isCompletionBlockedByAvailability {
             return .routineLabelSecondary
         }
 
@@ -40,7 +40,7 @@ struct RoutineCardView: View {
     }
 
     private var primaryAccessibilityHint: String {
-        if isUnavailable {
+        if isCompletionBlockedByAvailability {
             return "Completion is unavailable outside the configured time."
         }
 
@@ -52,7 +52,7 @@ struct RoutineCardView: View {
     }
 
     private var backgroundColor: Color {
-        if isUnavailable {
+        if isCompletionBlockedByAvailability {
             return .routineSurface
         }
 
@@ -60,7 +60,7 @@ struct RoutineCardView: View {
     }
 
     private var borderColor: Color {
-        if isUnavailable {
+        if isCompletionBlockedByAvailability {
             return Color.routineDivider.opacity(0.45)
         }
 
@@ -85,7 +85,11 @@ struct RoutineCardView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(viewData.name)
                             .font(.headline.weight(.semibold))
-                            .foregroundStyle(isUnavailable ? Color.routineLabelSecondary : Color.routineLabelPrimary)
+                            .foregroundStyle(
+                                isCompletionBlockedByAvailability
+                                    ? Color.routineLabelSecondary
+                                    : Color.routineLabelPrimary
+                            )
                             .multilineTextAlignment(.leading)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
@@ -102,7 +106,7 @@ struct RoutineCardView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .disabled(isUnavailable)
+            .disabled(isCompletionBlockedByAvailability)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(viewData.accessibilityLabel)
             .accessibilityHint(primaryAccessibilityHint)
@@ -175,7 +179,7 @@ struct RoutineCardView: View {
             }
         }
         .overlay {
-            if isUnavailable {
+            if isCompletionBlockedByAvailability {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(Color.routineLabelSecondary.opacity(0.04))
                     .allowsHitTesting(false)
@@ -252,7 +256,9 @@ struct RoutineCardView: View {
     private func availabilityLabel(_ text: String) -> some View {
         Text(text)
             .font(.caption)
-            .foregroundStyle(isUnavailable ? Color.routineLabelPrimary : Color.routineLabelSecondary)
+            .foregroundStyle(
+                isCompletionBlockedByAvailability ? Color.routineLabelPrimary : Color.routineLabelSecondary
+            )
             .fixedSize(horizontal: false, vertical: true)
     }
 
