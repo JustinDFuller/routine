@@ -559,7 +559,7 @@ Required coverage:
 - Starter groups and routines are editable normal data.
 - Completing an incomplete routine inserts exactly one completion.
 - Repeating completion for the same routine/day is idempotent.
-- Soft availability windows compact out-of-window routines but still allow completion.
+- Soft availability windows allow completion; out-of-window routines may compact only when the dashboard's unavailable-collapse setting is enabled.
 - Hard availability windows block a new same-day completion with a user-safe error.
 - Duplicate completion remains idempotent even when the current time is outside a hard window.
 - Undo today removes only today's completion.

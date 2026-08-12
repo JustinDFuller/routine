@@ -409,7 +409,7 @@ extension RoutineAppUITests {
 
         let primary = identifiedElement("routine-card-primary-evening-yoga", in: app)
         XCTAssertTrue(primary.waitForExistence(timeout: 5))
-        XCTAssertFalse(primary.buttons.firstMatch.isEnabled, primary.debugDescription)
+        XCTAssertFalse(primary.isEnabled, primary.debugDescription)
 
         let history = identifiedElement("routine-card-history-evening-yoga", in: app)
         XCTAssertTrue(history.waitForExistence(timeout: 5))

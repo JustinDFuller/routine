@@ -5,7 +5,7 @@ enum RoutineAvailabilityText {
     static func cardLabel(
         for window: RoutineAvailabilityWindow,
         isAvailableNow: Bool,
-        blockMode: RoutineAvailabilityBlockMode = .hard,
+        blockMode: RoutineAvailabilityBlockMode,
         routineCalendar: RoutineCalendar
     ) -> String {
         if isAvailableNow {
@@ -25,7 +25,7 @@ enum RoutineAvailabilityText {
 
     static func unavailableAccessibilityPhrase(
         for window: RoutineAvailabilityWindow,
-        blockMode: RoutineAvailabilityBlockMode = .hard,
+        blockMode: RoutineAvailabilityBlockMode,
         routineCalendar: RoutineCalendar
     ) -> String {
         let range = expandedRangeText(for: window, routineCalendar: routineCalendar)

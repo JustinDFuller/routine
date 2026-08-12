@@ -217,7 +217,8 @@ extension DashboardProjectionBuilder {
                 showsTodayCheckmark: progress.isCompletedToday
             ),
             isAvailableNow: availabilityState.isAvailableNow,
-            isCompletionBlockedByAvailability: availabilityState.isCompletionBlockedByAvailability,
+            isCompletionBlockedByAvailability:
+                progress.isCompletedToday == false && availabilityState.isCompletionBlockedByAvailability,
             isCompletedToday: progress.isCompletedToday,
             isTargetMet: progress.isTargetMet,
             isOverTarget: progress.isOverTarget

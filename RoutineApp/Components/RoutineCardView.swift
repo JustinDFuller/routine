@@ -107,7 +107,6 @@ struct RoutineCardView: View {
             }
             .buttonStyle(.plain)
             .disabled(isCompletionBlockedByAvailability)
-            .accessibilityElement(children: .ignore)
             .accessibilityLabel(viewData.accessibilityLabel)
             .accessibilityHint(primaryAccessibilityHint)
             .accessibilityIdentifier("routine-card-primary-\(viewData.name.routineAccessibilityIdentifierComponent)")
