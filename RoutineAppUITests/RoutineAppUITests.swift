@@ -112,6 +112,28 @@ final class RoutineAppUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["5 per week"].waitForExistence(timeout: 5))
     }
 
+    func testHistoryPreviousMonthNavigationShowsPriorMonth() {
+        let app = makeApp()
+        app.launch()
+
+        let historyButton = app.buttons["routine-card-history-morning-yoga"]
+        XCTAssertTrue(historyButton.waitForExistence(timeout: 5))
+        historyButton.tap()
+
+        let monthTitle = identifiedElement("routine-history-month-title", in: app)
+        XCTAssertTrue(monthTitle.waitForExistence(timeout: 5))
+        XCTAssertEqual(monthTitle.label, "June 2026")
+
+        let previousMonthButton = app.buttons["routine-history-previous-month-button"]
+        XCTAssertTrue(previousMonthButton.waitForExistence(timeout: 5))
+        previousMonthButton.tap()
+
+        let mayTitle = NSPredicate(format: "label == %@", "May 2026")
+        expectation(for: mayTitle, evaluatedWith: monthTitle)
+        waitForExpectations(timeout: 5)
+        XCTAssertEqual(monthTitle.label, "May 2026")
+    }
+
     func testHistoryDeletionRequiresConfirmationAndRefreshesState() {
         let app = makeApp(
             additionalLaunchArguments: ["-routine-open-morning-yoga-history-with-completion"]

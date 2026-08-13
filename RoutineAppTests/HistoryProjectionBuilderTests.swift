@@ -278,6 +278,45 @@ final class HistoryProjectionBuilderTests: ProjectionBuilderTestCase {
         XCTAssertFalse(incompleteDay.isToday)
     }
 
+    func testBuildDisplaysSelectedPriorMonthWithoutChangingCurrentPeriodSummary() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let group = insertGroup(name: "Calendar", sortOrder: 0, into: context)
+        let routine = insertRoutine(
+            seed: RoutineTestSeed(name: "Meditate", targetCount: 5, period: .weekly, sortOrder: 0),
+            group: group,
+            into: context
+        )
+        let now = makeDate(year: 2026, month: 6, day: 10, hour: 9, minute: 0, calendar: calendar.calendar)
+        let may4 = try makeDay(year: 2026, month: 5, day: 4)
+        let displayedMonth = try makeDay(year: 2026, month: 5, day: 1)
+        let completion = insertCompletion(
+            routine: routine,
+            day: may4,
+            completedAt: makeDate(year: 2026, month: 5, day: 4, calendar: calendar.calendar),
+            into: context
+        )
+
+        let viewData = try foundViewData(
+            from: HistoryProjectionBuilder(context: context, routineCalendar: calendar).build(
+                routineID: routine.id,
+                routines: [routine],
+                completions: [completion],
+                displayedMonth: displayedMonth,
+                now: now
+            )
+        )
+        let monthDays = viewData.weeks.flatMap(\.days)
+
+        XCTAssertEqual(monthDays.count, 31)
+        XCTAssertEqual(monthDays.first?.day, displayedMonth)
+        XCTAssertEqual(monthDays.last?.day, try makeDay(year: 2026, month: 5, day: 31))
+        XCTAssertTrue(monthDays.contains { $0.day == may4 && $0.isCompleted })
+        XCTAssertFalse(monthDays.contains(where: \.isToday))
+        XCTAssertFalse(monthDays.contains(where: \.isFuture))
+        XCTAssertEqual(viewData.progress.completedCount, 0)
+    }
+
     func testBuildMarksFutureDaysAndLeavesPastAndTodayUnmarked() throws {
         let context = try makeContext()
         let calendar = makeCalendar()
