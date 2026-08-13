@@ -22,6 +22,7 @@ struct RoutineHistoryView: View {
     @State private var pendingDay: HistoryCalendarDay?
     @State private var undoBanner: HistoryUndoPresentation?
     @State private var undoDismissTask: Task<Void, Never>?
+    @State private var selectedMonth: RoutineDay?
 
     init(routineID: UUID) {
         self.routineID = routineID
@@ -43,11 +44,16 @@ struct RoutineHistoryView: View {
         )
     }
 
+    private var displayedMonth: RoutineDay {
+        selectedMonth ?? routineCalendar.today(now: runtime.now)
+    }
+
     private var projection: RoutineHistoryProjection {
         HistoryProjectionBuilder(context: modelContext, routineCalendar: routineCalendar).build(
             routineID: routineID,
             routines: routines,
             completions: completions,
+            displayedMonth: displayedMonth,
             now: runtime.now
         )
     }
@@ -148,6 +154,7 @@ struct RoutineHistoryView: View {
                     HistoryMonthGridView(
                         weeks: viewData.weeks,
                         routineCalendar: routineCalendar,
+                        onShowPreviousMonth: showPreviousMonth,
                         onTapDay: tapDay,
                         popoverIsPresented: pendingPopoverIsPresented,
                         onConfirmDay: confirmPendingDay
@@ -311,6 +318,15 @@ struct RoutineHistoryView: View {
         } catch {
             removalAlert = HistoryRemovalAlert(message: error.localizedDescription)
         }
+    }
+
+    private func showPreviousMonth() {
+        let currentMonth = routineCalendar.currentMonthRange(containing: displayedMonth)
+        selectedMonth =
+            routineCalendar.previousPeriodRange(
+                for: .monthly,
+                before: currentMonth
+            ).lowerBound
     }
 
     private func tapDay(_ day: HistoryCalendarDay) {
