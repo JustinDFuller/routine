@@ -80,6 +80,8 @@ final class RoutineScreenshotFixtureSeederTests: ProjectionBuilderTestCase {
         XCTAssertEqual(wakeUpEarly.availabilityEndMinute, 6 * 60 + 45)
         XCTAssertEqual(eveningYoga.availabilityStartMinute, 23 * 60)
         XCTAssertEqual(eveningYoga.availabilityEndMinute, 3 * 60)
+        XCTAssertEqual(wakeUpEarly.availabilityBlockMode, .soft)
+        XCTAssertEqual(eveningYoga.availabilityBlockMode, .hard)
         XCTAssertEqual(
             try completionDays(for: walkTheDog, in: context),
             [

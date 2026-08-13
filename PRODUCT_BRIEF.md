@@ -116,6 +116,13 @@ The MVP is optimized for one person who wants a practical personal tracker on an
 - "Remaining today" means not yet completed today.
 - The app does not decide which routines are required on a specific day, but routines may optionally limit when they can be completed.
 
+### Availability-window rules
+
+- A routine can optionally define a preferred local-time window.
+- Outside a soft window, the routine stays compact on Today but can still be completed.
+- A routine can opt into a hard window, which also blocks a new same-day completion outside the window.
+- Calendar history can complete any past day outside either window mode.
+
 ### Streak rules
 
 - A streak is the count of consecutive finalized periods (weeks or months) in which the routine met its target count.

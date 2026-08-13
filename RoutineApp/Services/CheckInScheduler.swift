@@ -259,6 +259,7 @@ final class CheckInScheduler {
                 targetCount: routine.targetCount,
                 period: routine.period,
                 availabilityWindow: routine.availabilityWindow,
+                availabilityBlockMode: routine.availabilityBlockMode,
                 completionDays: completionDaysByRoutineID[routine.id] ?? []
             )
         }

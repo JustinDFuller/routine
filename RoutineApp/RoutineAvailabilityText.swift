@@ -5,13 +5,15 @@ enum RoutineAvailabilityText {
     static func cardLabel(
         for window: RoutineAvailabilityWindow,
         isAvailableNow: Bool,
+        blockMode: RoutineAvailabilityBlockMode,
         routineCalendar: RoutineCalendar
     ) -> String {
         if isAvailableNow {
             return "Available until \(timeText(for: window.end, routineCalendar: routineCalendar))"
         }
 
-        return "Available \(compactRangeText(for: window, routineCalendar: routineCalendar))"
+        let label = blockMode == .hard ? "Available" : "Preferred"
+        return "\(label) \(compactRangeText(for: window, routineCalendar: routineCalendar))"
     }
 
     static func manageSummaryText(
@@ -23,9 +25,15 @@ enum RoutineAvailabilityText {
 
     static func unavailableAccessibilityPhrase(
         for window: RoutineAvailabilityWindow,
+        blockMode: RoutineAvailabilityBlockMode,
         routineCalendar: RoutineCalendar
     ) -> String {
-        "unavailable now, available \(expandedRangeText(for: window, routineCalendar: routineCalendar))"
+        let range = expandedRangeText(for: window, routineCalendar: routineCalendar)
+        if blockMode == .hard {
+            return "unavailable now, available \(range)"
+        }
+
+        return "outside the preferred time; completion remains available, preferred \(range)"
     }
 
     static func trackingWindowText(

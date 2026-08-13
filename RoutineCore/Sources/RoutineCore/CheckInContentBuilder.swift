@@ -14,6 +14,7 @@ public struct CheckInRoutineSnapshot: Sendable {
     public let targetCount: Int
     public let period: RoutinePeriod
     public let availabilityWindow: RoutineAvailabilityWindow?
+    public let availabilityBlockMode: RoutineAvailabilityBlockMode
     public let completionDays: [RoutineDay]
 
     public init(
@@ -21,12 +22,14 @@ public struct CheckInRoutineSnapshot: Sendable {
         targetCount: Int,
         period: RoutinePeriod,
         availabilityWindow: RoutineAvailabilityWindow?,
+        availabilityBlockMode: RoutineAvailabilityBlockMode = .soft,
         completionDays: [RoutineDay]
     ) {
         self.name = name
         self.targetCount = targetCount
         self.period = period
         self.availabilityWindow = availabilityWindow
+        self.availabilityBlockMode = availabilityBlockMode
         self.completionDays = completionDays
     }
 }
@@ -101,8 +104,10 @@ public struct CheckInContentBuilder: Sendable {
         slotMinuteOfDay: Int
     ) -> RoutineProgressPair? {
         openGoals.first { routine, progress in
-            let isAvailable = routine.availabilityWindow?.contains(minuteOfDay: slotMinuteOfDay) ?? true
-            return isAvailable && progress.isCompletedToday == false
+            let isOutsideWindow =
+                routine.availabilityWindow?.contains(minuteOfDay: slotMinuteOfDay) == false
+            return (isOutsideWindow == false || routine.availabilityBlockMode == .soft)
+                && progress.isCompletedToday == false
         }
     }
 

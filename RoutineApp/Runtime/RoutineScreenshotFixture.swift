@@ -85,6 +85,7 @@ final class RoutineScreenshotFixtureSeeder {
                     period: routineSeed.period,
                     availabilityStartMinute: routineSeed.availabilityStartMinute,
                     availabilityEndMinute: routineSeed.availabilityEndMinute,
+                    availabilityBlockMode: routineSeed.availabilityBlockMode,
                     sortOrder: routineSeed.sortOrder,
                     group: group,
                     createdAt: now,
@@ -261,6 +262,7 @@ private enum FullAppSeed {
                     period: .weekly,
                     availabilityStartMinute: 23 * 60,
                     availabilityEndMinute: 3 * 60,
+                    availabilityBlockMode: .hard,
                     sortOrder: 0
                 ),
                 FixtureRoutineSeed(
@@ -402,15 +404,6 @@ private enum FullAppSeed {
             minute: 20
         ),
         FixtureCompletionSeed(
-            id: uuid("00000000-0000-0000-0000-000000000412"),
-            routineName: "Evening yoga",
-            year: 2026,
-            month: 6,
-            day: 9,
-            hour: 23,
-            minute: 30
-        ),
-        FixtureCompletionSeed(
             id: uuid("00000000-0000-0000-0000-000000000413"),
             routineName: "Water plants",
             year: 2026,
@@ -471,6 +464,7 @@ private struct FixtureRoutineSeed {
     let period: RoutinePeriod
     let availabilityStartMinute: Int?
     let availabilityEndMinute: Int?
+    let availabilityBlockMode: RoutineAvailabilityBlockMode
     let sortOrder: Int
 
     init(
@@ -480,6 +474,7 @@ private struct FixtureRoutineSeed {
         period: RoutinePeriod,
         availabilityStartMinute: Int? = nil,
         availabilityEndMinute: Int? = nil,
+        availabilityBlockMode: RoutineAvailabilityBlockMode = .soft,
         sortOrder: Int
     ) {
         self.id = id
@@ -487,6 +482,7 @@ private struct FixtureRoutineSeed {
         self.targetCount = targetCount
         self.period = period
         self.availabilityStartMinute = availabilityStartMinute
+        self.availabilityBlockMode = availabilityBlockMode
         self.availabilityEndMinute = availabilityEndMinute
         self.sortOrder = sortOrder
     }

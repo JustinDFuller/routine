@@ -38,6 +38,7 @@ final class Routine {
     var periodRawValue: String
     var availabilityStartMinute: Int?
     var availabilityEndMinute: Int?
+    var availabilityBlockModeRawValue: String = RoutineAvailabilityBlockMode.soft.rawValue
     var groupID: UUID
     var sortOrder: Int
     var createdAt: Date
@@ -60,6 +61,11 @@ final class Routine {
         )
     }
 
+    var availabilityBlockMode: RoutineAvailabilityBlockMode {
+        get { RoutineAvailabilityBlockMode(rawValue: availabilityBlockModeRawValue) ?? .soft }
+        set { availabilityBlockModeRawValue = newValue.rawValue }
+    }
+
     init(
         id: UUID = UUID(),
         name: String,
@@ -67,6 +73,7 @@ final class Routine {
         period: RoutinePeriod,
         availabilityStartMinute: Int? = nil,
         availabilityEndMinute: Int? = nil,
+        availabilityBlockMode: RoutineAvailabilityBlockMode = .soft,
         sortOrder: Int,
         group: RoutineGroup,
         createdAt: Date = .now,
@@ -79,6 +86,7 @@ final class Routine {
         self.periodRawValue = period.rawValue
         self.availabilityStartMinute = availabilityStartMinute
         self.availabilityEndMinute = availabilityEndMinute
+        self.availabilityBlockModeRawValue = availabilityBlockMode.rawValue
         self.groupID = group.id
         self.sortOrder = sortOrder
         self.group = group

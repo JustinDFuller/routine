@@ -1,5 +1,10 @@
 import Foundation
 
+public enum RoutineAvailabilityBlockMode: String, CaseIterable, Codable, Sendable {
+    case soft
+    case hard
+}
+
 public struct RoutineTimeOfDay: Equatable, Hashable, Sendable {
     public let hour: Int
     public let minute: Int

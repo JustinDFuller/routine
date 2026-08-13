@@ -55,8 +55,8 @@ final class RoutineFormStateTests: RoutineManagementServiceTestCase {
         XCTAssertTrue(state.isAvailableAllDay)
         XCTAssertNil(state.availabilityStartMinute)
         XCTAssertNil(state.availabilityEndMinute)
+        XCTAssertEqual(state.availabilityBlockMode, .soft)
     }
-
     func testEditingDraftMutationsDoNotMutatePersistedRoutineBeforeSaveOrCancel() throws {
         let context = try makeContext()
         let group = try insertGroup(name: "Health", sortOrder: 0, into: context)
@@ -102,12 +102,11 @@ final class RoutineFormStateTests: RoutineManagementServiceTestCase {
             availabilityEndMinute: 405
         )
         let state = RoutineFormState(presentation: .edit(snapshot))
-
         XCTAssertFalse(state.isAvailableAllDay)
         XCTAssertEqual(state.availabilityStartMinute, 0)
         XCTAssertEqual(state.availabilityEndMinute, 405)
+        XCTAssertEqual(state.availabilityBlockMode, .soft)
     }
-
     func testAllDayToggleProducesNilAvailabilityDraft() throws {
         let state = RoutineFormState(presentation: .add(initialGroupID: UUID()))
         state.name = "Walk"
@@ -115,24 +114,22 @@ final class RoutineFormStateTests: RoutineManagementServiceTestCase {
         state.availabilityStartMinute = 120
         state.availabilityEndMinute = 360
         state.isAvailableAllDay = true
-
         let draft = try state.makeDraft()
         XCTAssertNil(draft.availabilityStartMinute)
         XCTAssertNil(draft.availabilityEndMinute)
+        XCTAssertEqual(draft.availabilityBlockMode, .soft)
     }
-
     func testConfiguredWindowProducesAvailabilityDraft() throws {
         let state = RoutineFormState(presentation: .add(initialGroupID: UUID()))
         state.name = "Wake up early"
         state.isAvailableAllDay = false
         state.availabilityStartMinute = 1_380
         state.availabilityEndMinute = 180
-
         let draft = try state.makeDraft()
         XCTAssertEqual(draft.availabilityStartMinute, 1_380)
         XCTAssertEqual(draft.availabilityEndMinute, 180)
+        XCTAssertEqual(draft.availabilityBlockMode, .soft)
     }
-
     func testEqualAvailabilityTimesExposeValidationMessage() {
         let state = RoutineFormState(presentation: .add(initialGroupID: UUID()))
         state.name = "Wake up early"
@@ -144,6 +141,25 @@ final class RoutineFormStateTests: RoutineManagementServiceTestCase {
             XCTAssertEqual(error as? RoutineFormError, .validation(.invalidAvailabilityWindow))
         }
         XCTAssertEqual(state.validationMessage, "Choose different start and end times, or use all day.")
+    }
+
+    func testAvailabilityBlockModeSurvivesAllDayToggleAndEditRoundTrip() throws {
+        let snapshot = RoutineFormSnapshot(
+            routineID: UUID(),
+            name: "Wake up early",
+            targetCount: 4,
+            period: .weekly,
+            groupID: UUID(),
+            availabilityStartMinute: 0,
+            availabilityEndMinute: 405,
+            availabilityBlockMode: .hard
+        )
+        let state = RoutineFormState(presentation: .edit(snapshot))
+        state.isAvailableAllDay = true
+        state.isAvailableAllDay = false
+
+        XCTAssertEqual(state.availabilityBlockMode, .hard)
+        XCTAssertEqual(try state.makeDraft().availabilityBlockMode, .hard)
     }
 
     func testPeriodChangesClampTargetCountToValidRange() throws {
@@ -168,6 +184,7 @@ final class RoutineFormStateTests: RoutineManagementServiceTestCase {
             groupID: UUID(),
             availabilityStartMinute: nil,
             availabilityEndMinute: nil,
+            availabilityBlockMode: .soft,
             summaryText: "3 per week"
         )
         let snapshot = RoutineFormSnapshot(row: row, availableGroupIDs: [])

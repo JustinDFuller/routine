@@ -368,7 +368,7 @@ final class RoutineAppUITests: XCTestCase {
 }
 
 extension RoutineAppUITests {
-    func testUnavailableRoutineCollapsesToClockRowAndExpandsAndCollapsesOnTap() {
+    func testSoftUnavailableRoutineExpandsAndCompletes() {
         let app = makeApp(
             seeded: false,
             additionalLaunchArguments: [
@@ -381,25 +381,50 @@ extension RoutineAppUITests {
 
         let unavailableRow = identifiedElement("routine-unavailable-row-wake-up-early", in: app)
         XCTAssertTrue(unavailableRow.waitForExistence(timeout: 5))
-        XCTAssertFalse(
-            identifiedElement("routine-card-history-wake-up-early", in: app).waitForExistence(timeout: 2)
-        )
-
         unavailableRow.tap()
 
-        XCTAssertTrue(
-            identifiedElement("routine-card-history-wake-up-early", in: app).waitForExistence(timeout: 5)
+        let primary = identifiedElement("routine-card-primary-wake-up-early", in: app)
+        XCTAssertTrue(primary.waitForExistence(timeout: 5))
+        XCTAssertTrue(primary.isEnabled)
+        XCTAssertTrue(app.staticTexts["Preferred 12:00 AM-6:45 AM"].waitForExistence(timeout: 5))
+        primary.tap()
+
+        XCTAssertTrue(app.buttons["today-dashboard-undo-button"].waitForExistence(timeout: 5))
+    }
+
+    func testHardUnavailableRoutineBlocksTodayButAllowsHistoricalCompletion() {
+        let app = makeApp(
+            seeded: false,
+            additionalLaunchArguments: [
+                "-routine-empty-in-memory-store",
+                "-routine-screenshot-fixture",
+                "full-app"
+            ]
         )
-        XCTAssertTrue(app.staticTexts["Available 12:00 AM-6:45 AM"].waitForExistence(timeout: 5))
+        app.launch()
 
-        let collapseButton = identifiedElement("routine-card-collapse-wake-up-early", in: app)
-        XCTAssertTrue(collapseButton.waitForExistence(timeout: 5))
-        collapseButton.tap()
-
+        let unavailableRow = identifiedElement("routine-unavailable-row-evening-yoga", in: app)
         XCTAssertTrue(unavailableRow.waitForExistence(timeout: 5))
-        XCTAssertFalse(
-            identifiedElement("routine-card-history-wake-up-early", in: app).waitForExistence(timeout: 2)
-        )
+        unavailableRow.tap()
+
+        let primary = identifiedElement("routine-card-primary-evening-yoga", in: app)
+        XCTAssertTrue(primary.waitForExistence(timeout: 5))
+        XCTAssertFalse(primary.isEnabled, primary.debugDescription)
+
+        let history = identifiedElement("routine-card-history-evening-yoga", in: app)
+        XCTAssertTrue(history.waitForExistence(timeout: 5))
+        history.tap()
+
+        let day = identifiedElement("history-day-2026-06-09", in: app)
+        XCTAssertTrue(day.waitForExistence(timeout: 5))
+        day.tap()
+
+        let confirm = identifiedElement("history-day-confirm-2026-06-09", in: app)
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        confirm.tap()
+
+        let completedDay = identifiedElement("history-day-2026-06-09", in: app)
+        XCTAssertTrue(completedDay.label.contains("completed"), completedDay.debugDescription)
     }
 
     func testUnavailableRoutineStaysExpandedWhenCollapseUnavailableIsDisabledAtLaunch() {
@@ -417,7 +442,7 @@ extension RoutineAppUITests {
         XCTAssertTrue(
             identifiedElement("routine-card-history-wake-up-early", in: app).waitForExistence(timeout: 5)
         )
-        XCTAssertTrue(app.staticTexts["Available 12:00 AM-6:45 AM"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Preferred 12:00 AM-6:45 AM"].waitForExistence(timeout: 5))
         XCTAssertFalse(
             identifiedElement("routine-unavailable-row-wake-up-early", in: app).waitForExistence(timeout: 2)
         )
@@ -543,6 +568,9 @@ extension RoutineAppUITests {
 
         openManagementMenu(in: app)
         app.buttons["today-dashboard-settings-button"].tap()
+
+        app.collectionViews.firstMatch.swipeUp()
+        app.collectionViews.firstMatch.swipeUp()
 
         let factoryResetLink = identifiedElement("settings-factory-reset-link", in: app)
         XCTAssertTrue(factoryResetLink.waitForExistence(timeout: 5))

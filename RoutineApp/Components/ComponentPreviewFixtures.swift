@@ -25,6 +25,7 @@ enum ComponentPreviewFixtures {
             showsTodayCheckmark: false
         ),
         isAvailableNow: true,
+        isCompletionBlockedByAvailability: false,
         isCompletedToday: false,
         isTargetMet: false,
         isOverTarget: false
@@ -48,6 +49,7 @@ enum ComponentPreviewFixtures {
             showsTodayCheckmark: true
         ),
         isAvailableNow: true,
+        isCompletionBlockedByAvailability: false,
         isCompletedToday: true,
         isTargetMet: false,
         isOverTarget: false
@@ -71,6 +73,7 @@ enum ComponentPreviewFixtures {
             showsTodayCheckmark: false
         ),
         isAvailableNow: true,
+        isCompletionBlockedByAvailability: false,
         isCompletedToday: false,
         isTargetMet: true,
         isOverTarget: false
@@ -94,6 +97,7 @@ enum ComponentPreviewFixtures {
             showsTodayCheckmark: false
         ),
         isAvailableNow: true,
+        isCompletionBlockedByAvailability: false,
         isCompletedToday: false,
         isTargetMet: true,
         isOverTarget: true
@@ -117,6 +121,7 @@ enum ComponentPreviewFixtures {
             showsTodayCheckmark: true
         ),
         isAvailableNow: true,
+        isCompletionBlockedByAvailability: false,
         isCompletedToday: true,
         isTargetMet: false,
         isOverTarget: false
@@ -140,6 +145,7 @@ enum ComponentPreviewFixtures {
             showsTodayCheckmark: false
         ),
         isAvailableNow: false,
+        isCompletionBlockedByAvailability: true,
         isCompletedToday: false,
         isTargetMet: false,
         isOverTarget: false
@@ -163,6 +169,7 @@ enum ComponentPreviewFixtures {
             showsTodayCheckmark: false
         ),
         isAvailableNow: true,
+        isCompletionBlockedByAvailability: false,
         isCompletedToday: false,
         isTargetMet: false,
         isOverTarget: false

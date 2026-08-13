@@ -36,12 +36,40 @@ final class CheckInContentBuilderTests: XCTestCase {
             targetCount: 1,
             period: .weekly,
             availabilityWindow: window,
+            availabilityBlockMode: .hard,
             completionDays: []
         )
 
         let content = try content(slot: .morning, slotHour: 8, routines: [routine])
 
         XCTAssertEqual(content, .suppress)
+    }
+
+    func testMorningSoftRoutineOutsideAvailabilityWindowRemainsActionable() throws {
+        let window = try XCTUnwrap(
+            RoutineAvailabilityWindow(
+                start: try XCTUnwrap(RoutineTimeOfDay(hour: 12, minute: 0)),
+                end: try XCTUnwrap(RoutineTimeOfDay(hour: 18, minute: 0))
+            )
+        )
+        let routine = CheckInRoutineSnapshot(
+            name: "Evening walk",
+            targetCount: 1,
+            period: .weekly,
+            availabilityWindow: window,
+            availabilityBlockMode: .soft,
+            completionDays: []
+        )
+
+        let content = try content(slot: .morning, slotHour: 8, routines: [routine])
+
+        XCTAssertEqual(
+            content,
+            .message(
+                title: "Morning check-in",
+                body: "Next routine: Evening walk. You need 1 more completion to reach this week's goal."
+            )
+        )
     }
 
     func testMorningRoutineWithNoAvailabilityWindowIsAlwaysActionable() throws {
@@ -107,6 +135,7 @@ final class CheckInContentBuilderTests: XCTestCase {
             targetCount: 1,
             period: .weekly,
             availabilityWindow: window,
+            availabilityBlockMode: .hard,
             completionDays: []
         )
         let completedTodayRoutine = CheckInRoutineSnapshot(
