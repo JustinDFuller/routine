@@ -15,6 +15,18 @@ final class RoutineFactoryResetServiceTests: ProjectionBuilderTestCase {
         return defaults
     }
 
+    private func selection(
+        routinesAndHistory: Bool = false,
+        displayPreferences: Bool = false,
+        behindScheduleAlerts: Bool = false
+    ) -> RoutineResetSelection {
+        RoutineResetSelection(
+            routinesAndHistory: routinesAndHistory,
+            displayPreferences: displayPreferences,
+            behindScheduleAlerts: behindScheduleAlerts
+        )
+    }
+
     func testRoutinesAndHistorySelectionDeletesAllSwiftDataModels() async throws {
         let context = try makeContext()
         let calendar = makeCalendar()
@@ -30,13 +42,7 @@ final class RoutineFactoryResetServiceTests: ProjectionBuilderTestCase {
             completedAt: makeDate(year: 2026, month: 6, day: 10, calendar: calendar.calendar),
             into: context
         )
-        context.insert(
-            AppMetadata(
-                key: "test.key",
-                value: "v1",
-                updatedAt: makeDate(year: 2026, month: 6, day: 10, calendar: calendar.calendar)
-            )
-        )
+        context.insert(AppMetadata(key: "test.key", value: "v1", updatedAt: .now))
         try saveChanges(in: context)
 
         let originalReload = RoutineWidgetBridge.reloadAllTimelines
@@ -45,12 +51,8 @@ final class RoutineFactoryResetServiceTests: ProjectionBuilderTestCase {
 
         try await RoutineFactoryResetService(
             userDefaults: makeDefaults(),
-            notificationCenter: FakeCheckInNotificationCenter()
-        ).reset(
-            RoutineResetSelection(routinesAndHistory: true, displayPreferences: false, checkInReminders: false),
-            in: context,
-            calendar: calendar
-        )
+            notificationCenter: FakeBehindScheduleNotificationCenter()
+        ).reset(selection(routinesAndHistory: true), in: context, calendar: calendar)
 
         XCTAssertTrue(try context.fetch(FetchDescriptor<RoutineGroup>()).isEmpty)
         XCTAssertTrue(try context.fetch(FetchDescriptor<Routine>()).isEmpty)
@@ -58,150 +60,72 @@ final class RoutineFactoryResetServiceTests: ProjectionBuilderTestCase {
         XCTAssertTrue(try context.fetch(FetchDescriptor<AppMetadata>()).isEmpty)
     }
 
-    func testRoutinesAndHistorySelectionDoesNotTouchDisplayOrCheckInKeys() async throws {
-        let context = try makeContext()
-        let defaults = makeDefaults()
-        defaults.set(2, forKey: RoutineSettingsKeys.weekStartWeekday)
-        defaults.set(true, forKey: RoutineSettingsKeys.checkInMorningEnabled)
-
-        let originalReload = RoutineWidgetBridge.reloadAllTimelines
-        defer { RoutineWidgetBridge.reloadAllTimelines = originalReload }
-        RoutineWidgetBridge.reloadAllTimelines = {}
-
-        try await RoutineFactoryResetService(
-            userDefaults: defaults,
-            notificationCenter: FakeCheckInNotificationCenter()
-        ).reset(
-            RoutineResetSelection(routinesAndHistory: true, displayPreferences: false, checkInReminders: false),
-            in: context,
-            calendar: makeCalendar()
-        )
-
-        XCTAssertEqual(defaults.integer(forKey: RoutineSettingsKeys.weekStartWeekday), 2)
-        XCTAssertTrue(defaults.bool(forKey: RoutineSettingsKeys.checkInMorningEnabled))
-    }
-
-    func testDisplayPreferencesSelectionRemovesAllFourPreferenceKeys() async throws {
+    func testDisplayPreferencesSelectionRemovesOnlyDisplayPreferences() async throws {
         let context = try makeContext()
         let defaults = makeDefaults()
         defaults.set(2, forKey: RoutineSettingsKeys.weekStartWeekday)
         defaults.set(false, forKey: RoutineSettingsKeys.collapseCompletedToday)
         defaults.set(false, forKey: RoutineSettingsKeys.collapseGoalMetToday)
         defaults.set(false, forKey: RoutineSettingsKeys.collapseUnavailableToday)
-        defaults.set(true, forKey: RoutineSettingsKeys.checkInMorningEnabled)
+        defaults.set(true, forKey: RoutineSettingsKeys.behindScheduleNotificationsEnabled)
 
         try await RoutineFactoryResetService(
             userDefaults: defaults,
-            notificationCenter: FakeCheckInNotificationCenter()
-        ).reset(
-            RoutineResetSelection(routinesAndHistory: false, displayPreferences: true, checkInReminders: false),
-            in: context,
-            calendar: makeCalendar()
-        )
+            notificationCenter: FakeBehindScheduleNotificationCenter()
+        ).reset(selection(displayPreferences: true), in: context, calendar: makeCalendar())
 
         XCTAssertNil(defaults.object(forKey: RoutineSettingsKeys.weekStartWeekday))
         XCTAssertNil(defaults.object(forKey: RoutineSettingsKeys.collapseCompletedToday))
         XCTAssertNil(defaults.object(forKey: RoutineSettingsKeys.collapseGoalMetToday))
         XCTAssertNil(defaults.object(forKey: RoutineSettingsKeys.collapseUnavailableToday))
-        XCTAssertTrue(defaults.bool(forKey: RoutineSettingsKeys.checkInMorningEnabled))
+        XCTAssertTrue(defaults.bool(forKey: RoutineSettingsKeys.behindScheduleNotificationsEnabled))
     }
 
-    func testCheckInRemindersSelectionRemovesAllCheckInKeysAndCancelsPendingNotifications() async throws {
+    func testBehindScheduleAlertsSelectionRemovesNewAndRetiredKeysAndCancelsRequests() async throws {
         let context = try makeContext()
         let defaults = makeDefaults()
-        let notificationCenter = FakeCheckInNotificationCenter()
+        let notificationCenter = FakeBehindScheduleNotificationCenter()
         notificationCenter.seedPending(identifier: "checkin.morning.2026-06-10")
-
-        defaults.set(true, forKey: RoutineSettingsKeys.checkInMorningEnabled)
-        defaults.set(360, forKey: RoutineSettingsKeys.checkInMorningMinute)
-        defaults.set(true, forKey: RoutineSettingsKeys.checkInAfternoonEnabled)
-        defaults.set(720, forKey: RoutineSettingsKeys.checkInAfternoonMinute)
-        defaults.set(true, forKey: RoutineSettingsKeys.checkInEveningEnabled)
-        defaults.set(1_080, forKey: RoutineSettingsKeys.checkInEveningMinute)
-        defaults.set(true, forKey: RoutineSettingsKeys.checkInOnboardingShown)
-        defaults.set(true, forKey: CheckInScheduler.celebrationConsumedKey)
-        defaults.set(2, forKey: RoutineSettingsKeys.weekStartWeekday)
-
-        try await RoutineFactoryResetService(
-            userDefaults: defaults,
-            notificationCenter: notificationCenter
-        ).reset(
-            RoutineResetSelection(routinesAndHistory: false, displayPreferences: false, checkInReminders: true),
-            in: context,
-            calendar: makeCalendar()
-        )
-
-        XCTAssertNil(defaults.object(forKey: RoutineSettingsKeys.checkInMorningEnabled))
-        XCTAssertNil(defaults.object(forKey: RoutineSettingsKeys.checkInMorningMinute))
-        XCTAssertNil(defaults.object(forKey: RoutineSettingsKeys.checkInAfternoonEnabled))
-        XCTAssertNil(defaults.object(forKey: RoutineSettingsKeys.checkInAfternoonMinute))
-        XCTAssertNil(defaults.object(forKey: RoutineSettingsKeys.checkInEveningEnabled))
-        XCTAssertNil(defaults.object(forKey: RoutineSettingsKeys.checkInEveningMinute))
-        XCTAssertNil(defaults.object(forKey: RoutineSettingsKeys.checkInOnboardingShown))
-        XCTAssertNil(defaults.object(forKey: CheckInScheduler.celebrationConsumedKey))
-        XCTAssertEqual(defaults.integer(forKey: RoutineSettingsKeys.weekStartWeekday), 2)
-        let pending = await notificationCenter.pendingNotificationRequests()
-        XCTAssertTrue(pending.isEmpty)
-    }
-
-    func testAllSelectionsResetEverything() async throws {
-        let context = try makeContext()
-        let calendar = makeCalendar()
-        let defaults = makeDefaults()
-        let notificationCenter = FakeCheckInNotificationCenter()
-
-        let group = insertGroup(name: "Morning", sortOrder: 0, into: context)
-        insertRoutine(
-            seed: RoutineTestSeed(name: "Yoga", targetCount: 5, period: .weekly, sortOrder: 0),
-            group: group,
-            into: context
-        )
-        try saveChanges(in: context)
-
-        defaults.set(2, forKey: RoutineSettingsKeys.weekStartWeekday)
-        defaults.set(true, forKey: RoutineSettingsKeys.checkInMorningEnabled)
-
-        let originalReload = RoutineWidgetBridge.reloadAllTimelines
-        defer { RoutineWidgetBridge.reloadAllTimelines = originalReload }
-        RoutineWidgetBridge.reloadAllTimelines = {}
+        notificationCenter.seedPending(identifier: "behind-schedule.2026-06-10")
+        let keys = [
+            RoutineSettingsKeys.behindScheduleNotificationsEnabled,
+            RoutineSettingsKeys.behindScheduleNotificationMinute,
+            RoutineSettingsKeys.behindScheduleOnboardingShown,
+            "settings.checkin.morning.enabled",
+            "settings.checkin.morning.minute",
+            "settings.checkin.afternoon.enabled",
+            "settings.checkin.afternoon.minute",
+            "settings.checkin.evening.enabled",
+            "settings.checkin.evening.minute",
+            "settings.checkin.onboardingShown",
+            "checkin.celebrationConsumed"
+        ]
+        for key in keys {
+            defaults.set(true, forKey: key)
+        }
 
         try await RoutineFactoryResetService(
             userDefaults: defaults,
             notificationCenter: notificationCenter
-        ).reset(
-            RoutineResetSelection(routinesAndHistory: true, displayPreferences: true, checkInReminders: true),
-            in: context,
-            calendar: calendar
-        )
+        ).reset(selection(behindScheduleAlerts: true), in: context, calendar: makeCalendar())
 
-        XCTAssertTrue(try context.fetch(FetchDescriptor<RoutineGroup>()).isEmpty)
-        XCTAssertNil(defaults.object(forKey: RoutineSettingsKeys.weekStartWeekday))
-        XCTAssertNil(defaults.object(forKey: RoutineSettingsKeys.checkInMorningEnabled))
+        for key in keys {
+            XCTAssertNil(defaults.object(forKey: key))
+        }
+        let pendingRequests = await notificationCenter.pendingNotificationRequests()
+        XCTAssertTrue(pendingRequests.isEmpty)
     }
 
     func testEmptySelectionLeavesEverythingIntact() async throws {
         let context = try makeContext()
         let defaults = makeDefaults()
-
-        let group = insertGroup(name: "Morning", sortOrder: 0, into: context)
-        insertRoutine(
-            seed: RoutineTestSeed(name: "Yoga", targetCount: 5, period: .weekly, sortOrder: 0),
-            group: group,
-            into: context
-        )
-        try saveChanges(in: context)
-        defaults.set(2, forKey: RoutineSettingsKeys.weekStartWeekday)
+        defaults.set(true, forKey: RoutineSettingsKeys.behindScheduleNotificationsEnabled)
 
         try await RoutineFactoryResetService(
             userDefaults: defaults,
-            notificationCenter: FakeCheckInNotificationCenter()
-        ).reset(
-            RoutineResetSelection(routinesAndHistory: false, displayPreferences: false, checkInReminders: false),
-            in: context,
-            calendar: makeCalendar()
-        )
+            notificationCenter: FakeBehindScheduleNotificationCenter()
+        ).reset(selection(), in: context, calendar: makeCalendar())
 
-        XCTAssertFalse(try context.fetch(FetchDescriptor<RoutineGroup>()).isEmpty)
-        XCTAssertEqual(defaults.integer(forKey: RoutineSettingsKeys.weekStartWeekday), 2)
+        XCTAssertTrue(defaults.bool(forKey: RoutineSettingsKeys.behindScheduleNotificationsEnabled))
     }
 }

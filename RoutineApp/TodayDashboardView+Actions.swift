@@ -177,6 +177,7 @@ extension TodayDashboardView {
                 return
             }
 
+            rescheduleBehindScheduleAlerts()
             WidgetCenter.shared.reloadAllTimelines()
             RoutineHaptics.signalCompletion()
             showUndoBanner(
@@ -203,10 +204,27 @@ extension TodayDashboardView {
                 return
             }
 
+            rescheduleBehindScheduleAlerts()
             WidgetCenter.shared.reloadAllTimelines()
             RoutineHaptics.signalUndo()
         } catch {
             presentUpdateError(error)
+        }
+    }
+
+    private func rescheduleBehindScheduleAlerts() {
+        Task {
+            do {
+                try await BehindScheduleScheduler().reschedule(
+                    context: modelContext,
+                    calendar: routineCalendar,
+                    now: runtime.now
+                )
+            } catch {
+                AppDiagnostics.logger(.notifications).error(
+                    "dashboardRescheduleFailed e=\(String(describing: error), privacy: .private)"
+                )
+            }
         }
     }
 

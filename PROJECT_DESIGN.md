@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**M20 - Routine Streaks**
+**M21 - Behind-Schedule Notifications**
 
 The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -105,10 +105,11 @@ Core invariants that require automated coverage when touched:
 | DONE | M14 - Dogfooding Readiness | Local validation, diagnostics, privacy, app icon, and device-readiness checks are complete. |
 | DONE | M15 - Dashboard-First Management Redesign | The Today Dashboard becomes the tracking and management surface, with home-owned sheets and organize mode replacing the separate manage screen. |
 | DONE | M16 - Time-Based Routine Availability | Routines can optionally limit completion to local-time windows while staying visible and correct across all-day, same-day, and cross-midnight cases. |
-| DONE | M17 - Check-In Notifications | The app schedules local morning/afternoon/evening check-in notifications with progress-aware, non-spammy content that goes quiet once all goals for the period are met. |
+| DONE | M17 - Check-In Notifications | Retired three-slot notification implementation, cleanly replaced by M21. |
 | DONE | M18 - Production Launch Readiness | Release assets/docs are aligned, widget completion/handoff flows are covered, and internal-TestFlight operator workflows are documented and scripted. |
 | DONE | M19 - Separate Goal-Met Collapse Preference | Today collapse settings independently control completed-today, goal-met, and unavailable compact rows while preserving unavailable precedence. |
-| CURRENT | M20 - Routine Streaks | Quiet derived streak counts appear on full dashboard cards and in the routine history summary. |
+| DONE | M20 - Routine Streaks | Quiet derived streak counts appear on full dashboard cards and in the routine history summary. |
+| CURRENT | M21 - Behind-Schedule Notifications | One global local alert is scheduled at most once per day when a routine falls behind target-proportional weekly or monthly pace. |
 
 ## Milestones
 
@@ -868,21 +869,15 @@ Completion note:
 
 Status: `DONE`
 
-Goal: add local, non-spammy daily check-in notifications (morning, afternoon, evening) that reflect current progress and stay quiet once every goal for the period is met, without introducing per-routine reminders.
+Goal: replace the retired three-slot check-in behavior with one local behind-schedule alert per day at most, without per-routine reminders.
 
 Dependencies: M02, M03, M05, M06, M07, M09, M16.
 
-Primary references: [PRODUCT_BRIEF.md](PRODUCT_BRIEF.md), [DATA_DESIGN.md](DATA_DESIGN.md), [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md) Check-In Notifications section.
+Primary references: [PRODUCT_BRIEF.md](PRODUCT_BRIEF.md), [DATA_DESIGN.md](DATA_DESIGN.md), [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md) Behind-Schedule Notifications section.
 
 Deliverables:
 
-- Add a pure `CheckInContentBuilder` in `RoutineCore` that derives morning/afternoon/evening notification content (or suppression) from routine progress, availability windows, and a `celebrationConsumed` flag, using existing `ProgressCalculator`, `RoutineProgress`, `RoutineAvailabilityWindow`, and `RoutineCalendar` APIs.
-- Add a `CheckInScheduler` in the app layer that requests `UNUserNotificationCenter` authorization, snapshots routines/groups/completions from SwiftData, calls the builder, and schedules/cancels `UNNotificationRequest`s with stable per-slot identifiers.
-- Persist the celebration-consumed flag in the shared App Group `UserDefaults` so it survives relaunch and resets naturally on week/month rollover.
-- Add per-slot enabled flags and configurable local times as `@AppStorage` settings, with a "Check-ins" section in Settings (toggle + ranged time picker per slot).
-- Add a one-time onboarding prompt that asks for consent before enabling check-ins by default, gated by a persisted "shown" flag.
-- Reschedule notifications on app foreground/background scene-phase transitions so content stays fresh without a push entitlement.
-- Add or update tests for the builder's full state machine (open goals, celebration, suppression, week-reset resume) and for window relevance per slot.
+- Superseded by M21. The prior slot, availability-window, and celebration behavior is removed without compatibility aliases.
 
 Validation:
 
@@ -894,7 +889,7 @@ Validation:
 
 Required tests:
 
-- `CheckInContentBuilder` coverage for each slot's normal-content branch, availability-window relevance (in-window, out-of-window, nil-window), next-routine ordering, celebration-on-all-met, suppression-after-celebration-consumed, and resume-after-week-reset.
+- Superseded by M21 behind-schedule builder and scheduler coverage.
 
 Completion update:
 
@@ -1007,7 +1002,7 @@ Completion note:
 
 ### M20 - Routine Streaks
 
-Status: `CURRENT`
+Status: `DONE`
 
 Goal: implement quiet routine streaks as a derived consistency metric across dashboard cards and routine history.
 
@@ -1040,6 +1035,40 @@ Validation:
 - Run `./Scripts/check-format.sh`.
 - Run `./Scripts/lint.sh`.
 - Run `./Scripts/build-ios.sh`.
+- Run `./Scripts/validate.sh`.
+
+Completion note:
+
+- Source and focused tests for M20 routine streaks were already complete before this milestone; M21 advances the roadmap marker.
+
+### M21 - Behind-Schedule Notifications
+
+Status: `CURRENT`
+
+Goal: replace three daily check-ins with a single local alert that reports a routine falling behind the pace needed to meet its weekly or monthly target.
+
+Dependencies: M20.
+
+Primary references: [PRODUCT_BRIEF.md](PRODUCT_BRIEF.md), [DATA_DESIGN.md](DATA_DESIGN.md), [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md).
+
+Deliverables:
+
+- Add `BehindScheduleContentBuilder` with target-proportional rounded pace, deduplicated current-period completions, dashboard-order tie handling, and exact deficit/days-remaining content.
+- Add `BehindScheduleScheduler` with one enabled preference, one local minute-of-day preference defaulting to 7:00 AM, stable `behind-schedule.YYYY-MM-DD` identifiers, a two-day rolling horizon, and legacy request cleanup.
+- Replace notification Settings and onboarding with one daily behind-schedule control and neutral consent copy.
+- Rebuild pending alerts after foregrounding, progress/history mutations, routine create/edit/delete, settings changes, and factory reset.
+- Remove retired check-in preferences, slot scheduling, all-caught-up celebration state, and compatibility paths.
+
+Required tests:
+
+- Core pace behavior: deduplication, exact pace suppression, monthly lengths, pluralization, highest-deficit order, tied dashboard order, and final-day deficits.
+- Scheduler behavior: one request per projected-behind day, passed-time omission, disabled suppression, hard-window inclusion, request cleanup, default preference store, and mutation resync.
+- Onboarding UI copy and factory reset cleanup for current and retired notification state.
+
+Validation:
+
+- Run `./Scripts/test-core.sh`.
+- Run `./Scripts/test-ios.sh`.
 - Run `./Scripts/validate.sh`.
 
 ## MVP Completion Criteria

@@ -6,13 +6,9 @@ enum RoutineSettingsKeys {
     static let collapseCompletedToday = "settings.collapseCompletedToday"
     static let collapseGoalMetToday = "settings.collapseGoalMetToday"
     static let collapseUnavailableToday = "settings.collapseUnavailableToday"
-    static let checkInMorningEnabled = "settings.checkin.morning.enabled"
-    static let checkInMorningMinute = "settings.checkin.morning.minute"
-    static let checkInAfternoonEnabled = "settings.checkin.afternoon.enabled"
-    static let checkInAfternoonMinute = "settings.checkin.afternoon.minute"
-    static let checkInEveningEnabled = "settings.checkin.evening.enabled"
-    static let checkInEveningMinute = "settings.checkin.evening.minute"
-    static let checkInOnboardingShown = "settings.checkin.onboardingShown"
+    static let behindScheduleNotificationsEnabled = "settings.behindScheduleNotifications.enabled"
+    static let behindScheduleNotificationMinute = "settings.behindScheduleNotifications.minute"
+    static let behindScheduleOnboardingShown = "settings.behindScheduleNotifications.onboardingShown"
     static let openAppOnWidgetCompletion = RoutineWidgetBridge.openAppOnWidgetCompletionKey
 }
 

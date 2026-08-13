@@ -1352,8 +1352,8 @@ Multiple completions per day:
 
 Notifications:
 
-- Implemented as a global, non-per-routine daily check-in system (morning/afternoon/evening). Check-in enabled flags and times are global app preferences stored in `@AppStorage`/`UserDefaults`, not a new SwiftData model, and do not overload `RoutinePeriod` with notification behavior.
-- The celebration-consumed flag (whether the "all caught up" notification has already fired for the current open period) is a single App Group `UserDefaults` flag, not routine data.
+- Implemented as a global, non-per-routine behind-schedule alert. One enabled flag and one local minute-of-day preference are global `@AppStorage`/`UserDefaults` values, not a new SwiftData model, and do not overload `RoutinePeriod` with notification behavior.
+- At rescheduling time, the alert selects the first routine in dashboard order with the greatest deficit between deduplicated period completions and target-proportional expected completions. It uses a two-day local rolling horizon and cancels/rebuilds after foregrounding or progress-affecting mutations.
 - Per-routine reminder notifications remain a future extension if ever added; they would need their own settings model separate from completion history.
 
 Widgets:

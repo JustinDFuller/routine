@@ -470,16 +470,16 @@ extension RoutineAppUITests {
         )
     }
 
-    func testCheckInOnboardingPromptAppearsAndEnableButtonDismissesIt() {
+    func testBehindScheduleOnboardingPromptAppearsAndEnableButtonDismissesIt() {
         let app = makeApp(
-            additionalLaunchArguments: ["-routine-force-checkin-onboarding-prompt"]
+            additionalLaunchArguments: ["-routine-force-behind-schedule-onboarding-prompt"]
         )
         app.launch()
 
-        let alert = app.alerts["Stay on track with check-ins?"]
+        let alert = app.alerts["Behind-schedule alerts?"]
         XCTAssertTrue(alert.waitForExistence(timeout: 5))
 
-        let enableButton = alert.buttons["Enable Check-ins"]
+        let enableButton = alert.buttons["Enable alerts"]
         let notNowButton = alert.buttons["Not Now"]
         XCTAssertTrue(enableButton.exists)
         XCTAssertTrue(notNowButton.exists)
@@ -487,7 +487,7 @@ extension RoutineAppUITests {
         enableButton.tap()
 
         XCTAssertTrue(dashboardTitle(in: app).waitForExistence(timeout: 5))
-        XCTAssertFalse(app.staticTexts["Stay on track with check-ins?"].exists)
+        XCTAssertFalse(app.staticTexts["Behind-schedule alerts?"].exists)
     }
 
     func testCompletedRoutineCollapsesToMiniRowAndExpandsAndCollapsesOnTap() {

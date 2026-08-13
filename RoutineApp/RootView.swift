@@ -13,14 +13,14 @@ struct RootView: View {
     @State private var path: [AppRoute] = []
     @State private var hasAppliedDebugLaunchRoute = false
     @State private var seedErrorIsPresented = false
-    @State private var checkInOnboardingPromptIsPresented = false
+    @State private var behindScheduleConsentIsPresented = false
 
     private let debugLaunchConfiguration: RoutineDebugLaunchConfiguration
 
     private static let starterDataLogger = AppDiagnostics.logger(.starterData)
     private static let routingLogger = AppDiagnostics.logger(.routing)
     private static let notificationsLogger = AppDiagnostics.logger(.notifications)
-    private static let forceCheckInOnboardingArgument = "-routine-force-checkin-onboarding-prompt"
+    private static let forceBehindScheduleOnboardingArgument = "-routine-force-behind-schedule-onboarding-prompt"
 
     init(debugLaunchConfiguration: RoutineDebugLaunchConfiguration = .current) {
         self.debugLaunchConfiguration = debugLaunchConfiguration
@@ -44,8 +44,8 @@ struct RootView: View {
                 }
 
                 try applyDebugLaunchRouteIfNeeded()
-                await syncCheckIns()
-                presentCheckInOnboardingPromptIfNeeded()
+                await syncBehindScheduleAlerts()
+                presentBehindScheduleOnboardingPromptIfNeeded()
             } catch {
                 Self.starterDataLogger.error(
                     "Launch setup failed: \(String(describing: error), privacy: .private)")
@@ -58,7 +58,7 @@ struct RootView: View {
             }
 
             Task {
-                await syncCheckIns()
+                await syncBehindScheduleAlerts()
             }
         }
         .alert("Could not load initial data.", isPresented: $seedErrorIsPresented) {
@@ -67,21 +67,18 @@ struct RootView: View {
             Text("You can still use Routine.")
         }
         .alert(
-            "Stay on track with check-ins?",
-            isPresented: $checkInOnboardingPromptIsPresented
+            "Behind-schedule alerts?",
+            isPresented: $behindScheduleConsentIsPresented
         ) {
-            Button("Enable Check-ins") {
-                enableCheckInsFromOnboarding()
+            Button("Enable alerts") {
+                enableBehindScheduleAlertsFromOnboarding()
             }
 
             Button("Not Now", role: .cancel) {
-                markCheckInOnboardingShown()
+                markBehindScheduleOnboardingShown()
             }
         } message: {
-            Text(
-                "Routine can send morning, afternoon, and evening check-ins. "
-                    + "They stop once your current goals are done."
-            )
+            Text("Routine sends at most one daily alert when progress falls behind pace.")
         }
         .onOpenURL { url in
             guard url.host == "today" else {
@@ -133,42 +130,51 @@ struct RootView: View {
         hasAppliedDebugLaunchRoute = true
     }
 
-    private func syncCheckIns() async {
+    private func syncBehindScheduleAlerts() async {
         do {
-            try await CheckInScheduler().reschedule(context: modelContext, calendar: routineCalendar, now: runtime.now)
+            try await BehindScheduleScheduler().reschedule(
+                context: modelContext,
+                calendar: routineCalendar,
+                now: runtime.now
+            )
         } catch {
             Self.notificationsLogger.error(
-                "syncCheckInsFailed e=\(String(describing: error), privacy: .private)"
+                "syncBehindScheduleAlertsFailed e=\(String(describing: error), privacy: .private)"
             )
         }
     }
 
-    private func presentCheckInOnboardingPromptIfNeeded() {
-        let onboardingShown = UserDefaults.standard.bool(forKey: RoutineSettingsKeys.checkInOnboardingShown)
-        let forcesPrompt = ProcessInfo.processInfo.arguments.contains(Self.forceCheckInOnboardingArgument)
+    private func presentBehindScheduleOnboardingPromptIfNeeded() {
+        let onboardingShown = UserDefaults.standard.bool(
+            forKey: RoutineSettingsKeys.behindScheduleOnboardingShown
+        )
+        let forcesPrompt = ProcessInfo.processInfo.arguments.contains(
+            Self.forceBehindScheduleOnboardingArgument
+        )
 
         guard onboardingShown == false || forcesPrompt else {
             return
         }
 
-        checkInOnboardingPromptIsPresented = true
+        behindScheduleConsentIsPresented = true
     }
 
-    private func enableCheckInsFromOnboarding() {
+    private func enableBehindScheduleAlertsFromOnboarding() {
         let defaults = UserDefaults.standard
-        defaults.set(true, forKey: RoutineSettingsKeys.checkInMorningEnabled)
-        defaults.set(true, forKey: RoutineSettingsKeys.checkInAfternoonEnabled)
-        defaults.set(true, forKey: RoutineSettingsKeys.checkInEveningEnabled)
-        markCheckInOnboardingShown()
+        defaults.set(true, forKey: RoutineSettingsKeys.behindScheduleNotificationsEnabled)
+        markBehindScheduleOnboardingShown()
 
         Task {
-            await CheckInScheduler().requestAuthorizationIfNeeded()
-            await syncCheckIns()
+            await BehindScheduleScheduler().requestAuthorizationIfNeeded()
+            await syncBehindScheduleAlerts()
         }
     }
 
-    private func markCheckInOnboardingShown() {
-        UserDefaults.standard.set(true, forKey: RoutineSettingsKeys.checkInOnboardingShown)
+    private func markBehindScheduleOnboardingShown() {
+        UserDefaults.standard.set(
+            true,
+            forKey: RoutineSettingsKeys.behindScheduleOnboardingShown
+        )
     }
 }
 

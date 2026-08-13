@@ -315,6 +315,7 @@ struct RoutineHistoryView: View {
         do {
             try RoutineTrackingService(context: modelContext, routineCalendar: routineCalendar)
                 .removeCompletion(completionID: item.id)
+            rescheduleBehindScheduleAlerts()
         } catch {
             removalAlert = HistoryRemovalAlert(message: error.localizedDescription)
         }
@@ -353,6 +354,8 @@ struct RoutineHistoryView: View {
                     return
                 }
 
+                rescheduleBehindScheduleAlerts()
+
                 WidgetCenter.shared.reloadAllTimelines()
                 RoutineHaptics.signalUndo()
                 showUndoBanner(day: day.day, action: .removed, message: "Removed \(dateText)")
@@ -361,6 +364,8 @@ struct RoutineHistoryView: View {
                 guard result.didInsert else {
                     return
                 }
+
+                rescheduleBehindScheduleAlerts()
 
                 WidgetCenter.shared.reloadAllTimelines()
                 RoutineHaptics.signalCompletion()
@@ -387,6 +392,8 @@ struct RoutineHistoryView: View {
                     return
                 }
 
+                rescheduleBehindScheduleAlerts()
+
                 WidgetCenter.shared.reloadAllTimelines()
                 RoutineHaptics.signalUndo()
             case .removed:
@@ -396,12 +403,30 @@ struct RoutineHistoryView: View {
                     return
                 }
 
+                rescheduleBehindScheduleAlerts()
+
                 WidgetCenter.shared.reloadAllTimelines()
                 RoutineHaptics.signalCompletion()
             }
         } catch {
             clearUndoBanner()
             removalAlert = HistoryRemovalAlert(message: error.localizedDescription)
+        }
+    }
+
+    private func rescheduleBehindScheduleAlerts() {
+        Task {
+            do {
+                try await BehindScheduleScheduler().reschedule(
+                    context: modelContext,
+                    calendar: routineCalendar,
+                    now: runtime.now
+                )
+            } catch {
+                AppDiagnostics.logger(.notifications).error(
+                    "historyRescheduleFailed e=\(String(describing: error), privacy: .private)"
+                )
+            }
         }
     }
 

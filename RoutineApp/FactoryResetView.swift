@@ -10,7 +10,7 @@ struct FactoryResetView: View {
     @State private var selection = RoutineResetSelection(
         routinesAndHistory: true,
         displayPreferences: true,
-        checkInReminders: true
+        behindScheduleAlerts: true
     )
     @State private var isConfirmingReset = false
     @State private var resetError: Error?
@@ -22,8 +22,8 @@ struct FactoryResetView: View {
                     .accessibilityIdentifier("factory-reset-routines-toggle")
                 Toggle("Display preferences", isOn: $selection.displayPreferences)
                     .accessibilityIdentifier("factory-reset-display-toggle")
-                Toggle("Check-in reminders", isOn: $selection.checkInReminders)
-                    .accessibilityIdentifier("factory-reset-checkin-toggle")
+                Toggle("Behind-schedule alerts", isOn: $selection.behindScheduleAlerts)
+                    .accessibilityIdentifier("factory-reset-behind-schedule-toggle")
             } footer: {
                 Text("This action is permanent and cannot be undone.")
             }
@@ -69,7 +69,7 @@ struct FactoryResetView: View {
     }
 
     private var nothingSelected: Bool {
-        !selection.routinesAndHistory && !selection.displayPreferences && !selection.checkInReminders
+        !selection.routinesAndHistory && !selection.displayPreferences && !selection.behindScheduleAlerts
     }
 
     private func performReset() {

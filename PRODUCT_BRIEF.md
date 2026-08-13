@@ -96,7 +96,7 @@ The MVP is optimized for one person who wants a practical personal tracker on an
 - Show last completed date for each routine.
 - Show current weekly or monthly progress visually.
 - Let the user review past completions in a calendar/history view.
-- Offer local morning, afternoon, and evening check-in notifications that stay quiet once goals are met.
+- Offer at most one local daily behind-schedule alert, at a configurable local time, only when weekly or monthly progress falls behind the pace needed to meet its target.
 - Show the next ready routine in a Home Screen widget, with tap-through to Today and one-tap completion.
 
 ## Core Product Behavior
