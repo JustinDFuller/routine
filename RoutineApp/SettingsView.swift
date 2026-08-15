@@ -11,23 +11,23 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.routineCalendar) private var routineCalendar
+    @Environment(\.behindScheduleRescheduleCoordinator) private var behindScheduleRescheduleCoordinator
 
     @AppStorage(RoutineSettingsKeys.weekStartWeekday) private var weekStartRaw = Weekday.sunday.rawValue
     @AppStorage(RoutineSettingsKeys.collapseCompletedToday) private var collapseCompletedToday = true
     @AppStorage(RoutineSettingsKeys.collapseGoalMetToday) private var collapseGoalMetToday = true
     @AppStorage(RoutineSettingsKeys.collapseUnavailableToday) private var collapseUnavailableToday = true
 
-    @AppStorage(RoutineSettingsKeys.checkInMorningEnabled) private var checkInMorningEnabled = false
-    @AppStorage(RoutineSettingsKeys.checkInMorningMinute) private var checkInMorningMinute = 360
-    @AppStorage(RoutineSettingsKeys.checkInAfternoonEnabled) private var checkInAfternoonEnabled = false
-    @AppStorage(RoutineSettingsKeys.checkInAfternoonMinute) private var checkInAfternoonMinute = 720
-    @AppStorage(RoutineSettingsKeys.checkInEveningEnabled) private var checkInEveningEnabled = false
-    @AppStorage(RoutineSettingsKeys.checkInEveningMinute) private var checkInEveningMinute = 1_080
+    @AppStorage(RoutineSettingsKeys.behindScheduleNotificationsEnabled)
+    private var behindScheduleNotificationsEnabled = false
+    @AppStorage(RoutineSettingsKeys.behindScheduleNotificationMinute)
+    private var behindScheduleNotificationMinute = 420
 
     @AppStorage(RoutineSettingsKeys.openAppOnWidgetCompletion, store: RoutineWidgetBridge.appGroupDefaults)
     private var openAppOnWidgetCompletion = true
 
     @State private var isNotificationAccessDenied = false
+    @State private var behindScheduleTimeChangeTask: Task<Void, Never>?
 
     var body: some View {
         NavigationStack {
@@ -58,7 +58,7 @@ struct SettingsView: View {
                     )
                 }
 
-                checkInSection
+                behindScheduleSection
 
                 Section {
                     Toggle("Open app when completing from widget", isOn: $openAppOnWidgetCompletion)
@@ -108,96 +108,78 @@ struct SettingsView: View {
         }
     }
 
-    private var checkInSection: some View {
+    private var behindScheduleSection: some View {
         Section {
-            checkInRow(
-                title: "Morning",
-                isOn: $checkInMorningEnabled,
-                minute: $checkInMorningMinute,
-                slotName: "morning",
-                range: timeRange(startHour: 5, endHour: 10)
-            )
-            checkInRow(
-                title: "Afternoon",
-                isOn: $checkInAfternoonEnabled,
-                minute: $checkInAfternoonMinute,
-                slotName: "afternoon",
-                range: timeRange(startHour: 11, endHour: 15)
-            )
-            checkInRow(
-                title: "Evening",
-                isOn: $checkInEveningEnabled,
-                minute: $checkInEveningMinute,
-                slotName: "evening",
-                range: timeRange(startHour: 17, endHour: 21)
-            )
-        } header: {
-            Text("Check-ins")
-        } footer: {
-            checkInFooter
-        }
-    }
-
-    private var checkInFooter: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(
-                "Choose which check-ins you want and when they should arrive. "
-                    + "Routine stops sending them once your current goals are done."
-            )
-
-            if isNotificationAccessDenied {
-                Text("Notifications are turned off for Routine in system Settings.")
-
-                Button("Open Settings") {
-                    openSystemSettings()
-                }
-                .accessibilityIdentifier("settings-checkin-open-system-settings-button")
-            }
-        }
-    }
-
-    private func checkInRow(
-        title: String,
-        isOn: Binding<Bool>,
-        minute: Binding<Int>,
-        slotName: String,
-        range: ClosedRange<Date>
-    ) -> some View {
-        VStack(alignment: .leading) {
-            Toggle(title, isOn: isOn)
-                .accessibilityIdentifier("settings-checkin-\(slotName)-toggle")
-                .onChange(of: isOn.wrappedValue) {
-                    handleCheckInChange(turnedOn: isOn.wrappedValue)
+            Toggle("Alert me when I fall behind", isOn: $behindScheduleNotificationsEnabled)
+                .accessibilityIdentifier("settings-behind-schedule-toggle")
+                .onChange(of: behindScheduleNotificationsEnabled) { oldValue, newValue in
+                    behindScheduleTimeChangeTask?.cancel()
+                    handleBehindScheduleChange(justEnabled: oldValue == false && newValue)
                 }
 
             DatePicker(
                 "Time",
-                selection: timeBinding(minute: minute),
-                in: range,
+                selection: timeBinding(minute: $behindScheduleNotificationMinute),
                 displayedComponents: .hourAndMinute
             )
-            .labelsHidden()
-            .disabled(isOn.wrappedValue == false)
-            .accessibilityIdentifier("settings-checkin-\(slotName)-time")
-            .onChange(of: minute.wrappedValue) {
-                handleCheckInChange(turnedOn: isOn.wrappedValue)
+            .disabled(behindScheduleNotificationsEnabled == false)
+            .accessibilityIdentifier("settings-behind-schedule-time")
+            .onChange(of: behindScheduleNotificationMinute) {
+                guard behindScheduleNotificationsEnabled else {
+                    return
+                }
+
+                behindScheduleTimeChangeTask?.cancel()
+                behindScheduleTimeChangeTask = Task {
+                    try? await Task.sleep(nanoseconds: 300_000_000)
+
+                    guard Task.isCancelled == false else {
+                        return
+                    }
+
+                    handleBehindScheduleChange(justEnabled: false)
+                }
+            }
+        } header: {
+            Text("Behind-schedule alerts")
+        } footer: {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(
+                    "An alert arrives once per day only when current progress is behind the pace "
+                        + "needed to meet the goal."
+                )
+
+                if isNotificationAccessDenied {
+                    Text("Notifications are turned off for Routine in system Settings.")
+
+                    Button("Open Settings") {
+                        openSystemSettings()
+                    }
+                    .accessibilityIdentifier("settings-behind-schedule-open-system-settings-button")
+                }
             }
         }
     }
 
-    private func handleCheckInChange(turnedOn: Bool) {
+    private func handleBehindScheduleChange(justEnabled: Bool) {
         Task {
-            if turnedOn {
-                await CheckInScheduler().requestAuthorizationIfNeeded()
+            if justEnabled {
+                await behindScheduleRescheduleCoordinator.requestAuthorizationIfNeeded()
             }
 
-            try? await CheckInScheduler().reschedule(context: modelContext, calendar: routineCalendar)
+            await rescheduleBehindScheduleAlerts(
+                coordinator: behindScheduleRescheduleCoordinator,
+                context: modelContext,
+                calendar: routineCalendar,
+                now: .now,
+                logLabel: "settingsRescheduleFailed"
+            )
             await refreshNotificationAccessStatus()
         }
     }
 
     private func refreshNotificationAccessStatus() async {
-        isNotificationAccessDenied = await CheckInScheduler().isAuthorizationDenied()
+        isNotificationAccessDenied = await BehindScheduleScheduler().isAuthorizationDenied()
     }
 
     private func openSystemSettings() {
@@ -206,14 +188,6 @@ struct SettingsView: View {
         }
 
         UIApplication.shared.open(url)
-    }
-
-    private func timeRange(startHour: Int, endHour: Int) -> ClosedRange<Date> {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: .now)
-        let start = calendar.date(bySettingHour: startHour, minute: 0, second: 0, of: today) ?? today
-        let end = calendar.date(bySettingHour: endHour, minute: 0, second: 0, of: today) ?? today
-        return start...end
     }
 
     private func timeBinding(minute: Binding<Int>) -> Binding<Date> {

@@ -1,25 +1,36 @@
 import Foundation
 import RoutineCore
 import SwiftData
-import UserNotifications
 
 struct RoutineResetSelection {
     var routinesAndHistory: Bool
     var displayPreferences: Bool
-    var checkInReminders: Bool
+    var behindScheduleAlerts: Bool
 }
 
 @MainActor
 final class RoutineFactoryResetService {
+    private static let retiredNotificationPreferenceKeys = [
+        "settings.checkin.morning.enabled",
+        "settings.checkin.morning.minute",
+        "settings.checkin.afternoon.enabled",
+        "settings.checkin.afternoon.minute",
+        "settings.checkin.evening.enabled",
+        "settings.checkin.evening.minute",
+        "settings.checkin.onboardingShown",
+        "checkin.celebrationConsumed"
+    ]
+
     private let userDefaults: UserDefaults
-    private let notificationCenter: CheckInNotificationCenter
+    private let behindScheduleRescheduleCoordinator: BehindScheduleRescheduleCoordinator
 
     init(
         userDefaults: UserDefaults = .standard,
-        notificationCenter: CheckInNotificationCenter = UNUserNotificationCenter.current()
+        behindScheduleRescheduleCoordinator: BehindScheduleRescheduleCoordinator =
+            BehindScheduleRescheduleCoordinator()
     ) {
         self.userDefaults = userDefaults
-        self.notificationCenter = notificationCenter
+        self.behindScheduleRescheduleCoordinator = behindScheduleRescheduleCoordinator
     }
 
     func reset(
@@ -40,19 +51,20 @@ final class RoutineFactoryResetService {
             userDefaults.removeObject(forKey: RoutineSettingsKeys.collapseUnavailableToday)
         }
 
-        if selection.checkInReminders {
-            userDefaults.removeObject(forKey: RoutineSettingsKeys.checkInMorningEnabled)
-            userDefaults.removeObject(forKey: RoutineSettingsKeys.checkInMorningMinute)
-            userDefaults.removeObject(forKey: RoutineSettingsKeys.checkInAfternoonEnabled)
-            userDefaults.removeObject(forKey: RoutineSettingsKeys.checkInAfternoonMinute)
-            userDefaults.removeObject(forKey: RoutineSettingsKeys.checkInEveningEnabled)
-            userDefaults.removeObject(forKey: RoutineSettingsKeys.checkInEveningMinute)
-            userDefaults.removeObject(forKey: RoutineSettingsKeys.checkInOnboardingShown)
-            userDefaults.removeObject(forKey: CheckInScheduler.celebrationConsumedKey)
-            await CheckInScheduler(
-                notificationCenter: notificationCenter,
-                userDefaults: userDefaults
-            ).cancelAll()
+        if selection.behindScheduleAlerts {
+            userDefaults.removeObject(forKey: RoutineSettingsKeys.behindScheduleNotificationsEnabled)
+            userDefaults.removeObject(forKey: RoutineSettingsKeys.behindScheduleNotificationMinute)
+            userDefaults.removeObject(forKey: RoutineSettingsKeys.behindScheduleOnboardingShown)
+            Self.retiredNotificationPreferenceKeys.forEach(userDefaults.removeObject(forKey:))
+            await behindScheduleRescheduleCoordinator.cancelAll()
+        }
+
+        if selection.routinesAndHistory {
+            try await behindScheduleRescheduleCoordinator.reschedule(
+                context: context,
+                calendar: calendar,
+                now: .now
+            )
         }
     }
 }

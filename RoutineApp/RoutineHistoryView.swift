@@ -12,6 +12,7 @@ struct RoutineHistoryView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.routineRuntimeConfiguration) private var runtime
     @Environment(\.routineCalendar) private var routineCalendar
+    @Environment(\.behindScheduleRescheduleCoordinator) private var behindScheduleRescheduleCoordinator
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @Query private var routines: [Routine]
@@ -315,6 +316,15 @@ struct RoutineHistoryView: View {
         do {
             try RoutineTrackingService(context: modelContext, routineCalendar: routineCalendar)
                 .removeCompletion(completionID: item.id)
+            Task {
+                await rescheduleBehindScheduleAlerts(
+                    coordinator: behindScheduleRescheduleCoordinator,
+                    context: modelContext,
+                    calendar: routineCalendar,
+                    now: runtime.now,
+                    logLabel: "historyRescheduleFailed"
+                )
+            }
         } catch {
             removalAlert = HistoryRemovalAlert(message: error.localizedDescription)
         }
@@ -353,6 +363,16 @@ struct RoutineHistoryView: View {
                     return
                 }
 
+                Task {
+                    await rescheduleBehindScheduleAlerts(
+                        coordinator: behindScheduleRescheduleCoordinator,
+                        context: modelContext,
+                        calendar: routineCalendar,
+                        now: runtime.now,
+                        logLabel: "historyRescheduleFailed"
+                    )
+                }
+
                 WidgetCenter.shared.reloadAllTimelines()
                 RoutineHaptics.signalUndo()
                 showUndoBanner(day: day.day, action: .removed, message: "Removed \(dateText)")
@@ -360,6 +380,16 @@ struct RoutineHistoryView: View {
                 let result = try service.complete(routineID: routineID, day: day.day, now: runtime.now)
                 guard result.didInsert else {
                     return
+                }
+
+                Task {
+                    await rescheduleBehindScheduleAlerts(
+                        coordinator: behindScheduleRescheduleCoordinator,
+                        context: modelContext,
+                        calendar: routineCalendar,
+                        now: runtime.now,
+                        logLabel: "historyRescheduleFailed"
+                    )
                 }
 
                 WidgetCenter.shared.reloadAllTimelines()
@@ -387,6 +417,16 @@ struct RoutineHistoryView: View {
                     return
                 }
 
+                Task {
+                    await rescheduleBehindScheduleAlerts(
+                        coordinator: behindScheduleRescheduleCoordinator,
+                        context: modelContext,
+                        calendar: routineCalendar,
+                        now: runtime.now,
+                        logLabel: "historyRescheduleFailed"
+                    )
+                }
+
                 WidgetCenter.shared.reloadAllTimelines()
                 RoutineHaptics.signalUndo()
             case .removed:
@@ -394,6 +434,16 @@ struct RoutineHistoryView: View {
                 clearUndoBanner()
                 guard result.didInsert else {
                     return
+                }
+
+                Task {
+                    await rescheduleBehindScheduleAlerts(
+                        coordinator: behindScheduleRescheduleCoordinator,
+                        context: modelContext,
+                        calendar: routineCalendar,
+                        now: runtime.now,
+                        logLabel: "historyRescheduleFailed"
+                    )
                 }
 
                 WidgetCenter.shared.reloadAllTimelines()

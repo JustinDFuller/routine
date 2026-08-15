@@ -10,6 +10,7 @@ struct TodayDashboardView: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.routineRuntimeConfiguration) var runtime
     @Environment(\.routineCalendar) var routineCalendar
+    @Environment(\.behindScheduleRescheduleCoordinator) var behindScheduleRescheduleCoordinator
 
     @Query(
         sort: [SortDescriptor(\RoutineGroup.sortOrder), SortDescriptor(\RoutineGroup.name)]

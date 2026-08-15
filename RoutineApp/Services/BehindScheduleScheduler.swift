@@ -5,7 +5,7 @@ import SwiftData
 import UserNotifications
 
 @MainActor
-protocol CheckInNotificationCenter {
+protocol BehindScheduleNotificationCenter {
     func requestAuthorization(options: UNAuthorizationOptions) async throws -> Bool
     func notificationSettings() async -> UNNotificationSettings
     func add(_ request: UNNotificationRequest) async throws
@@ -13,49 +13,21 @@ protocol CheckInNotificationCenter {
     func pendingNotificationRequests() async -> [UNNotificationRequest]
 }
 
-extension UNUserNotificationCenter: CheckInNotificationCenter {}
-
-private struct CheckInSlotSetting {
-    let slot: CheckInSlot
-    let enabledKey: String
-    let minuteKey: String
-    let defaultMinute: Int
-}
+extension UNUserNotificationCenter: BehindScheduleNotificationCenter {}
 
 @MainActor
-final class CheckInScheduler {
-    static let celebrationConsumedKey = "checkin.celebrationConsumed"
-
+final class BehindScheduleScheduler {
     private static let logger = AppDiagnostics.logger(.notifications)
-    private static let identifierPrefix = "checkin."
+    private static let identifierPrefix = "behind-schedule."
+    private static let retiredIdentifierPrefix = "checkin."
     private static let daysAhead = 2
+    private static let defaultMinute = 420
 
-    private static let slotSettings: [CheckInSlotSetting] = [
-        CheckInSlotSetting(
-            slot: .morning,
-            enabledKey: RoutineSettingsKeys.checkInMorningEnabled,
-            minuteKey: RoutineSettingsKeys.checkInMorningMinute,
-            defaultMinute: 360
-        ),
-        CheckInSlotSetting(
-            slot: .afternoon,
-            enabledKey: RoutineSettingsKeys.checkInAfternoonEnabled,
-            minuteKey: RoutineSettingsKeys.checkInAfternoonMinute,
-            defaultMinute: 720
-        ),
-        CheckInSlotSetting(
-            slot: .evening,
-            enabledKey: RoutineSettingsKeys.checkInEveningEnabled,
-            minuteKey: RoutineSettingsKeys.checkInEveningMinute,
-            defaultMinute: 1_080
-        )
-    ]
-
-    private let notificationCenter: CheckInNotificationCenter
+    private let notificationCenter: BehindScheduleNotificationCenter
     private let userDefaults: UserDefaults
 
     init(
-        notificationCenter: CheckInNotificationCenter = UNUserNotificationCenter.current(),
+        notificationCenter: BehindScheduleNotificationCenter = UNUserNotificationCenter.current(),
         userDefaults: UserDefaults = .standard
     ) {
         self.notificationCenter = notificationCenter
@@ -79,65 +51,59 @@ final class CheckInScheduler {
     }
 
     func reschedule(context: ModelContext, calendar: RoutineCalendar, now: Date = .now) async throws {
+        await cancelPendingBehindScheduleAlerts()
+
+        guard userDefaults.bool(forKey: RoutineSettingsKeys.behindScheduleNotificationsEnabled) else {
+            Self.logger.info("rescheduleComplete count=0")
+            return
+        }
+
         let snapshots = try routineSnapshots(context: context)
-        await cancelPendingCheckIns()
 
-        var celebrationConsumed = userDefaults.bool(forKey: Self.celebrationConsumedKey)
         var scheduledCount = 0
-
-        for occurrence in upcomingOccurrences(calendar: calendar, now: now) {
-            let scheduled = await scheduleIfNeeded(
-                occurrence: occurrence,
-                snapshots: snapshots,
-                calendar: calendar,
-                celebrationConsumed: celebrationConsumed
-            )
-
-            guard let scheduled else {
-                continue
-            }
-
-            celebrationConsumed = scheduled
+        for occurrence in upcomingOccurrences(calendar: calendar, now: now)
+        where await scheduleIfNeeded(occurrence: occurrence, snapshots: snapshots, calendar: calendar) {
             scheduledCount += 1
         }
 
-        userDefaults.set(celebrationConsumed, forKey: Self.celebrationConsumedKey)
         Self.logger.info("rescheduleComplete count=\(scheduledCount, privacy: .public)")
     }
 
+    func cancelAll() async {
+        await cancelPendingBehindScheduleAlerts()
+    }
+
     private func scheduleIfNeeded(
-        occurrence: CheckInOccurrence,
-        snapshots: [CheckInRoutineSnapshot],
-        calendar: RoutineCalendar,
-        celebrationConsumed: Bool
-    ) async -> Bool? {
-        let context = CheckInContext(
-            now: occurrence.fireDate, calendar: calendar, celebrationConsumed: celebrationConsumed)
-        let content = CheckInContentBuilder().content(
-            slot: occurrence.setting.slot,
-            slotMinuteOfDay: occurrence.minute,
+        occurrence: BehindScheduleOccurrence,
+        snapshots: [BehindScheduleRoutineSnapshot],
+        calendar: RoutineCalendar
+    ) async -> Bool {
+        let content = BehindScheduleContentBuilder().content(
             routines: snapshots,
-            context: context
+            context: BehindScheduleContext(now: occurrence.fireDate, calendar: calendar)
         )
 
         guard case .message(let title, let body) = content else {
-            return nil
+            return false
         }
 
         do {
             try await schedule(occurrence: occurrence, title: title, body: body)
-            return title == CheckInContentBuilder.celebrationTitle
+            return true
         } catch {
-            let identifier = occurrence.identifier
             let errorText = String(describing: error)
             Self.logger.error(
-                "scheduleFailed identifier=\(identifier, privacy: .public) e=\(errorText, privacy: .private)"
+                "scheduleFailed identifier=\(occurrence.identifier, privacy: .public) e=\(errorText, privacy: .private)"
             )
-            return nil
+            return false
         }
     }
 
-    private func schedule(occurrence: CheckInOccurrence, title: String, body: String) async throws {
+    private func schedule(
+        occurrence: BehindScheduleOccurrence,
+        title: String,
+        body: String
+    ) async throws {
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
@@ -154,51 +120,39 @@ final class CheckInScheduler {
         Self.logger.debug("scheduled identifier=\(occurrence.identifier, privacy: .public)")
     }
 
-    func cancelAll() async {
-        await cancelPendingCheckIns()
-    }
-
-    private func cancelPendingCheckIns() async {
-        let pending = await notificationCenter.pendingNotificationRequests()
-        let staleIdentifiers =
-            pending
+    private func cancelPendingBehindScheduleAlerts() async {
+        let identifiers = await notificationCenter.pendingNotificationRequests()
             .map(\.identifier)
-            .filter { $0.hasPrefix(Self.identifierPrefix) }
+            .filter {
+                $0.hasPrefix(Self.identifierPrefix) || $0.hasPrefix(Self.retiredIdentifierPrefix)
+            }
 
-        guard staleIdentifiers.isEmpty == false else {
+        guard identifiers.isEmpty == false else {
             return
         }
 
-        notificationCenter.removePendingNotificationRequests(withIdentifiers: staleIdentifiers)
-        Self.logger.debug("cancelledPending count=\(staleIdentifiers.count, privacy: .public)")
+        notificationCenter.removePendingNotificationRequests(withIdentifiers: identifiers)
+        Self.logger.debug("cancelledPending count=\(identifiers.count, privacy: .public)")
     }
 
-    private func upcomingOccurrences(calendar: RoutineCalendar, now: Date) -> [CheckInOccurrence] {
+    private func upcomingOccurrences(calendar: RoutineCalendar, now: Date) -> [BehindScheduleOccurrence] {
         let today = calendar.today(now: now)
 
-        return (0..<Self.daysAhead).flatMap { dayOffset -> [CheckInOccurrence] in
-            guard let day = day(after: dayOffset, from: today, calendar: calendar) else {
-                return []
+        return (0..<Self.daysAhead).compactMap { offset in
+            guard let day = day(after: offset, from: today, calendar: calendar) else {
+                return nil
             }
 
-            return Self.slotSettings.compactMap { setting in
-                occurrence(for: setting, on: day, calendar: calendar, now: now)
-            }
+            return occurrence(on: day, calendar: calendar, now: now)
         }
     }
 
     private func occurrence(
-        for setting: CheckInSlotSetting,
         on day: RoutineDay,
         calendar: RoutineCalendar,
         now: Date
-    ) -> CheckInOccurrence? {
-        guard userDefaults.bool(forKey: setting.enabledKey) else {
-            return nil
-        }
-
-        let minute = storedMinute(for: setting)
-
+    ) -> BehindScheduleOccurrence? {
+        let minute = storedMinute()
         var components = DateComponents()
         components.year = day.year
         components.month = day.month
@@ -210,21 +164,19 @@ final class CheckInScheduler {
             return nil
         }
 
-        return CheckInOccurrence(
-            setting: setting,
-            minute: minute,
+        return BehindScheduleOccurrence(
             fireDate: fireDate,
             fireComponents: components,
-            identifier: "\(Self.identifierPrefix)\(setting.slot.rawValue).\(day.key)"
+            identifier: "\(Self.identifierPrefix)\(day.key)"
         )
     }
 
-    private func storedMinute(for setting: CheckInSlotSetting) -> Int {
-        guard userDefaults.object(forKey: setting.minuteKey) != nil else {
-            return setting.defaultMinute
+    private func storedMinute() -> Int {
+        guard userDefaults.object(forKey: RoutineSettingsKeys.behindScheduleNotificationMinute) != nil else {
+            return Self.defaultMinute
         }
 
-        return userDefaults.integer(forKey: setting.minuteKey)
+        return userDefaults.integer(forKey: RoutineSettingsKeys.behindScheduleNotificationMinute)
     }
 
     private func day(after offset: Int, from today: RoutineDay, calendar: RoutineCalendar) -> RoutineDay? {
@@ -232,11 +184,7 @@ final class CheckInScheduler {
             return today
         }
 
-        var components = DateComponents()
-        components.year = today.year
-        components.month = today.month
-        components.day = today.day
-
+        let components = DateComponents(year: today.year, month: today.month, day: today.day)
         guard
             let todayDate = calendar.calendar.date(from: components),
             let offsetDate = calendar.calendar.date(byAdding: .day, value: offset, to: todayDate)
@@ -247,19 +195,17 @@ final class CheckInScheduler {
         return calendar.day(containing: offsetDate)
     }
 
-    private func routineSnapshots(context: ModelContext) throws -> [CheckInRoutineSnapshot] {
+    private func routineSnapshots(context: ModelContext) throws -> [BehindScheduleRoutineSnapshot] {
         let groups = try fetchGroups(context)
         let routines = try fetchRoutines(context)
         let completions = try fetchCompletions(context)
         let completionDaysByRoutineID = completionDaysByRoutineID(from: completions)
 
         return orderedRoutines(groups: groups, routines: routines).map { routine in
-            CheckInRoutineSnapshot(
+            BehindScheduleRoutineSnapshot(
                 name: routine.name,
                 targetCount: routine.targetCount,
                 period: routine.period,
-                availabilityWindow: routine.availabilityWindow,
-                availabilityBlockMode: routine.availabilityBlockMode,
                 completionDays: completionDaysByRoutineID[routine.id] ?? []
             )
         }
@@ -327,10 +273,128 @@ final class CheckInScheduler {
         }
     }
 }
+@MainActor
+final class BehindScheduleRescheduleCoordinator {
+    @MainActor
+    private final class PendingReschedule {
+        var context: ModelContext
+        var calendar: RoutineCalendar
+        var now: Date
+        private var task: Task<Void, Error>?
 
-private struct CheckInOccurrence {
-    let setting: CheckInSlotSetting
-    let minute: Int
+        init(context: ModelContext, calendar: RoutineCalendar, now: Date) {
+            self.context = context
+            self.calendar = calendar
+            self.now = now
+        }
+
+        func update(context: ModelContext, calendar: RoutineCalendar, now: Date) {
+            self.context = context
+            self.calendar = calendar
+            self.now = now
+        }
+
+        func start(
+            behind predecessor: Task<Void, Never>,
+            scheduler: BehindScheduleScheduler,
+            coordinator: BehindScheduleRescheduleCoordinator
+        ) -> Task<Void, Error> {
+            let task = Task { @MainActor [weak coordinator, scheduler] in
+                await predecessor.value
+
+                if let coordinator, coordinator.pendingReschedule === self {
+                    coordinator.pendingReschedule = nil
+                }
+
+                try await scheduler.reschedule(context: context, calendar: calendar, now: now)
+            }
+            self.task = task
+            return task
+        }
+
+        func value() async throws {
+            guard let task else {
+                preconditionFailure("A pending reschedule must have a task.")
+            }
+
+            try await task.value
+        }
+    }
+
+    private let scheduler: BehindScheduleScheduler
+    private var tail: Task<Void, Never> = Task {}
+    private var pendingReschedule: PendingReschedule?
+
+    init(scheduler: BehindScheduleScheduler = BehindScheduleScheduler()) {
+        self.scheduler = scheduler
+    }
+
+    func requestAuthorizationIfNeeded() async {
+        pendingReschedule = nil
+        await enqueue {
+            await self.scheduler.requestAuthorizationIfNeeded()
+        }
+    }
+
+    func reschedule(context: ModelContext, calendar: RoutineCalendar, now: Date) async throws {
+        if let pendingReschedule {
+            pendingReschedule.update(context: context, calendar: calendar, now: now)
+            try await pendingReschedule.value()
+            return
+        }
+
+        let predecessor = tail
+        let pendingReschedule = PendingReschedule(context: context, calendar: calendar, now: now)
+        self.pendingReschedule = pendingReschedule
+        let task = pendingReschedule.start(
+            behind: predecessor,
+            scheduler: scheduler,
+            coordinator: self
+        )
+        tail = Task { @MainActor in
+            _ = try? await task.value
+        }
+
+        try await task.value
+    }
+
+    func cancelAll() async {
+        pendingReschedule = nil
+        await enqueue {
+            await self.scheduler.cancelAll()
+        }
+    }
+
+    private func enqueue(_ operation: @escaping @MainActor () async -> Void) async {
+        let predecessor = tail
+        let task = Task { @MainActor in
+            await predecessor.value
+            await operation()
+        }
+        tail = task
+
+        await task.value
+    }
+}
+
+@MainActor
+func rescheduleBehindScheduleAlerts(
+    coordinator: BehindScheduleRescheduleCoordinator,
+    context: ModelContext,
+    calendar: RoutineCalendar,
+    now: Date,
+    logLabel: String
+) async {
+    do {
+        try await coordinator.reschedule(context: context, calendar: calendar, now: now)
+    } catch {
+        AppDiagnostics.logger(.notifications).error(
+            "\(logLabel, privacy: .public) e=\(String(describing: error), privacy: .private)"
+        )
+    }
+}
+
+private struct BehindScheduleOccurrence {
     let fireDate: Date
     let fireComponents: DateComponents
     let identifier: String

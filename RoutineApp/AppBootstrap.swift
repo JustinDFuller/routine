@@ -86,13 +86,9 @@ enum AppBootstrap {
             forKey: RoutineSettingsKeys.collapseUnavailableToday
         )
 
-        userDefaults.removeObject(forKey: RoutineSettingsKeys.checkInMorningEnabled)
-        userDefaults.removeObject(forKey: RoutineSettingsKeys.checkInMorningMinute)
-        userDefaults.removeObject(forKey: RoutineSettingsKeys.checkInAfternoonEnabled)
-        userDefaults.removeObject(forKey: RoutineSettingsKeys.checkInAfternoonMinute)
-        userDefaults.removeObject(forKey: RoutineSettingsKeys.checkInEveningEnabled)
-        userDefaults.removeObject(forKey: RoutineSettingsKeys.checkInEveningMinute)
-        userDefaults.set(true, forKey: RoutineSettingsKeys.checkInOnboardingShown)
+        userDefaults.removeObject(forKey: RoutineSettingsKeys.behindScheduleNotificationsEnabled)
+        userDefaults.removeObject(forKey: RoutineSettingsKeys.behindScheduleNotificationMinute)
+        userDefaults.set(true, forKey: RoutineSettingsKeys.behindScheduleOnboardingShown)
     }
 }
 

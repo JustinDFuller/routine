@@ -26,7 +26,7 @@ In scope for the MVP:
 - Weekly and monthly target progress.
 - One-tap completion, immediate undo, and history correction.
 - Local development, local device deployment, local full validation, and Linux-friendly GitHub Actions checks.
-- Local daily check-in notifications (morning/afternoon/evening), scheduled via `UNUserNotificationCenter`. No per-routine reminders; content is built from current progress and suppressed once all goals for the period are met.
+- One local behind-schedule alert per local calendar day at most, scheduled via `UNUserNotificationCenter` at a configurable local time. No per-routine reminders; content is built from current target pace and suppressed when every routine is at or ahead of pace.
 - A Home Screen widget that shows the next ready routine, supports one-tap completion, and hands off back to Today.
 
 Out of scope for the MVP:
@@ -286,11 +286,11 @@ Required services:
 - `AppDiagnostics`
   Owns loggers, signpost helpers, and DEBUG-only diagnostic behavior.
 
-- `CheckInContentBuilder` (`RoutineCore`, pure)
-  Derives morning/afternoon/evening check-in notification content, or suppression, from a routine progress snapshot, the slot's configured time, and a celebration-consumed flag. See Check-In Notifications below.
+- `BehindScheduleContentBuilder` (`RoutineCore`, pure)
+  Derives one behind-schedule notification message, or suppression, from routine progress snapshots and the occurrence date.
 
-- `CheckInScheduler` (app layer, `@MainActor`)
-  Requests notification authorization, snapshots routines/groups/completions, calls `CheckInContentBuilder`, and schedules or cancels `UNNotificationRequest`s.
+- `BehindScheduleScheduler` (app layer, `@MainActor`)
+  Requests notification authorization, snapshots routines/groups/completions, calls `BehindScheduleContentBuilder`, and schedules or cancels `UNNotificationRequest`s.
 
 Service design rules:
 
@@ -301,21 +301,17 @@ Service design rules:
 - Duplicate completion attempts are idempotent no-ops, not scary user-facing errors.
 - The service layer is the only place that should decide whether a save is needed after a mutation.
 
-## Check-In Notifications
+## Behind-Schedule Notifications
 
-The app sends local-only check-in notifications instead of per-routine reminders, to stay non-spammy:
+The app sends local-only behind-schedule alerts instead of per-routine reminders:
 
-- Three daily slots — morning (default 6:00am), afternoon (default 12:00pm), evening (default 6:00pm) — each independently toggleable with a configurable local time within a bounded range.
-- Notifications are scheduled with `UNUserNotificationCenter` and `UNCalendarNotificationTrigger`. No `aps-environment` entitlement is required; only the existing App Group is used, for the celebration-consumed flag.
-- Content is built by the pure `CheckInContentBuilder` from a routine progress snapshot: morning leads with the next available routine, afternoon leads with momentum (done-so-far plus next), evening leads with weekly-goal reflection.
-- Suppression and celebration state machine, evaluated per slot fire:
-  1. Any routine not yet target-met for its period (open goal) → send that slot's normal content; clear the celebration-consumed flag.
-  2. No open goals and the celebration-consumed flag is not set → send a single all-caught-up celebration; set the flag.
-  3. No open goals and the flag is already set → suppress (no notification).
-  4. A week or month rollover, or adding a routine, reopens goals, which clears the flag on the next slot fire and resumes normal notifications automatically.
+- One global toggle and one full-day local time preference default to 7:00 AM. Alerts are disabled until the user opts in.
+- The scheduler keeps a two-day local rolling horizon. It cancels retired `checkin.` requests and existing `behind-schedule.` requests before rebuilding future requests with stable `behind-schedule.YYYY-MM-DD` identifiers.
+- For each occurrence date, `BehindScheduleContentBuilder` uses `ProgressCalculator`'s deduplicated completed count and a target-proportional expected count: `round(target × elapsed period days / period days)`. It reports the routine with the greatest positive expected-minus-completed deficit, retaining dashboard order on ties.
+- At most one message is scheduled per local day. It is suppressed when no routine is behind pace; target-met routines and exact pace do not alert. Impossible-to-recover routines remain reported with their deficit and days remaining.
 - Tapping a notification opens the app via the existing `routine://today` deep link; there are no notification quick actions in v1.
-- Notifications are rescheduled on app foreground/background scene-phase transitions (local data only changes while foregrounded), with a short rolling horizon as a safety net while the app stays closed.
-- A one-time onboarding prompt asks for consent before any slot is enabled by default; declining leaves all slots off until changed in Settings.
+- Alerts rebuild after app foregrounding, completion or history correction, routine create/edit/delete, settings changes, and data reset. Notification content reflects the most recent rebuild because local notifications cannot query SwiftData at fire time.
+- A one-time onboarding prompt explains the alert before enabling it. Declining leaves alerts off until changed in Settings.
 
 ## SwiftUI Implementation
 
@@ -970,7 +966,7 @@ These are intentionally not part of MVP implementation, but the architecture sho
 - TestFlight distribution.
 - macOS GitHub Actions or Xcode Cloud.
 - Widgets through shared read projections.
-- Per-routine reminder notifications, layered on top of the daily check-in system, through separate reminder settings.
+- Per-routine reminder notifications, layered on top of the daily behind-schedule alert system, through separate reminder settings.
 - Cloud sync after reviewing SwiftData/CloudKit constraints, conflict handling, uniqueness, and deletion semantics.
 - Multiple completions per day by replacing the routine-day uniqueness policy with a more flexible completion limit.
 - Richer analytics through derived query services. Derived (non-persisted) streak counts are explicitly sanctioned; persisted streak fields or scores are appropriate only if a later measured performance problem requires a cache.
