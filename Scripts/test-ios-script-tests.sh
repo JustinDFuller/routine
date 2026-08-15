@@ -206,6 +206,9 @@ run_build_ios_and_capture() {
     local output_file="$script_test_dir/output.txt"
     set +e
     env \
+        -u ROUTINE_VALIDATE_VERBOSE \
+        -u ROUTINE_SCRIPT_VERBOSE \
+        -u CURRENT_PROJECT_VERSION \
         -u DEVELOPMENT_TEAM \
         -u APP_STORE_CONNECT_AUTH_KEY_PATH \
         -u APP_STORE_CONNECT_AUTH_KEY_ID \
@@ -226,6 +229,9 @@ run_test_ios_and_capture() {
     local output_file="$script_test_dir/output.txt"
     set +e
     env \
+        -u ROUTINE_VALIDATE_VERBOSE \
+        -u ROUTINE_SCRIPT_VERBOSE \
+        -u CURRENT_PROJECT_VERSION \
         -u DEVELOPMENT_TEAM \
         -u APP_STORE_CONNECT_AUTH_KEY_PATH \
         -u APP_STORE_CONNECT_AUTH_KEY_ID \
@@ -329,6 +335,9 @@ run_archive_ios_and_capture() {
 
     set +e
     env \
+        -u ROUTINE_VALIDATE_VERBOSE \
+        -u ROUTINE_SCRIPT_VERBOSE \
+        -u CURRENT_PROJECT_VERSION \
         -u DEVELOPMENT_TEAM \
         -u APP_STORE_CONNECT_AUTH_KEY_PATH \
         -u APP_STORE_CONNECT_AUTH_KEY_ID \
@@ -419,7 +428,11 @@ run_make_archive_and_capture() {
     set +e
     (
         cd "$archive_make_repo"
-        env "$@" make archive-ios
+        env \
+            -u ROUTINE_VALIDATE_VERBOSE \
+            -u ROUTINE_SCRIPT_VERBOSE \
+            -u CURRENT_PROJECT_VERSION \
+            "$@" make archive-ios
     ) >"$output_file" 2>&1
     local exit_code=$?
     if (( had_errexit )); then
@@ -470,6 +483,9 @@ run_export_ios_and_capture() {
 
     set +e
     env \
+        -u ROUTINE_VALIDATE_VERBOSE \
+        -u ROUTINE_SCRIPT_VERBOSE \
+        -u CURRENT_PROJECT_VERSION \
         -u DEVELOPMENT_TEAM \
         -u APP_STORE_CONNECT_AUTH_KEY_PATH \
         -u APP_STORE_CONNECT_AUTH_KEY_ID \
@@ -580,7 +596,11 @@ done
 run_validate_and_capture() {
     local output_file="$workdir/validate-output.txt"
     set +e
-    env "$@" "$validate_repo/Scripts/validate.sh" >"$output_file" 2>&1
+    env \
+        -u ROUTINE_VALIDATE_VERBOSE \
+        -u ROUTINE_SCRIPT_VERBOSE \
+        -u CURRENT_PROJECT_VERSION \
+        "$@" "$validate_repo/Scripts/validate.sh" >"$output_file" 2>&1
     CAPTURED_EXIT_CODE=$?
     set -e
     REPLY="$(<"$output_file")"
@@ -676,7 +696,11 @@ done
 run_release_preflight_and_capture() {
     local output_file="$workdir/release-preflight-output.txt"
     set +e
-    env "$@" "$release_preflight_repo/Scripts/release-preflight.sh" >"$output_file" 2>&1
+    env \
+        -u ROUTINE_VALIDATE_VERBOSE \
+        -u ROUTINE_SCRIPT_VERBOSE \
+        -u CURRENT_PROJECT_VERSION \
+        "$@" "$release_preflight_repo/Scripts/release-preflight.sh" >"$output_file" 2>&1
     CAPTURED_EXIT_CODE=$?
     set -e
     REPLY="$(<"$output_file")"
@@ -830,6 +854,9 @@ run_run_ios_and_capture() {
     local output_file="$run_ios_dir/output.txt"
     set +e
     env \
+        -u ROUTINE_VALIDATE_VERBOSE \
+        -u ROUTINE_SCRIPT_VERBOSE \
+        -u CURRENT_PROJECT_VERSION \
         FAKE_RUN_IOS_XCODEBUILD_LOG="$run_ios_xcodebuild_log" \
         FAKE_RUN_IOS_XCRUN_LOG="$run_ios_xcrun_log" \
         FAKE_RUN_IOS_OPEN_LOG="$run_ios_open_log" \
