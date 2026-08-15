@@ -9,12 +9,13 @@ import XCTest
 @MainActor
 final class FakeBehindScheduleNotificationCenter: BehindScheduleNotificationCenter {
     private(set) var addedRequests: [UNNotificationRequest] = []
+    private(set) var addCallCount = 0
     private var pendingRequests: [String: UNNotificationRequest] = [:]
     var authorizationStatus: UNAuthorizationStatus = .authorized
     private var shouldSuspendFirstAdd = false
     private var firstAddWasSuspended = false
     private var firstAddSuspension: CheckedContinuation<Void, Never>?
-    private var firstAddStarted: CheckedContinuation<Void, Never>?
+    private var firstAddStarted: CheckedContinuation<Bool, Never>?
 
     func seedPending(identifier: String) {
         pendingRequests[identifier] = UNNotificationRequest(
@@ -28,13 +29,26 @@ final class FakeBehindScheduleNotificationCenter: BehindScheduleNotificationCent
         shouldSuspendFirstAdd = true
     }
 
-    func waitUntilFirstAddIsSuspended() async {
+    func waitUntilFirstAddIsSuspended(
+        timeoutNanoseconds: UInt64 = 1_000_000_000
+    ) async -> Bool {
         guard firstAddWasSuspended == false else {
-            return
+            return true
         }
 
-        await withCheckedContinuation { continuation in
+        return await withCheckedContinuation { continuation in
             firstAddStarted = continuation
+
+            Task { [weak self] in
+                try? await Task.sleep(nanoseconds: timeoutNanoseconds)
+
+                guard let self, let firstAddStarted else {
+                    return
+                }
+
+                self.firstAddStarted = nil
+                firstAddStarted.resume(returning: false)
+            }
         }
     }
 
@@ -58,10 +72,12 @@ final class FakeBehindScheduleNotificationCenter: BehindScheduleNotificationCent
     }
 
     func add(_ request: UNNotificationRequest) async throws {
+        addCallCount += 1
+
         if shouldSuspendFirstAdd {
             shouldSuspendFirstAdd = false
             firstAddWasSuspended = true
-            firstAddStarted?.resume()
+            firstAddStarted?.resume(returning: true)
             firstAddStarted = nil
             await withCheckedContinuation { continuation in
                 firstAddSuspension = continuation
@@ -314,10 +330,19 @@ final class BehindScheduleSchedulerTests: ProjectionBuilderTestCase {
         XCTAssertEqual(fakeCenter.addedRequests.count, 2)
     }
 
-    func testCoordinatorSerializesOverlappingReschedules() async throws {
+    func testWaitUntilFirstAddIsSuspendedReturnsFalseWhenNoAddOccurs() async {
+        let fakeCenter = FakeBehindScheduleNotificationCenter()
+
+        let didSuspend = await fakeCenter.waitUntilFirstAddIsSuspended(timeoutNanoseconds: 0)
+
+        XCTAssertFalse(didSuspend)
+    }
+
+    func testCoordinatorCoalescesQueuedReschedules() async throws {
         let context = try makeContext()
         let calendar = makeCalendar()
-        let now = makeDate(year: 2026, month: 6, day: 10, hour: 5, minute: 0, calendar: calendar.calendar)
+        let firstNow = makeDate(year: 2026, month: 6, day: 10, hour: 5, minute: 0, calendar: calendar.calendar)
+        let thirdNow = makeDate(year: 2026, month: 6, day: 10, hour: 10, minute: 0, calendar: calendar.calendar)
         _ = insertBehindRoutine(into: context)
         try saveChanges(in: context)
 
@@ -331,25 +356,38 @@ final class BehindScheduleSchedulerTests: ProjectionBuilderTestCase {
         )
 
         let firstReschedule = Task {
-            try await coordinator.reschedule(context: context, calendar: calendar, now: now)
+            try await coordinator.reschedule(context: context, calendar: calendar, now: firstNow)
         }
-        await fakeCenter.waitUntilFirstAddIsSuspended()
+        let didSuspend = await fakeCenter.waitUntilFirstAddIsSuspended()
+        XCTAssertTrue(didSuspend, "Timed out waiting for the first notification add to suspend.")
+        guard didSuspend else {
+            return
+        }
 
         defaults.set(480, forKey: RoutineSettingsKeys.behindScheduleNotificationMinute)
         let secondReschedule = Task {
-            try await coordinator.reschedule(context: context, calendar: calendar, now: now)
+            try await coordinator.reschedule(context: context, calendar: calendar, now: firstNow)
         }
+        await Task.yield()
+
+        defaults.set(540, forKey: RoutineSettingsKeys.behindScheduleNotificationMinute)
+        let thirdReschedule = Task {
+            try await coordinator.reschedule(context: context, calendar: calendar, now: thirdNow)
+        }
+        await Task.yield()
+
         fakeCenter.resumeFirstAdd()
 
         try await firstReschedule.value
         try await secondReschedule.value
+        try await thirdReschedule.value
 
+        XCTAssertEqual(fakeCenter.addCallCount, 3)
         let pendingRequests = await fakeCenter.pendingNotificationRequests()
-        let request = try XCTUnwrap(
-            pendingRequests.first { $0.identifier == "behind-schedule.2026-06-10" }
-        )
+        XCTAssertEqual(pendingRequests.map(\.identifier), ["behind-schedule.2026-06-11"])
+        let request = try XCTUnwrap(pendingRequests.first)
         let trigger = try XCTUnwrap(request.trigger as? UNCalendarNotificationTrigger)
-        XCTAssertEqual(trigger.dateComponents.hour, 8)
+        XCTAssertEqual(trigger.dateComponents.hour, 9)
         XCTAssertEqual(trigger.dateComponents.minute, 0)
     }
 }

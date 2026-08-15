@@ -32,7 +32,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 **Roadmap complete**
 
-The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
+If `Current Milestone` is `Roadmap complete`, it is a terminal roadmap state: do not start milestone implementation unless the user explicitly requests post-roadmap work. Otherwise, the implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
 ## Status Legend
 

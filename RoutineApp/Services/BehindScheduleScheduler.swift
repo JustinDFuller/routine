@@ -60,11 +60,6 @@ final class BehindScheduleScheduler {
 
         let snapshots = try routineSnapshots(context: context)
 
-        guard userDefaults.bool(forKey: RoutineSettingsKeys.behindScheduleNotificationsEnabled) else {
-            Self.logger.info("rescheduleComplete count=0")
-            return
-        }
-
         var scheduledCount = 0
         for occurrence in upcomingOccurrences(calendar: calendar, now: now)
         where await scheduleIfNeeded(occurrence: occurrence, snapshots: snapshots, calendar: calendar) {
@@ -280,25 +275,82 @@ final class BehindScheduleScheduler {
 }
 @MainActor
 final class BehindScheduleRescheduleCoordinator {
+    @MainActor
+    private final class PendingReschedule {
+        var context: ModelContext
+        var calendar: RoutineCalendar
+        var now: Date
+        private var task: Task<Void, Error>?
+
+        init(context: ModelContext, calendar: RoutineCalendar, now: Date) {
+            self.context = context
+            self.calendar = calendar
+            self.now = now
+        }
+
+        func update(context: ModelContext, calendar: RoutineCalendar, now: Date) {
+            self.context = context
+            self.calendar = calendar
+            self.now = now
+        }
+
+        func start(
+            behind predecessor: Task<Void, Never>,
+            scheduler: BehindScheduleScheduler,
+            coordinator: BehindScheduleRescheduleCoordinator
+        ) -> Task<Void, Error> {
+            let task = Task { @MainActor [weak coordinator, scheduler] in
+                await predecessor.value
+
+                if let coordinator, coordinator.pendingReschedule === self {
+                    coordinator.pendingReschedule = nil
+                }
+
+                try await scheduler.reschedule(context: context, calendar: calendar, now: now)
+            }
+            self.task = task
+            return task
+        }
+
+        func value() async throws {
+            guard let task else {
+                preconditionFailure("A pending reschedule must have a task.")
+            }
+
+            try await task.value
+        }
+    }
+
     private let scheduler: BehindScheduleScheduler
     private var tail: Task<Void, Never> = Task {}
+    private var pendingReschedule: PendingReschedule?
 
     init(scheduler: BehindScheduleScheduler = BehindScheduleScheduler()) {
         self.scheduler = scheduler
     }
 
     func requestAuthorizationIfNeeded() async {
+        pendingReschedule = nil
         await enqueue {
             await self.scheduler.requestAuthorizationIfNeeded()
         }
     }
 
     func reschedule(context: ModelContext, calendar: RoutineCalendar, now: Date) async throws {
-        let predecessor = tail
-        let task = Task { @MainActor [scheduler] in
-            await predecessor.value
-            try await scheduler.reschedule(context: context, calendar: calendar, now: now)
+        if let pendingReschedule {
+            pendingReschedule.update(context: context, calendar: calendar, now: now)
+            try await pendingReschedule.value()
+            return
         }
+
+        let predecessor = tail
+        let pendingReschedule = PendingReschedule(context: context, calendar: calendar, now: now)
+        self.pendingReschedule = pendingReschedule
+        let task = pendingReschedule.start(
+            behind: predecessor,
+            scheduler: scheduler,
+            coordinator: self
+        )
         tail = Task { @MainActor in
             _ = try? await task.value
         }
@@ -307,6 +359,7 @@ final class BehindScheduleRescheduleCoordinator {
     }
 
     func cancelAll() async {
+        pendingReschedule = nil
         await enqueue {
             await self.scheduler.cancelAll()
         }

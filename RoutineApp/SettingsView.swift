@@ -27,6 +27,7 @@ struct SettingsView: View {
     private var openAppOnWidgetCompletion = true
 
     @State private var isNotificationAccessDenied = false
+    @State private var behindScheduleTimeChangeTask: Task<Void, Never>?
 
     var body: some View {
         NavigationStack {
@@ -112,6 +113,7 @@ struct SettingsView: View {
             Toggle("Alert me when I fall behind", isOn: $behindScheduleNotificationsEnabled)
                 .accessibilityIdentifier("settings-behind-schedule-toggle")
                 .onChange(of: behindScheduleNotificationsEnabled) { oldValue, newValue in
+                    behindScheduleTimeChangeTask?.cancel()
                     handleBehindScheduleChange(justEnabled: oldValue == false && newValue)
                 }
 
@@ -123,7 +125,20 @@ struct SettingsView: View {
             .disabled(behindScheduleNotificationsEnabled == false)
             .accessibilityIdentifier("settings-behind-schedule-time")
             .onChange(of: behindScheduleNotificationMinute) {
-                handleBehindScheduleChange(justEnabled: false)
+                guard behindScheduleNotificationsEnabled else {
+                    return
+                }
+
+                behindScheduleTimeChangeTask?.cancel()
+                behindScheduleTimeChangeTask = Task {
+                    try? await Task.sleep(nanoseconds: 300_000_000)
+
+                    guard Task.isCancelled == false else {
+                        return
+                    }
+
+                    handleBehindScheduleChange(justEnabled: false)
+                }
             }
         } header: {
             Text("Behind-schedule alerts")
