@@ -15,6 +15,18 @@ final class RoutineFactoryResetServiceTests: ProjectionBuilderTestCase {
         return defaults
     }
 
+    private func makeCoordinator(
+        notificationCenter: FakeBehindScheduleNotificationCenter,
+        userDefaults: UserDefaults
+    ) -> BehindScheduleRescheduleCoordinator {
+        BehindScheduleRescheduleCoordinator(
+            scheduler: BehindScheduleScheduler(
+                notificationCenter: notificationCenter,
+                userDefaults: userDefaults
+            )
+        )
+    }
+
     private func selection(
         routinesAndHistory: Bool = false,
         displayPreferences: Bool = false,
@@ -49,9 +61,14 @@ final class RoutineFactoryResetServiceTests: ProjectionBuilderTestCase {
         defer { RoutineWidgetBridge.reloadAllTimelines = originalReload }
         RoutineWidgetBridge.reloadAllTimelines = {}
 
+        let defaults = makeDefaults()
+        let notificationCenter = FakeBehindScheduleNotificationCenter()
         try await RoutineFactoryResetService(
-            userDefaults: makeDefaults(),
-            notificationCenter: FakeBehindScheduleNotificationCenter()
+            userDefaults: defaults,
+            behindScheduleRescheduleCoordinator: makeCoordinator(
+                notificationCenter: notificationCenter,
+                userDefaults: defaults
+            )
         ).reset(selection(routinesAndHistory: true), in: context, calendar: calendar)
 
         XCTAssertTrue(try context.fetch(FetchDescriptor<RoutineGroup>()).isEmpty)
@@ -69,9 +86,13 @@ final class RoutineFactoryResetServiceTests: ProjectionBuilderTestCase {
         defaults.set(false, forKey: RoutineSettingsKeys.collapseUnavailableToday)
         defaults.set(true, forKey: RoutineSettingsKeys.behindScheduleNotificationsEnabled)
 
+        let notificationCenter = FakeBehindScheduleNotificationCenter()
         try await RoutineFactoryResetService(
             userDefaults: defaults,
-            notificationCenter: FakeBehindScheduleNotificationCenter()
+            behindScheduleRescheduleCoordinator: makeCoordinator(
+                notificationCenter: notificationCenter,
+                userDefaults: defaults
+            )
         ).reset(selection(displayPreferences: true), in: context, calendar: makeCalendar())
 
         XCTAssertNil(defaults.object(forKey: RoutineSettingsKeys.weekStartWeekday))
@@ -106,7 +127,10 @@ final class RoutineFactoryResetServiceTests: ProjectionBuilderTestCase {
 
         try await RoutineFactoryResetService(
             userDefaults: defaults,
-            notificationCenter: notificationCenter
+            behindScheduleRescheduleCoordinator: makeCoordinator(
+                notificationCenter: notificationCenter,
+                userDefaults: defaults
+            )
         ).reset(selection(behindScheduleAlerts: true), in: context, calendar: makeCalendar())
 
         for key in keys {
@@ -121,9 +145,13 @@ final class RoutineFactoryResetServiceTests: ProjectionBuilderTestCase {
         let defaults = makeDefaults()
         defaults.set(true, forKey: RoutineSettingsKeys.behindScheduleNotificationsEnabled)
 
+        let notificationCenter = FakeBehindScheduleNotificationCenter()
         try await RoutineFactoryResetService(
             userDefaults: defaults,
-            notificationCenter: FakeBehindScheduleNotificationCenter()
+            behindScheduleRescheduleCoordinator: makeCoordinator(
+                notificationCenter: notificationCenter,
+                userDefaults: defaults
+            )
         ).reset(selection(), in: context, calendar: makeCalendar())
 
         XCTAssertTrue(defaults.bool(forKey: RoutineSettingsKeys.behindScheduleNotificationsEnabled))

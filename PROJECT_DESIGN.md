@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**M21 - Behind-Schedule Notifications**
+**Roadmap complete**
 
 The implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -109,7 +109,7 @@ Core invariants that require automated coverage when touched:
 | DONE | M18 - Production Launch Readiness | Release assets/docs are aligned, widget completion/handoff flows are covered, and internal-TestFlight operator workflows are documented and scripted. |
 | DONE | M19 - Separate Goal-Met Collapse Preference | Today collapse settings independently control completed-today, goal-met, and unavailable compact rows while preserving unavailable precedence. |
 | DONE | M20 - Routine Streaks | Quiet derived streak counts appear on full dashboard cards and in the routine history summary. |
-| CURRENT | M21 - Behind-Schedule Notifications | One global local alert is scheduled at most once per day when a routine falls behind target-proportional weekly or monthly pace. |
+| DONE | M21 - Behind-Schedule Notifications | One global local alert is scheduled at most once per day when a routine falls behind target-proportional weekly or monthly pace. |
 
 ## Milestones
 
@@ -1043,7 +1043,7 @@ Completion note:
 
 ### M21 - Behind-Schedule Notifications
 
-Status: `CURRENT`
+Status: `DONE`
 
 Goal: replace three daily check-ins with a single local alert that reports a routine falling behind the pace needed to meet its weekly or monthly target.
 

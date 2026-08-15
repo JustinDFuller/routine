@@ -11,6 +11,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.routineCalendar) private var routineCalendar
+    @Environment(\.behindScheduleRescheduleCoordinator) private var behindScheduleRescheduleCoordinator
 
     @AppStorage(RoutineSettingsKeys.weekStartWeekday) private var weekStartRaw = Weekday.sunday.rawValue
     @AppStorage(RoutineSettingsKeys.collapseCompletedToday) private var collapseCompletedToday = true
@@ -110,8 +111,8 @@ struct SettingsView: View {
         Section {
             Toggle("Alert me when I fall behind", isOn: $behindScheduleNotificationsEnabled)
                 .accessibilityIdentifier("settings-behind-schedule-toggle")
-                .onChange(of: behindScheduleNotificationsEnabled) {
-                    handleBehindScheduleChange(turnedOn: behindScheduleNotificationsEnabled)
+                .onChange(of: behindScheduleNotificationsEnabled) { oldValue, newValue in
+                    handleBehindScheduleChange(justEnabled: oldValue == false && newValue)
                 }
 
             DatePicker(
@@ -122,7 +123,7 @@ struct SettingsView: View {
             .disabled(behindScheduleNotificationsEnabled == false)
             .accessibilityIdentifier("settings-behind-schedule-time")
             .onChange(of: behindScheduleNotificationMinute) {
-                handleBehindScheduleChange(turnedOn: behindScheduleNotificationsEnabled)
+                handleBehindScheduleChange(justEnabled: false)
             }
         } header: {
             Text("Behind-schedule alerts")
@@ -145,22 +146,19 @@ struct SettingsView: View {
         }
     }
 
-    private func handleBehindScheduleChange(turnedOn: Bool) {
+    private func handleBehindScheduleChange(justEnabled: Bool) {
         Task {
-            if turnedOn {
-                await BehindScheduleScheduler().requestAuthorizationIfNeeded()
+            if justEnabled {
+                await behindScheduleRescheduleCoordinator.requestAuthorizationIfNeeded()
             }
 
-            do {
-                try await BehindScheduleScheduler().reschedule(
-                    context: modelContext,
-                    calendar: routineCalendar
-                )
-            } catch {
-                AppDiagnostics.logger(.notifications).error(
-                    "settingsRescheduleFailed e=\(String(describing: error), privacy: .private)"
-                )
-            }
+            await rescheduleBehindScheduleAlerts(
+                coordinator: behindScheduleRescheduleCoordinator,
+                context: modelContext,
+                calendar: routineCalendar,
+                now: .now,
+                logLabel: "settingsRescheduleFailed"
+            )
             await refreshNotificationAccessStatus()
         }
     }

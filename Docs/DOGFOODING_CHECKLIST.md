@@ -23,8 +23,8 @@ Use this checklist before relying on the MVP on a simulator or personal iPhone.
 - Accept the behind-schedule alert onboarding prompt and confirm the alert setting turns on at the default 7:00 AM.
 - Relaunch after enabling alerts and confirm the selected notification time persists.
 - Deny notification permission and confirm the app remains usable without broken settings or alerts.
-- Re-enable notification permission and confirm scheduling resumes without duplicating requests.
-- Create a weekly target of three with one completion by Thursday, foreground before 7:00 AM, and confirm one pending behind-schedule request names the routine and projected deficit.
+- After denial, open iOS Settings, choose Routine, enable notifications, then verify scheduling resumes without duplicate requests.
+- Set week start to Sunday; before 7:00 AM on Thursday, create a weekly target of three with one completion; ensure every other routine is on pace or removed; then verify exactly two pending requests for the chosen routine—the Thursday and Friday occurrences—contain its projected deficit.
 - Complete, edit, or remove the routine, foreground again, and confirm stale pending requests are replaced.
 - Add the widget to the Home Screen and confirm the small layout renders with a routine or empty state.
 - Add the medium widget and confirm the routine name, count, period, and last-done text render legibly.

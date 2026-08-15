@@ -11,6 +11,10 @@ final class FakeBehindScheduleNotificationCenter: BehindScheduleNotificationCent
     private(set) var addedRequests: [UNNotificationRequest] = []
     private var pendingRequests: [String: UNNotificationRequest] = [:]
     var authorizationStatus: UNAuthorizationStatus = .authorized
+    private var shouldSuspendFirstAdd = false
+    private var firstAddWasSuspended = false
+    private var firstAddSuspension: CheckedContinuation<Void, Never>?
+    private var firstAddStarted: CheckedContinuation<Void, Never>?
 
     func seedPending(identifier: String) {
         pendingRequests[identifier] = UNNotificationRequest(
@@ -18,6 +22,29 @@ final class FakeBehindScheduleNotificationCenter: BehindScheduleNotificationCent
             content: UNMutableNotificationContent(),
             trigger: nil
         )
+    }
+
+    func suspendFirstAdd() {
+        shouldSuspendFirstAdd = true
+    }
+
+    func waitUntilFirstAddIsSuspended() async {
+        guard firstAddWasSuspended == false else {
+            return
+        }
+
+        await withCheckedContinuation { continuation in
+            firstAddStarted = continuation
+        }
+    }
+
+    func resumeFirstAdd() {
+        guard let firstAddSuspension else {
+            preconditionFailure("Expected the first notification add to be suspended.")
+        }
+
+        self.firstAddSuspension = nil
+        firstAddSuspension.resume()
     }
 
     func requestAuthorization(options: UNAuthorizationOptions) async throws -> Bool {
@@ -31,6 +58,16 @@ final class FakeBehindScheduleNotificationCenter: BehindScheduleNotificationCent
     }
 
     func add(_ request: UNNotificationRequest) async throws {
+        if shouldSuspendFirstAdd {
+            shouldSuspendFirstAdd = false
+            firstAddWasSuspended = true
+            firstAddStarted?.resume()
+            firstAddStarted = nil
+            await withCheckedContinuation { continuation in
+                firstAddSuspension = continuation
+            }
+        }
+
         addedRequests.append(request)
         pendingRequests[request.identifier] = request
     }
@@ -136,6 +173,30 @@ final class BehindScheduleSchedulerTests: ProjectionBuilderTestCase {
         )
 
         XCTAssertTrue(fakeCenter.addedRequests.isEmpty)
+    }
+
+    func testDisabledAlertsCancelPendingRequestsWithoutFetchingSnapshots() async throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let now = makeDate(year: 2026, month: 6, day: 10, hour: 5, minute: 0, calendar: calendar.calendar)
+        let fakeCenter = FakeBehindScheduleNotificationCenter()
+        fakeCenter.seedPending(identifier: "behind-schedule.2026-06-10")
+        var didFetchGroups = false
+
+        RoutinePersistenceFetchExecutor.fetchGroups = { _, _ in
+            didFetchGroups = true
+            throw SimulatedProjectionFetchFailure()
+        }
+
+        try await BehindScheduleScheduler(notificationCenter: fakeCenter, userDefaults: makeDefaults()).reschedule(
+            context: context,
+            calendar: calendar,
+            now: now
+        )
+
+        XCTAssertFalse(didFetchGroups)
+        let pendingRequests = await fakeCenter.pendingNotificationRequests()
+        XCTAssertTrue(pendingRequests.isEmpty)
     }
 
     func testHardAvailabilityWindowDoesNotSuppressBehindAlert() async throws {
@@ -251,5 +312,44 @@ final class BehindScheduleSchedulerTests: ProjectionBuilderTestCase {
         )
 
         XCTAssertEqual(fakeCenter.addedRequests.count, 2)
+    }
+
+    func testCoordinatorSerializesOverlappingReschedules() async throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let now = makeDate(year: 2026, month: 6, day: 10, hour: 5, minute: 0, calendar: calendar.calendar)
+        _ = insertBehindRoutine(into: context)
+        try saveChanges(in: context)
+
+        let defaults = makeDefaults()
+        defaults.set(true, forKey: RoutineSettingsKeys.behindScheduleNotificationsEnabled)
+        defaults.set(420, forKey: RoutineSettingsKeys.behindScheduleNotificationMinute)
+        let fakeCenter = FakeBehindScheduleNotificationCenter()
+        fakeCenter.suspendFirstAdd()
+        let coordinator = BehindScheduleRescheduleCoordinator(
+            scheduler: BehindScheduleScheduler(notificationCenter: fakeCenter, userDefaults: defaults)
+        )
+
+        let firstReschedule = Task {
+            try await coordinator.reschedule(context: context, calendar: calendar, now: now)
+        }
+        await fakeCenter.waitUntilFirstAddIsSuspended()
+
+        defaults.set(480, forKey: RoutineSettingsKeys.behindScheduleNotificationMinute)
+        let secondReschedule = Task {
+            try await coordinator.reschedule(context: context, calendar: calendar, now: now)
+        }
+        fakeCenter.resumeFirstAdd()
+
+        try await firstReschedule.value
+        try await secondReschedule.value
+
+        let pendingRequests = await fakeCenter.pendingNotificationRequests()
+        let request = try XCTUnwrap(
+            pendingRequests.first { $0.identifier == "behind-schedule.2026-06-10" }
+        )
+        let trigger = try XCTUnwrap(request.trigger as? UNCalendarNotificationTrigger)
+        XCTAssertEqual(trigger.dateComponents.hour, 8)
+        XCTAssertEqual(trigger.dateComponents.minute, 0)
     }
 }

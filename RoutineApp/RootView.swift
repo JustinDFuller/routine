@@ -14,12 +14,12 @@ struct RootView: View {
     @State private var hasAppliedDebugLaunchRoute = false
     @State private var seedErrorIsPresented = false
     @State private var behindScheduleConsentIsPresented = false
+    @State private var behindScheduleRescheduleCoordinator = BehindScheduleRescheduleCoordinator()
 
     private let debugLaunchConfiguration: RoutineDebugLaunchConfiguration
 
     private static let starterDataLogger = AppDiagnostics.logger(.starterData)
     private static let routingLogger = AppDiagnostics.logger(.routing)
-    private static let notificationsLogger = AppDiagnostics.logger(.notifications)
     private static let forceBehindScheduleOnboardingArgument = "-routine-force-behind-schedule-onboarding-prompt"
 
     init(debugLaunchConfiguration: RoutineDebugLaunchConfiguration = .current) {
@@ -34,6 +34,7 @@ struct RootView: View {
                     destination(for: route)
                 }
         }
+        .environment(\.behindScheduleRescheduleCoordinator, behindScheduleRescheduleCoordinator)
         .task {
             do {
                 if let screenshotFixture = runtime.screenshotFixture {
@@ -131,17 +132,13 @@ struct RootView: View {
     }
 
     private func syncBehindScheduleAlerts() async {
-        do {
-            try await BehindScheduleScheduler().reschedule(
-                context: modelContext,
-                calendar: routineCalendar,
-                now: runtime.now
-            )
-        } catch {
-            Self.notificationsLogger.error(
-                "syncBehindScheduleAlertsFailed e=\(String(describing: error), privacy: .private)"
-            )
-        }
+        await rescheduleBehindScheduleAlerts(
+            coordinator: behindScheduleRescheduleCoordinator,
+            context: modelContext,
+            calendar: routineCalendar,
+            now: runtime.now,
+            logLabel: "syncBehindScheduleAlertsFailed"
+        )
     }
 
     private func presentBehindScheduleOnboardingPromptIfNeeded() {
@@ -165,7 +162,7 @@ struct RootView: View {
         markBehindScheduleOnboardingShown()
 
         Task {
-            await BehindScheduleScheduler().requestAuthorizationIfNeeded()
+            await behindScheduleRescheduleCoordinator.requestAuthorizationIfNeeded()
             await syncBehindScheduleAlerts()
         }
     }

@@ -51,8 +51,14 @@ final class BehindScheduleScheduler {
     }
 
     func reschedule(context: ModelContext, calendar: RoutineCalendar, now: Date = .now) async throws {
-        let snapshots = try routineSnapshots(context: context)
         await cancelPendingBehindScheduleAlerts()
+
+        guard userDefaults.bool(forKey: RoutineSettingsKeys.behindScheduleNotificationsEnabled) else {
+            Self.logger.info("rescheduleComplete count=0")
+            return
+        }
+
+        let snapshots = try routineSnapshots(context: context)
 
         guard userDefaults.bool(forKey: RoutineSettingsKeys.behindScheduleNotificationsEnabled) else {
             Self.logger.info("rescheduleComplete count=0")
@@ -270,6 +276,68 @@ final class BehindScheduleScheduler {
             Self.logger.error("fetchCompletionsFailed e=\(String(describing: error), privacy: .private)")
             throw PersistenceError.fetchFailed(String(describing: error))
         }
+    }
+}
+@MainActor
+final class BehindScheduleRescheduleCoordinator {
+    private let scheduler: BehindScheduleScheduler
+    private var tail: Task<Void, Never> = Task {}
+
+    init(scheduler: BehindScheduleScheduler = BehindScheduleScheduler()) {
+        self.scheduler = scheduler
+    }
+
+    func requestAuthorizationIfNeeded() async {
+        await enqueue {
+            await self.scheduler.requestAuthorizationIfNeeded()
+        }
+    }
+
+    func reschedule(context: ModelContext, calendar: RoutineCalendar, now: Date) async throws {
+        let predecessor = tail
+        let task = Task { @MainActor [scheduler] in
+            await predecessor.value
+            try await scheduler.reschedule(context: context, calendar: calendar, now: now)
+        }
+        tail = Task { @MainActor in
+            _ = try? await task.value
+        }
+
+        try await task.value
+    }
+
+    func cancelAll() async {
+        await enqueue {
+            await self.scheduler.cancelAll()
+        }
+    }
+
+    private func enqueue(_ operation: @escaping @MainActor () async -> Void) async {
+        let predecessor = tail
+        let task = Task { @MainActor in
+            await predecessor.value
+            await operation()
+        }
+        tail = task
+
+        await task.value
+    }
+}
+
+@MainActor
+func rescheduleBehindScheduleAlerts(
+    coordinator: BehindScheduleRescheduleCoordinator,
+    context: ModelContext,
+    calendar: RoutineCalendar,
+    now: Date,
+    logLabel: String
+) async {
+    do {
+        try await coordinator.reschedule(context: context, calendar: calendar, now: now)
+    } catch {
+        AppDiagnostics.logger(.notifications).error(
+            "\(logLabel, privacy: .public) e=\(String(describing: error), privacy: .private)"
+        )
     }
 }
 

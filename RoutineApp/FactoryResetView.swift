@@ -6,6 +6,7 @@ struct FactoryResetView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.routineCalendar) private var routineCalendar
+    @Environment(\.behindScheduleRescheduleCoordinator) private var behindScheduleRescheduleCoordinator
 
     @State private var selection = RoutineResetSelection(
         routinesAndHistory: true,
@@ -75,7 +76,9 @@ struct FactoryResetView: View {
     private func performReset() {
         Task {
             do {
-                try await RoutineFactoryResetService().reset(
+                try await RoutineFactoryResetService(
+                    behindScheduleRescheduleCoordinator: behindScheduleRescheduleCoordinator
+                ).reset(
                     selection,
                     in: modelContext,
                     calendar: routineCalendar

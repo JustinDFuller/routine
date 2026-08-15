@@ -1,7 +1,6 @@
 import Foundation
 import RoutineCore
 import SwiftData
-import UserNotifications
 
 struct RoutineResetSelection {
     var routinesAndHistory: Bool
@@ -23,14 +22,15 @@ final class RoutineFactoryResetService {
     ]
 
     private let userDefaults: UserDefaults
-    private let notificationCenter: BehindScheduleNotificationCenter
+    private let behindScheduleRescheduleCoordinator: BehindScheduleRescheduleCoordinator
 
     init(
         userDefaults: UserDefaults = .standard,
-        notificationCenter: BehindScheduleNotificationCenter = UNUserNotificationCenter.current()
+        behindScheduleRescheduleCoordinator: BehindScheduleRescheduleCoordinator =
+            BehindScheduleRescheduleCoordinator()
     ) {
         self.userDefaults = userDefaults
-        self.notificationCenter = notificationCenter
+        self.behindScheduleRescheduleCoordinator = behindScheduleRescheduleCoordinator
     }
 
     func reset(
@@ -56,17 +56,15 @@ final class RoutineFactoryResetService {
             userDefaults.removeObject(forKey: RoutineSettingsKeys.behindScheduleNotificationMinute)
             userDefaults.removeObject(forKey: RoutineSettingsKeys.behindScheduleOnboardingShown)
             Self.retiredNotificationPreferenceKeys.forEach(userDefaults.removeObject(forKey:))
-            await BehindScheduleScheduler(
-                notificationCenter: notificationCenter,
-                userDefaults: userDefaults
-            ).cancelAll()
+            await behindScheduleRescheduleCoordinator.cancelAll()
         }
 
         if selection.routinesAndHistory {
-            try await BehindScheduleScheduler(
-                notificationCenter: notificationCenter,
-                userDefaults: userDefaults
-            ).reschedule(context: context, calendar: calendar, now: .now)
+            try await behindScheduleRescheduleCoordinator.reschedule(
+                context: context,
+                calendar: calendar,
+                now: .now
+            )
         }
     }
 }

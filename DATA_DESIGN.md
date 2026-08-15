@@ -1353,7 +1353,7 @@ Multiple completions per day:
 Notifications:
 
 - Implemented as a global, non-per-routine behind-schedule alert. One enabled flag and one local minute-of-day preference are global `@AppStorage`/`UserDefaults` values, not a new SwiftData model, and do not overload `RoutinePeriod` with notification behavior.
-- At rescheduling time, the alert selects the first routine in dashboard order with the greatest deficit between deduplicated period completions and target-proportional expected completions. It uses a two-day local rolling horizon and cancels/rebuilds after foregrounding or progress-affecting mutations.
+- At rescheduling time, the alert selects the first routine in dashboard order with the greatest deficit between deduplicated period completions and target-proportional expected completions. It uses a two-day local rolling horizon and cancels/rebuilds after app foregrounding; completion or history correction; routine creation, edit, or deletion; notification setting changes; and data reset.
 - Per-routine reminder notifications remain a future extension if ever added; they would need their own settings model separate from completion history.
 
 Widgets:

@@ -16,9 +16,19 @@ private struct RoutineCalendarKey: EnvironmentKey {
     static let defaultValue = RoutineCalendar.current
 }
 
+private struct BehindScheduleRescheduleCoordinatorKey: EnvironmentKey {
+    static let defaultValue = MainActor.assumeIsolated {
+        BehindScheduleRescheduleCoordinator()
+    }
+}
+
 extension EnvironmentValues {
     var routineCalendar: RoutineCalendar {
         get { self[RoutineCalendarKey.self] }
         set { self[RoutineCalendarKey.self] = newValue }
+    }
+    var behindScheduleRescheduleCoordinator: BehindScheduleRescheduleCoordinator {
+        get { self[BehindScheduleRescheduleCoordinatorKey.self] }
+        set { self[BehindScheduleRescheduleCoordinatorKey.self] = newValue }
     }
 }

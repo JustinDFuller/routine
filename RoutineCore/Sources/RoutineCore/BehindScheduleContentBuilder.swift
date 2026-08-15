@@ -85,18 +85,8 @@ public struct BehindScheduleContentBuilder: Sendable {
                 continue
             }
 
-            let daysRemaining = periodDays - elapsedDays + 1
-            guard let currentMostBehind = mostBehind else {
-                mostBehind = BehindScheduleDeficit(
-                    routine: routine,
-                    completedCount: completedCount,
-                    deficit: deficit,
-                    daysRemaining: daysRemaining
-                )
-                continue
-            }
-
-            if deficit > currentMostBehind.deficit {
+            if deficit > (mostBehind?.deficit ?? 0) {
+                let daysRemaining = periodDays - elapsedDays + 1
                 mostBehind = BehindScheduleDeficit(
                     routine: routine,
                     completedCount: completedCount,

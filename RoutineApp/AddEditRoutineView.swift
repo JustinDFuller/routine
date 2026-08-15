@@ -12,6 +12,7 @@ struct AddEditRoutineView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.routineCalendar) private var routineCalendar
     @Environment(\.routineRuntimeConfiguration) private var runtime
+    @Environment(\.behindScheduleRescheduleCoordinator) private var behindScheduleRescheduleCoordinator
 
     @State private var formState: RoutineFormState
     @State private var isDeleteConfirmationPresented = false
@@ -201,7 +202,15 @@ struct AddEditRoutineView: View {
                 try service.updateRoutine(id: snapshot.routineID, with: draft)
             }
 
-            rescheduleBehindScheduleAlerts()
+            Task {
+                await rescheduleBehindScheduleAlerts(
+                    coordinator: behindScheduleRescheduleCoordinator,
+                    context: modelContext,
+                    calendar: routineCalendar,
+                    now: runtime.now,
+                    logLabel: "routineEditorRescheduleFailed"
+                )
+            }
 
             dismiss()
         } catch is RoutineFormError {
@@ -226,7 +235,15 @@ struct AddEditRoutineView: View {
 
         do {
             try RoutineManagementService(context: modelContext).deleteRoutine(id: routineID)
-            rescheduleBehindScheduleAlerts()
+            Task {
+                await rescheduleBehindScheduleAlerts(
+                    coordinator: behindScheduleRescheduleCoordinator,
+                    context: modelContext,
+                    calendar: routineCalendar,
+                    now: runtime.now,
+                    logLabel: "routineEditorRescheduleFailed"
+                )
+            }
             dismiss()
         } catch let error as PersistenceError {
             if case .routineNotFound = error {
@@ -241,22 +258,6 @@ struct AddEditRoutineView: View {
 
     private func userSafeAlertDetail(for error: Error) -> String? {
         error.localizedDescription
-    }
-
-    private func rescheduleBehindScheduleAlerts() {
-        Task {
-            do {
-                try await BehindScheduleScheduler().reschedule(
-                    context: modelContext,
-                    calendar: routineCalendar,
-                    now: runtime.now
-                )
-            } catch {
-                AppDiagnostics.logger(.notifications).error(
-                    "routineEditorRescheduleFailed e=\(String(describing: error), privacy: .private)"
-                )
-            }
-        }
     }
 
     private func availabilityDateBinding(
