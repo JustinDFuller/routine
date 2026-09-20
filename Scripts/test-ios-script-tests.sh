@@ -169,12 +169,15 @@ log_file="$script_test_dir/xcodebuild.log"
 generate_log="$script_test_dir/generate.log"
 fake_xcodebuild="$script_test_dir/xcodebuild"
 fake_generate="$script_test_dir/generate-project.sh"
+auth_key_file="$script_test_dir/AuthKey_TEST.p8"
+print -r -- "fake private key" >"$auth_key_file"
 
 cat >"$fake_xcodebuild" <<'EOF'
 #!/bin/zsh
 set -euo pipefail
 
 print -r -- "$*" >>"${FAKE_XCODEBUILD_LOG}"
+print -r -- "DEVELOPER_DIR=${DEVELOPER_DIR:-}" >>"${FAKE_XCODEBUILD_LOG}"
 
 if [[ "$*" == *"-showdestinations"* ]]; then
     print -r -- "${FAKE_SHOWDESTINATIONS_OUTPUT:-}"
@@ -376,6 +379,15 @@ assert_contains "$override_archive_log" "-quiet -project Routine.xcodeproj -sche
 
 : >"$log_file"
 : >"$generate_log"
+selected_developer_dir="$workdir/SelectedXcode/Contents/Developer"
+run_archive_ios_and_capture \
+    CURRENT_PROJECT_VERSION=42 \
+    DEVELOPER_DIR="$selected_developer_dir"
+assert_equals "$?" "0"
+assert_contains "$(<"$log_file")" "DEVELOPER_DIR=$selected_developer_dir"
+
+: >"$log_file"
+: >"$generate_log"
 set +e
 run_archive_ios_and_capture DEVELOPMENT_TEAM=
 missing_team_exit_code=$?
@@ -387,22 +399,36 @@ assert_equals "$(<"$generate_log")" ""
 : >"$log_file"
 : >"$generate_log"
 run_archive_ios_and_capture \
-    APP_STORE_CONNECT_AUTH_KEY_PATH=/tmp/AuthKey_TEST.p8 \
+    APP_STORE_CONNECT_AUTH_KEY_PATH="$auth_key_file" \
     APP_STORE_CONNECT_AUTH_KEY_ID=ABC1234567 \
     APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID=11111111-2222-3333-4444-555555555555 \
     CURRENT_PROJECT_VERSION=42
 assert_equals "$?" "0"
 auth_archive_log="$(<"$log_file")"
-assert_contains "$auth_archive_log" "-authenticationKeyPath /tmp/AuthKey_TEST.p8 -authenticationKeyID ABC1234567 -authenticationKeyIssuerID 11111111-2222-3333-4444-555555555555 -allowProvisioningUpdates archive"
+assert_contains "$auth_archive_log" "-authenticationKeyPath $auth_key_file -authenticationKeyID ABC1234567 -authenticationKeyIssuerID 11111111-2222-3333-4444-555555555555 -allowProvisioningUpdates archive"
 
 : >"$log_file"
 : >"$generate_log"
 set +e
-run_archive_ios_and_capture APP_STORE_CONNECT_AUTH_KEY_PATH=/tmp/AuthKey_TEST.p8 CURRENT_PROJECT_VERSION=42
+run_archive_ios_and_capture APP_STORE_CONNECT_AUTH_KEY_PATH="$auth_key_file" CURRENT_PROJECT_VERSION=42
 partial_auth_archive_exit_code=$?
 set -e
 assert_equals "$partial_auth_archive_exit_code" "1"
 assert_contains "$REPLY" "error: APP_STORE_CONNECT_AUTH_KEY_PATH, APP_STORE_CONNECT_AUTH_KEY_ID, and APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID must be set together."
+assert_equals "$(<"$generate_log")" ""
+
+: >"$log_file"
+: >"$generate_log"
+set +e
+run_archive_ios_and_capture \
+    APP_STORE_CONNECT_AUTH_KEY_PATH="$workdir/missing-auth-key.p8" \
+    APP_STORE_CONNECT_AUTH_KEY_ID=ABC1234567 \
+    APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID=11111111-2222-3333-4444-555555555555 \
+    CURRENT_PROJECT_VERSION=42
+unreadable_auth_archive_exit_code=$?
+set -e
+assert_equals "$unreadable_auth_archive_exit_code" "1"
+assert_contains "$REPLY" "error: App Store Connect auth key is not readable at $workdir/missing-auth-key.p8."
 assert_equals "$(<"$generate_log")" ""
 
 archive_make_repo="$workdir/archive-make-repo"
@@ -543,12 +569,12 @@ assert_contains "$(<"$export_options_log")" "<string>TEAM789XYZ</string>"
 : >"$log_file"
 : >"$export_options_log"
 run_export_ios_and_capture \
-    APP_STORE_CONNECT_AUTH_KEY_PATH=/tmp/AuthKey_TEST.p8 \
+    APP_STORE_CONNECT_AUTH_KEY_PATH="$auth_key_file" \
     APP_STORE_CONNECT_AUTH_KEY_ID=ABC1234567 \
     APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID=11111111-2222-3333-4444-555555555555
 assert_equals "$?" "0"
 auth_export_log="$(<"$log_file")"
-assert_contains "$auth_export_log" "-authenticationKeyPath /tmp/AuthKey_TEST.p8 -authenticationKeyID ABC1234567 -authenticationKeyIssuerID 11111111-2222-3333-4444-555555555555"
+assert_contains "$auth_export_log" "-authenticationKeyPath $auth_key_file -authenticationKeyID ABC1234567 -authenticationKeyIssuerID 11111111-2222-3333-4444-555555555555"
 
 : >"$log_file"
 : >"$export_options_log"
@@ -1170,7 +1196,7 @@ upload_ipa_path="$upload_ios_dir/Routine.ipa"
 : >"$upload_ios_xcrun_log"
 set +e
 run_upload_ios_and_capture \
-    APP_STORE_CONNECT_AUTH_KEY_PATH=/tmp/AuthKey_TEST.p8 \
+    APP_STORE_CONNECT_AUTH_KEY_PATH="$auth_key_file" \
     APP_STORE_CONNECT_AUTH_KEY_ID=ABC1234567 \
     APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID=11111111-2222-3333-4444-555555555555 \
     ROUTINE_UPLOAD_IPA_PATH="$upload_ipa_path"
@@ -1184,21 +1210,21 @@ print -r -- "fake ipa" >"$upload_ipa_path"
 
 : >"$upload_ios_xcrun_log"
 run_upload_ios_and_capture \
-    APP_STORE_CONNECT_AUTH_KEY_PATH=/tmp/AuthKey_TEST.p8 \
+    APP_STORE_CONNECT_AUTH_KEY_PATH="$auth_key_file" \
     APP_STORE_CONNECT_AUTH_KEY_ID=ABC1234567 \
     APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID=11111111-2222-3333-4444-555555555555 \
     ROUTINE_UPLOAD_IPA_PATH="$upload_ipa_path"
 assert_equals "$?" "0"
 assert_contains "$REPLY" "Uploaded $upload_ipa_path to App Store Connect."
 upload_log="$(<"$upload_ios_xcrun_log")"
-assert_contains "$upload_log" "altool --upload-package $upload_ipa_path --api-key ABC1234567 --api-issuer 11111111-2222-3333-4444-555555555555 --p8-file-path /tmp/AuthKey_TEST.p8"
+assert_contains "$upload_log" "altool --upload-package $upload_ipa_path --api-key ABC1234567 --api-issuer 11111111-2222-3333-4444-555555555555 --p8-file-path $auth_key_file"
 
 mkdir -p build/export
 print -r -- "fake ipa" >build/export/Routine.ipa
 
 : >"$upload_ios_xcrun_log"
 run_upload_ios_and_capture \
-    APP_STORE_CONNECT_AUTH_KEY_PATH=/tmp/AuthKey_TEST.p8 \
+    APP_STORE_CONNECT_AUTH_KEY_PATH="$auth_key_file" \
     APP_STORE_CONNECT_AUTH_KEY_ID=ABC1234567 \
     APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID=11111111-2222-3333-4444-555555555555
 assert_equals "$?" "0"

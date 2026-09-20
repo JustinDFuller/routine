@@ -30,6 +30,8 @@ This is one-time Apple Developer / App Store Connect website setup, already docu
 - Create `group.com.justinfuller.routines` and attach it to both bundle IDs.
 - Create the App Store Connect app record for `com.justinfuller.routine`.
 
+This release changes the App Group identifier from `group.com.justinfuller.routine` to `group.com.justinfuller.routines`. Before the first archive, verify that the signing team owns the new App Group and can still access the old one if existing development data must be preserved. If the old group belongs only to the Personal Team, treat the paid-team build as a fresh data store and record that limitation in the release notes.
+
 ## Beta Xcode
 
 If a beta Xcode is installed and set as the active `xcode-select` toolchain (common if you're running beta seeds day-to-day), builds made with it are rejected by App Store Connect: `altool` fails with `Unsupported SDK or Xcode version` (error 90534), even after a successful archive/export. `archive-ios.sh`, `export-ios.sh`, and `upload-ios.sh` default `DEVELOPER_DIR` to `/Applications/Xcode.app/Contents/Developer` (the release Xcode) regardless of the system default, so this is handled automatically — no need to switch `xcode-select` or set `DEVELOPER_DIR` yourself unless the release Xcode lives somewhere else on this machine.
@@ -45,7 +47,7 @@ export APP_STORE_CONNECT_AUTH_KEY_ID=XXXXXXXXXX
 export APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
 
-`DEVELOPMENT_TEAM` already defaults to `CX2KMQZQ7X` inside `archive-ios.sh`, `export-ios.sh`, and `deploy-device.sh`; only export it if you need to override the default. The App Store Connect variables are required together for `upload-ios.sh` and optional (but recommended for headless use) for `archive-ios.sh`/`export-ios.sh`.
+`DEVELOPMENT_TEAM` already defaults to `CX2KMQZQ7X` inside `archive-ios.sh`, `export-ios.sh`, and `deploy-device.sh`; only export it if you need to override the default. The App Store Connect variables are required together for `upload-ios.sh` and optional (but recommended for headless use) for `archive-ios.sh`/`export-ios.sh`. When all three are supplied, the scripts fail before invoking Xcode if the key path is unreadable.
 
 ## Device Registration for On-Phone Installs
 

@@ -28,6 +28,12 @@ jobs:
         with:
           xcode-version: ${{ inputs.xcode_version }}
 
+      - name: Verify selected Xcode
+        run: |
+          developer_dir="$(xcode-select --print-path)"
+          echo "DEVELOPER_DIR=$developer_dir" >>"$GITHUB_ENV"
+          xcodebuild -version
+
       - name: Install XcodeGen
         run: brew install xcodegen
 
@@ -42,6 +48,10 @@ jobs:
             :
           else
             printf '%s' "$APP_STORE_CONNECT_AUTH_KEY" >"$key_path"
+          fi
+          if [[ ! -s "$key_path" ]] || ! grep -q "PRIVATE KEY" "$key_path"; then
+            echo "App Store Connect API key secret is empty or is not a PEM private key." >&2
+            exit 1
           fi
           chmod 600 "$key_path"
           echo "APP_STORE_CONNECT_AUTH_KEY_PATH=$key_path" >>"$GITHUB_ENV"

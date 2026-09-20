@@ -48,6 +48,11 @@ routine_validate_app_store_connect_auth_key_trio() {
             echo "error: APP_STORE_CONNECT_AUTH_KEY_PATH, APP_STORE_CONNECT_AUTH_KEY_ID, and APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID must be set together." >&2
             return 1
         fi
+
+        if [[ ! -r "$auth_key_path" ]]; then
+            echo "error: App Store Connect auth key is not readable at $auth_key_path." >&2
+            return 1
+        fi
     fi
 
     return 0

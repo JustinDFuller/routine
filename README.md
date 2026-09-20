@@ -74,7 +74,7 @@ Use [Docs/DOGFOODING_CHECKLIST.md](Docs/DOGFOODING_CHECKLIST.md) for the manual 
 
 ## Local iPhone Deployment
 
-Complete the one-time setup in [Docs/SIGNING_AND_DEPLOY_SETUP.md](Docs/SIGNING_AND_DEPLOY_SETUP.md), then:
+Complete the one-time setup in [Docs/SIGNING_AND_DEPLOY_SETUP.md](Docs/SIGNING_AND_DEPLOY_SETUP.md). This release changes the App Group identifier from the earlier development value; verify the signing team owns both identifiers before treating an existing development store as upgradeable.
 
 1. Connect your iPhone via USB (or Wi-Fi debugging) and trust the Mac if prompted.
 2. Run `make deploy-device`. This generates the project, builds for the connected device, installs it via `xcrun devicectl`, and launches it — no Xcode GUI required.

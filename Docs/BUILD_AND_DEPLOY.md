@@ -39,7 +39,7 @@ The same uploaded build serves both TestFlight and the App Store: TestFlight tes
 
 ## Local vs. CI
 
-Local `make` targets are the primary path. The "iOS Release" GitHub Actions workflow (`.github/workflows/ios-release.yml`) is a manual (`workflow_dispatch`-only) backup that runs the same `make release` command on `macos-15`, reading the App Store Connect key and team from repository secrets. Prove a release locally (device install, then a TestFlight upload) before trusting CI to do the same, since CI reuses the same cloud-signing path.
+Local `make` targets are the primary path. The "iOS Release" GitHub Actions workflow (`.github/workflows/ios-release.yml`) is a manual (`workflow_dispatch`-only) backup that runs the same `make release` command on `macos-15`, exports the Xcode path selected by `setup-xcode`, and reads the App Store Connect key and team from repository secrets. Prove a release locally (fresh paid-team install, then a TestFlight upload) before trusting CI to do the same, since CI reuses the same cloud-signing path.
 
 ## Dev-Assist Tooling (Not Part of Deploy)
 
