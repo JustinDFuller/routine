@@ -442,17 +442,14 @@ The dashboard must clearly distinguish at least these states:
 - When the Today completed-collapse preference is enabled, completed-today routines may collapse into compact checkmark rows beneath the full cards in their section
 - Do not gray the row into irrelevance
 
-##### Unavailable now
+##### Outside availability window
 
-- Incomplete unavailable routines remain visible in the same section and order as available routines
-- By default, incomplete unavailable routines may collapse into compact clock rows beneath the actionable cards in their section
-- Expanding a compact unavailable row should reveal the normal full card with the disabled completion state and explicit availability line
-- The primary completion affordance is visibly disabled and should read as inactive before the user taps it
-- Card contrast softens further than a normal incomplete card, but the card remains readable
-- Availability text becomes explicit, such as `Available 11:00 PM-3:00 AM`
-- History access remains active
-- If the routine is already completed today, the card may still open history even when the current time is outside the window
-- Do not use strikethrough
+- Incomplete out-of-window routines remain visible in the same section and order as available routines.
+- By default, they may collapse into compact clock rows beneath actionable cards.
+- Expanding either policy shows the explicit availability line and keeps History access active.
+- Soft cards retain normal contrast and an active completion control; use `Preferred 11:00 PM-3:00 AM` and state that completion remains available.
+- Hard cards use muted contrast with a disabled primary control; use `Available 11:00 PM-3:00 AM`.
+- Do not use strikethrough.
 
 ##### Period target met
 
@@ -715,7 +712,7 @@ MVP fields:
 - Target count
 - Frequency period: `Weekly` or `Monthly`
 - Group assignment
-- Availability: `Available all day` toggle plus start and end time when the toggle is off
+- Availability: `Available all day` toggle plus start and end time when the toggle is off, followed by an `Outside window` soft/hard policy picker
 
 Preferred control patterns:
 

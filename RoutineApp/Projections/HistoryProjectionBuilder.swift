@@ -20,7 +20,11 @@ final class HistoryProjectionBuilder {
         streakCalculator = StreakCalculator(routineCalendar: routineCalendar)
     }
 
-    func build(routineID: UUID, now: Date = .now) throws -> RoutineHistoryProjection {
+    func build(
+        routineID: UUID,
+        displayedMonth: RoutineDay? = nil,
+        now: Date = .now
+    ) throws -> RoutineHistoryProjection {
         let buildSignpost = Self.signposter.beginInterval("buildHistoryProjection")
         defer {
             Self.signposter.endInterval("buildHistoryProjection", buildSignpost)
@@ -35,6 +39,7 @@ final class HistoryProjectionBuilder {
             routineID: routineID,
             routines: [routine],
             completions: completions,
+            displayedMonth: displayedMonth,
             now: now
         )
     }
@@ -43,6 +48,7 @@ final class HistoryProjectionBuilder {
         routineID: UUID,
         routines: [Routine],
         completions: [RoutineCompletion],
+        displayedMonth: RoutineDay? = nil,
         now: Date = .now
     ) -> RoutineHistoryProjection {
         guard let routine = routines.first(where: { $0.id == routineID }) else {
@@ -57,6 +63,7 @@ final class HistoryProjectionBuilder {
             makeViewData(
                 routine: routine,
                 completions: filteredCompletions,
+                displayedMonth: displayedMonth ?? routineCalendar.today(now: now),
                 now: now
             )
         )
@@ -131,6 +138,7 @@ extension HistoryProjectionBuilder {
     fileprivate func makeViewData(
         routine: Routine,
         completions: [RoutineCompletion],
+        displayedMonth: RoutineDay,
         now: Date
     ) -> RoutineHistoryViewData {
         let today = routineCalendar.today(now: now)
@@ -163,6 +171,7 @@ extension HistoryProjectionBuilder {
             lastDoneText: routineCalendar.relativeLabel(for: progress.lastCompletedDay, today: today),
             weeks: buildWeeks(
                 today: today,
+                displayedMonth: displayedMonth,
                 completedDays: completedDays,
                 period: routine.period,
                 targetCount: routine.targetCount
@@ -173,18 +182,23 @@ extension HistoryProjectionBuilder {
 
     fileprivate func buildWeeks(
         today: RoutineDay,
+        displayedMonth: RoutineDay,
         completedDays: Set<RoutineDay>,
         period: RoutinePeriod,
         targetCount: Int
     ) -> [HistoryCalendarWeek] {
-        let days = buildCalendarDays(today: today, completedDays: completedDays)
+        let days = buildCalendarDays(
+            today: today,
+            displayedMonth: displayedMonth,
+            completedDays: completedDays
+        )
 
         guard let firstDay = days.first else {
             return []
         }
 
         let monthlyGoalMet = isMonthlyGoalMet(
-            today: today,
+            displayedMonth: displayedMonth,
             completedDays: completedDays,
             period: period,
             targetCount: targetCount
@@ -205,9 +219,10 @@ extension HistoryProjectionBuilder {
 
     fileprivate func buildCalendarDays(
         today: RoutineDay,
+        displayedMonth: RoutineDay,
         completedDays: Set<RoutineDay>
     ) -> [HistoryCalendarDay] {
-        routineCalendar.daysInCurrentMonth(containing: today).map { day in
+        routineCalendar.daysInCurrentMonth(containing: displayedMonth).map { day in
             HistoryCalendarDay(
                 id: day.key,
                 day: day,
@@ -268,7 +283,7 @@ extension HistoryProjectionBuilder {
     }
 
     fileprivate func isMonthlyGoalMet(
-        today: RoutineDay,
+        displayedMonth: RoutineDay,
         completedDays: Set<RoutineDay>,
         period: RoutinePeriod,
         targetCount: Int
@@ -277,7 +292,7 @@ extension HistoryProjectionBuilder {
             return false
         }
 
-        let monthRange = routineCalendar.currentMonthRange(containing: today)
+        let monthRange = routineCalendar.currentMonthRange(containing: displayedMonth)
         return progressCalculator.completions(
             in: monthRange,
             completionDays: Array(completedDays)

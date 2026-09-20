@@ -112,6 +112,28 @@ final class RoutineAppUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["5 per week"].waitForExistence(timeout: 5))
     }
 
+    func testHistoryPreviousMonthNavigationShowsPriorMonth() {
+        let app = makeApp()
+        app.launch()
+
+        let historyButton = app.buttons["routine-card-history-morning-yoga"]
+        XCTAssertTrue(historyButton.waitForExistence(timeout: 5))
+        historyButton.tap()
+
+        let monthTitle = identifiedElement("routine-history-month-title", in: app)
+        XCTAssertTrue(monthTitle.waitForExistence(timeout: 5))
+        XCTAssertEqual(monthTitle.label, "June 2026")
+
+        let previousMonthButton = app.buttons["routine-history-previous-month-button"]
+        XCTAssertTrue(previousMonthButton.waitForExistence(timeout: 5))
+        previousMonthButton.tap()
+
+        let mayTitle = NSPredicate(format: "label == %@", "May 2026")
+        expectation(for: mayTitle, evaluatedWith: monthTitle)
+        waitForExpectations(timeout: 5)
+        XCTAssertEqual(monthTitle.label, "May 2026")
+    }
+
     func testHistoryDeletionRequiresConfirmationAndRefreshesState() {
         let app = makeApp(
             additionalLaunchArguments: ["-routine-open-morning-yoga-history-with-completion"]
@@ -368,7 +390,7 @@ final class RoutineAppUITests: XCTestCase {
 }
 
 extension RoutineAppUITests {
-    func testUnavailableRoutineCollapsesToClockRowAndExpandsAndCollapsesOnTap() {
+    func testSoftUnavailableRoutineExpandsAndCompletes() {
         let app = makeApp(
             seeded: false,
             additionalLaunchArguments: [
@@ -381,25 +403,50 @@ extension RoutineAppUITests {
 
         let unavailableRow = identifiedElement("routine-unavailable-row-wake-up-early", in: app)
         XCTAssertTrue(unavailableRow.waitForExistence(timeout: 5))
-        XCTAssertFalse(
-            identifiedElement("routine-card-history-wake-up-early", in: app).waitForExistence(timeout: 2)
-        )
-
         unavailableRow.tap()
 
-        XCTAssertTrue(
-            identifiedElement("routine-card-history-wake-up-early", in: app).waitForExistence(timeout: 5)
+        let primary = identifiedElement("routine-card-primary-wake-up-early", in: app)
+        XCTAssertTrue(primary.waitForExistence(timeout: 5))
+        XCTAssertTrue(primary.isEnabled)
+        XCTAssertTrue(app.staticTexts["Preferred 12:00 AM-6:45 AM"].waitForExistence(timeout: 5))
+        primary.tap()
+
+        XCTAssertTrue(app.buttons["today-dashboard-undo-button"].waitForExistence(timeout: 5))
+    }
+
+    func testHardUnavailableRoutineBlocksTodayButAllowsHistoricalCompletion() {
+        let app = makeApp(
+            seeded: false,
+            additionalLaunchArguments: [
+                "-routine-empty-in-memory-store",
+                "-routine-screenshot-fixture",
+                "full-app"
+            ]
         )
-        XCTAssertTrue(app.staticTexts["Available 12:00 AM-6:45 AM"].waitForExistence(timeout: 5))
+        app.launch()
 
-        let collapseButton = identifiedElement("routine-card-collapse-wake-up-early", in: app)
-        XCTAssertTrue(collapseButton.waitForExistence(timeout: 5))
-        collapseButton.tap()
-
+        let unavailableRow = identifiedElement("routine-unavailable-row-evening-yoga", in: app)
         XCTAssertTrue(unavailableRow.waitForExistence(timeout: 5))
-        XCTAssertFalse(
-            identifiedElement("routine-card-history-wake-up-early", in: app).waitForExistence(timeout: 2)
-        )
+        unavailableRow.tap()
+
+        let primary = identifiedElement("routine-card-primary-evening-yoga", in: app)
+        XCTAssertTrue(primary.waitForExistence(timeout: 5))
+        XCTAssertFalse(primary.isEnabled, primary.debugDescription)
+
+        let history = identifiedElement("routine-card-history-evening-yoga", in: app)
+        XCTAssertTrue(history.waitForExistence(timeout: 5))
+        history.tap()
+
+        let day = identifiedElement("history-day-2026-06-09", in: app)
+        XCTAssertTrue(day.waitForExistence(timeout: 5))
+        day.tap()
+
+        let confirm = identifiedElement("history-day-confirm-2026-06-09", in: app)
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        confirm.tap()
+
+        let completedDay = identifiedElement("history-day-2026-06-09", in: app)
+        XCTAssertTrue(completedDay.label.contains("completed"), completedDay.debugDescription)
     }
 
     func testUnavailableRoutineStaysExpandedWhenCollapseUnavailableIsDisabledAtLaunch() {
@@ -417,22 +464,22 @@ extension RoutineAppUITests {
         XCTAssertTrue(
             identifiedElement("routine-card-history-wake-up-early", in: app).waitForExistence(timeout: 5)
         )
-        XCTAssertTrue(app.staticTexts["Available 12:00 AM-6:45 AM"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Preferred 12:00 AM-6:45 AM"].waitForExistence(timeout: 5))
         XCTAssertFalse(
             identifiedElement("routine-unavailable-row-wake-up-early", in: app).waitForExistence(timeout: 2)
         )
     }
 
-    func testCheckInOnboardingPromptAppearsAndEnableButtonDismissesIt() {
+    func testBehindScheduleOnboardingPromptAppearsAndEnableButtonDismissesIt() {
         let app = makeApp(
-            additionalLaunchArguments: ["-routine-force-checkin-onboarding-prompt"]
+            additionalLaunchArguments: ["-routine-force-behind-schedule-onboarding-prompt"]
         )
         app.launch()
 
-        let alert = app.alerts["Stay on track with check-ins?"]
+        let alert = app.alerts["Behind-schedule alerts?"]
         XCTAssertTrue(alert.waitForExistence(timeout: 5))
 
-        let enableButton = alert.buttons["Enable Check-ins"]
+        let enableButton = alert.buttons["Enable alerts"]
         let notNowButton = alert.buttons["Not Now"]
         XCTAssertTrue(enableButton.exists)
         XCTAssertTrue(notNowButton.exists)
@@ -440,7 +487,7 @@ extension RoutineAppUITests {
         enableButton.tap()
 
         XCTAssertTrue(dashboardTitle(in: app).waitForExistence(timeout: 5))
-        XCTAssertFalse(app.staticTexts["Stay on track with check-ins?"].exists)
+        XCTAssertFalse(app.staticTexts["Behind-schedule alerts?"].exists)
     }
 
     func testCompletedRoutineCollapsesToMiniRowAndExpandsAndCollapsesOnTap() {
@@ -543,6 +590,9 @@ extension RoutineAppUITests {
 
         openManagementMenu(in: app)
         app.buttons["today-dashboard-settings-button"].tap()
+
+        app.collectionViews.firstMatch.swipeUp()
+        app.collectionViews.firstMatch.swipeUp()
 
         let factoryResetLink = identifiedElement("settings-factory-reset-link", in: app)
         XCTAssertTrue(factoryResetLink.waitForExistence(timeout: 5))

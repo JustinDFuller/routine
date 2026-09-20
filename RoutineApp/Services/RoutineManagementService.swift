@@ -11,6 +11,7 @@ struct RoutineDraft: Equatable, Sendable {
     var groupID: UUID
     var availabilityStartMinute: Int?
     var availabilityEndMinute: Int?
+    var availabilityBlockMode: RoutineAvailabilityBlockMode = .soft
 }
 enum RoutineManagementError: LocalizedError, Equatable {
     case nonEmptyGroup(UUID)
@@ -49,6 +50,7 @@ final class RoutineManagementService {
             period: draft.period,
             availabilityStartMinute: availabilityWindow?.start.minuteOfDay,
             availabilityEndMinute: availabilityWindow?.end.minuteOfDay,
+            availabilityBlockMode: draft.availabilityBlockMode,
             sortOrder: existingRoutines.count,
             group: group,
             createdAt: now,
@@ -96,6 +98,7 @@ final class RoutineManagementService {
         routine.period = draft.period
         routine.availabilityStartMinute = availabilityWindow?.start.minuteOfDay
         routine.availabilityEndMinute = availabilityWindow?.end.minuteOfDay
+        routine.availabilityBlockMode = draft.availabilityBlockMode
         routine.updatedAt = now
 
         if sourceGroupID == destinationGroup.id {

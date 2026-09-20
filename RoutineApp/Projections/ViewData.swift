@@ -96,6 +96,7 @@ struct RoutineCardViewData: Identifiable, Equatable, Sendable {
     let unavailableAccessibilityPhrase: String?
     let progressRing: ProgressRingViewData
     let isAvailableNow: Bool
+    let isCompletionBlockedByAvailability: Bool
     let isCompletedToday: Bool
     let isTargetMet: Bool
     let isOverTarget: Bool
@@ -185,6 +186,7 @@ struct ManageRoutineRowViewData: Identifiable, Equatable, Sendable {
     let groupID: UUID
     let availabilityStartMinute: Int?
     let availabilityEndMinute: Int?
+    let availabilityBlockMode: RoutineAvailabilityBlockMode
     let summaryText: String
 }
 

@@ -100,7 +100,7 @@ final class NextRoutineSelectorTests: ProjectionBuilderTestCase {
         XCTAssertEqual(snapshot.name, "Read")
     }
 
-    func testNextSkipsRoutineOutsideAvailabilityWindow() throws {
+    func testNextSkipsHardRoutineOutsideAvailabilityWindow() throws {
         let context = try makeContext()
         let calendar = makeCalendar()
         let now = makeDate(year: 2026, month: 6, day: 10, hour: 8, minute: 0, calendar: calendar.calendar)
@@ -113,6 +113,7 @@ final class NextRoutineSelectorTests: ProjectionBuilderTestCase {
                 period: .weekly,
                 availabilityStartMinute: 0,
                 availabilityEndMinute: 405,
+                availabilityBlockMode: .hard,
                 sortOrder: 0
             ),
             group: group,
@@ -132,6 +133,35 @@ final class NextRoutineSelectorTests: ProjectionBuilderTestCase {
         }
 
         XCTAssertEqual(snapshot.name, "Walk")
+    }
+
+    func testNextReturnsSoftRoutineOutsideAvailabilityWindow() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let now = makeDate(year: 2026, month: 6, day: 10, hour: 8, minute: 0, calendar: calendar.calendar)
+        let group = insertGroup(name: "Health", sortOrder: 0, into: context)
+        _ = insertRoutine(
+            seed: RoutineTestSeed(
+                name: "Wake up early",
+                targetCount: 4,
+                period: .weekly,
+                availabilityStartMinute: 0,
+                availabilityEndMinute: 405,
+                availabilityBlockMode: .soft,
+                sortOrder: 0
+            ),
+            group: group,
+            into: context
+        )
+        try saveChanges(in: context)
+
+        let selection = try NextRoutineSelector.next(context: context, calendar: calendar, now: now)
+
+        guard case .ready(let snapshot) = selection else {
+            return XCTFail("Expected a ready routine, got \(selection)")
+        }
+
+        XCTAssertEqual(snapshot.name, "Wake up early")
     }
 
     func testNextReturnsNoRoutinesWhenStoreIsEmpty() throws {
@@ -163,6 +193,7 @@ final class NextRoutineSelectorTests: ProjectionBuilderTestCase {
                 period: .weekly,
                 availabilityStartMinute: 0,
                 availabilityEndMinute: 405,
+                availabilityBlockMode: .hard,
                 sortOrder: 1
             ),
             group: group,
@@ -257,6 +288,7 @@ final class NextRoutineSelectorTests: ProjectionBuilderTestCase {
                 period: .weekly,
                 availabilityStartMinute: 420,
                 availabilityEndMinute: 600,
+                availabilityBlockMode: .hard,
                 sortOrder: 0
             ),
             group: group,

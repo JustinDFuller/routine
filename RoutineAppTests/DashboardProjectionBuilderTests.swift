@@ -244,6 +244,7 @@ final class DashboardProjectionBuilderTests: ProjectionBuilderTestCase {
                 targetCount: 2, completedCount: 1, fillRatio: 0.5, showsTodayCheckmark: true
             ),
             isAvailableNow: true,
+            isCompletionBlockedByAvailability: false,
             isCompletedToday: true,
             isTargetMet: false,
             isOverTarget: false
@@ -367,6 +368,7 @@ final class DashboardProjectionBuilderTests: ProjectionBuilderTestCase {
                 showsTodayCheckmark: false
             ),
             isAvailableNow: false,
+            isCompletionBlockedByAvailability: true,
             isCompletedToday: false,
             isTargetMet: true,
             isOverTarget: false
@@ -402,6 +404,7 @@ final class DashboardProjectionBuilderTests: ProjectionBuilderTestCase {
                 showsTodayCheckmark: true
             ),
             isAvailableNow: false,
+            isCompletionBlockedByAvailability: false,
             isCompletedToday: true,
             isTargetMet: false,
             isOverTarget: false

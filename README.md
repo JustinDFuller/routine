@@ -1,6 +1,6 @@
 # routine
 
-Routine is a personal iPhone app for tracking recurring habits and routines in a simple, visual way. The MVP is local-only: it uses on-device SwiftData storage and does not include networking, analytics, tracking, CloudKit, or remote logging. It does include local, non-spammy daily check-in notifications (morning/afternoon/evening) backed by `UNUserNotificationCenter` — no per-routine reminders.
+Routine is a personal iPhone app for tracking recurring habits and routines in a simple, visual way. The MVP is local-only: it uses on-device SwiftData storage and does not include networking, analytics, tracking, CloudKit, or remote logging. It includes at most one local behind-schedule alert per day, at a configurable local time, when current weekly or monthly progress is behind the pace needed to meet its target — no per-routine reminders.
 
 The product and system have been scoped in the planning documents below. Implementation should now follow [PROJECT_DESIGN.md](PROJECT_DESIGN.md), which breaks the MVP into dependency-ordered milestones and marks the current step.
 

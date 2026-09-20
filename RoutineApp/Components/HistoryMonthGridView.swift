@@ -4,10 +4,10 @@ import SwiftUI
 struct HistoryMonthGridView: View {
     let weeks: [HistoryCalendarWeek]
     let routineCalendar: RoutineCalendar
+    let onShowPreviousMonth: () -> Void
     let onTapDay: (HistoryCalendarDay) -> Void
     let popoverIsPresented: (String) -> Binding<Bool>
     let onConfirmDay: () -> Void
-
     private var monthTitle: String {
         guard let firstDay = weeks.first(where: { $0.days.isEmpty == false })?.days.first else {
             return "This month"
@@ -27,9 +27,25 @@ struct HistoryMonthGridView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(monthTitle)
-                .font(.headline.weight(.semibold))
-                .foregroundStyle(Color.routineLabelPrimary)
+            HStack(spacing: 8) {
+                Text(monthTitle)
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(Color.routineLabelPrimary)
+                    .accessibilityIdentifier("routine-history-month-title")
+
+                Spacer()
+
+                Button(action: onShowPreviousMonth) {
+                    Image(systemName: "chevron.left")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.bordered)
+                .tint(Color.routineLabelSecondary)
+                .frame(minWidth: 44, minHeight: 44)
+                .accessibilityIdentifier("routine-history-previous-month-button")
+                .accessibilityLabel("Show previous month")
+                .accessibilityHint("Shows the previous calendar month")
+            }
 
             VStack(spacing: 10) {
                 HStack(spacing: 8) {

@@ -177,6 +177,15 @@ extension TodayDashboardView {
                 return
             }
 
+            Task {
+                await rescheduleBehindScheduleAlerts(
+                    coordinator: behindScheduleRescheduleCoordinator,
+                    context: modelContext,
+                    calendar: routineCalendar,
+                    now: runtime.now,
+                    logLabel: "dashboardRescheduleFailed"
+                )
+            }
             WidgetCenter.shared.reloadAllTimelines()
             RoutineHaptics.signalCompletion()
             showUndoBanner(
@@ -203,6 +212,15 @@ extension TodayDashboardView {
                 return
             }
 
+            Task {
+                await rescheduleBehindScheduleAlerts(
+                    coordinator: behindScheduleRescheduleCoordinator,
+                    context: modelContext,
+                    calendar: routineCalendar,
+                    now: runtime.now,
+                    logLabel: "dashboardRescheduleFailed"
+                )
+            }
             WidgetCenter.shared.reloadAllTimelines()
             RoutineHaptics.signalUndo()
         } catch {

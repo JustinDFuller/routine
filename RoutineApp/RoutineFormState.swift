@@ -24,6 +24,7 @@ struct RoutineFormSnapshot: Equatable, Sendable {
     let groupID: UUID?
     let availabilityStartMinute: Int?
     let availabilityEndMinute: Int?
+    let availabilityBlockMode: RoutineAvailabilityBlockMode
 
     init(
         routineID: UUID,
@@ -32,7 +33,8 @@ struct RoutineFormSnapshot: Equatable, Sendable {
         period: RoutinePeriod,
         groupID: UUID?,
         availabilityStartMinute: Int?,
-        availabilityEndMinute: Int?
+        availabilityEndMinute: Int?,
+        availabilityBlockMode: RoutineAvailabilityBlockMode = .soft
     ) {
         self.routineID = routineID
         self.name = name
@@ -41,6 +43,7 @@ struct RoutineFormSnapshot: Equatable, Sendable {
         self.groupID = groupID
         self.availabilityStartMinute = availabilityStartMinute
         self.availabilityEndMinute = availabilityEndMinute
+        self.availabilityBlockMode = availabilityBlockMode
     }
 
     init(
@@ -54,7 +57,8 @@ struct RoutineFormSnapshot: Equatable, Sendable {
             period: row.period,
             groupID: availableGroupIDs.contains(row.groupID) ? row.groupID : nil,
             availabilityStartMinute: row.availabilityStartMinute,
-            availabilityEndMinute: row.availabilityEndMinute
+            availabilityEndMinute: row.availabilityEndMinute,
+            availabilityBlockMode: row.availabilityBlockMode
         )
     }
 }
@@ -139,6 +143,10 @@ final class RoutineFormState {
         didSet { clearValidationError() }
     }
 
+    var availabilityBlockMode: RoutineAvailabilityBlockMode {
+        didSet { clearValidationError() }
+    }
+
     private(set) var validationError: RoutineFormError?
 
     init(presentation: RoutineFormPresentation) {
@@ -151,6 +159,7 @@ final class RoutineFormState {
             isAvailableAllDay = true
             availabilityStartMinute = nil
             availabilityEndMinute = nil
+            availabilityBlockMode = .soft
         case .edit(let snapshot):
             name = snapshot.name
             targetCount = snapshot.targetCount
@@ -161,6 +170,7 @@ final class RoutineFormState {
                 || snapshot.availabilityEndMinute == nil
             availabilityStartMinute = snapshot.availabilityStartMinute
             availabilityEndMinute = snapshot.availabilityEndMinute
+            availabilityBlockMode = snapshot.availabilityBlockMode
         }
 
         targetCount = clampedTargetCount(targetCount, for: period)
@@ -198,7 +208,8 @@ final class RoutineFormState {
                 period: period,
                 groupID: groupID,
                 availabilityStartMinute: availabilityWindow?.start.minuteOfDay,
-                availabilityEndMinute: availabilityWindow?.end.minuteOfDay
+                availabilityEndMinute: availabilityWindow?.end.minuteOfDay,
+                availabilityBlockMode: availabilityBlockMode
             )
         } catch let error as RoutineValidationError {
             let formError = RoutineFormError.validation(error)

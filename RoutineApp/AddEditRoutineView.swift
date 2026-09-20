@@ -10,6 +10,9 @@ struct AddEditRoutineView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.routineCalendar) private var routineCalendar
+    @Environment(\.routineRuntimeConfiguration) private var runtime
+    @Environment(\.behindScheduleRescheduleCoordinator) private var behindScheduleRescheduleCoordinator
 
     @State private var formState: RoutineFormState
     @State private var isDeleteConfirmationPresented = false
@@ -76,7 +79,7 @@ struct AddEditRoutineView: View {
                     }
                 }
 
-                Section("Availability") {
+                Section {
                     Toggle("Available all day", isOn: $formState.isAvailableAllDay)
                         .accessibilityIdentifier("routine-form-availability-all-day-toggle")
 
@@ -100,6 +103,21 @@ struct AddEditRoutineView: View {
                             displayedComponents: .hourAndMinute
                         )
                         .accessibilityIdentifier("routine-form-availability-end-picker")
+
+                        Picker("Outside window", selection: $formState.availabilityBlockMode) {
+                            Text("Soft block").tag(RoutineAvailabilityBlockMode.soft)
+                            Text("Hard block").tag(RoutineAvailabilityBlockMode.hard)
+                        }
+                        .accessibilityIdentifier("routine-form-availability-block-mode-picker")
+                    }
+                } header: {
+                    Text("Availability")
+                } footer: {
+                    if formState.isAvailableAllDay == false {
+                        Text(
+                            "Soft block collapses this routine outside the window but still allows completion. "
+                                + "Hard block also prevents completion."
+                        )
                     }
                 }
 
@@ -184,6 +202,16 @@ struct AddEditRoutineView: View {
                 try service.updateRoutine(id: snapshot.routineID, with: draft)
             }
 
+            Task {
+                await rescheduleBehindScheduleAlerts(
+                    coordinator: behindScheduleRescheduleCoordinator,
+                    context: modelContext,
+                    calendar: routineCalendar,
+                    now: runtime.now,
+                    logLabel: "routineEditorRescheduleFailed"
+                )
+            }
+
             dismiss()
         } catch is RoutineFormError {
             return
@@ -207,6 +235,15 @@ struct AddEditRoutineView: View {
 
         do {
             try RoutineManagementService(context: modelContext).deleteRoutine(id: routineID)
+            Task {
+                await rescheduleBehindScheduleAlerts(
+                    coordinator: behindScheduleRescheduleCoordinator,
+                    context: modelContext,
+                    calendar: routineCalendar,
+                    now: runtime.now,
+                    logLabel: "routineEditorRescheduleFailed"
+                )
+            }
             dismiss()
         } catch let error as PersistenceError {
             if case .routineNotFound = error {

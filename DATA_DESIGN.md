@@ -228,6 +228,7 @@ final class Routine {
     var sortOrder: Int
     var availabilityStartMinute: Int?
     var availabilityEndMinute: Int?
+    var availabilityBlockModeRawValue: String
     var createdAt: Date
     var updatedAt: Date
 
@@ -243,6 +244,8 @@ final class Routine {
 
     var availabilityWindow: RoutineAvailabilityWindow? { ... }
 
+    var availabilityBlockMode: RoutineAvailabilityBlockMode { ... }
+
     init(
         id: UUID = UUID(),
         name: String,
@@ -252,6 +255,7 @@ final class Routine {
         group: RoutineGroup,
         availabilityStartMinute: Int? = nil,
         availabilityEndMinute: Int? = nil,
+        availabilityBlockMode: RoutineAvailabilityBlockMode = .soft,
         createdAt: Date = .now,
         updatedAt: Date = .now,
         completions: [RoutineCompletion] = []
@@ -278,6 +282,7 @@ Design notes:
 - `nil` and `nil` is the only canonical all-day state.
 - Partial persisted availability should be treated defensively as all-day in projections and tracking, but normal service and form saves must reject it.
 - `availabilityWindow` should return `nil` unless both persisted minutes form a valid configured window.
+- `availabilityBlockModeRawValue` persists the stable `soft` or `hard` enum raw value; absent or malformed values resolve to `soft`.
 - `group` is optional at the SwiftData relationship level to support migration and framework behavior, but the app domain treats it as required.
 - Deleting a routine cascades to its completions. This matches the MVP decision that deleted routine history is intentionally removed after confirmation.
 
@@ -342,6 +347,13 @@ struct RoutineAvailabilityWindow: Equatable, Sendable {
 }
 ```
 
+```swift
+enum RoutineAvailabilityBlockMode: String, CaseIterable, Codable, Sendable {
+    case soft
+    case hard
+}
+```
+
 Rules:
 
 - Valid hours are `0...23`.
@@ -352,6 +364,9 @@ Rules:
 - Same-day windows contain minutes between `start.minuteOfDay` and `end.minuteOfDay`.
 - Cross-midnight windows contain minutes greater than or equal to the start minute or strictly less than the end minute.
 - Completion day keys always use the actual local calendar day of the tap, even when the window crosses midnight.
+- A soft window is a preferred-time presentation signal: it compacts an out-of-window incomplete card but keeps completion actionable.
+- A hard window also rejects a new same-day completion outside the configured window.
+- Historical calendar completion remains available outside both window modes.
 
 #### AppMetadata
 
@@ -556,7 +571,7 @@ Responsibilities:
 - Undo today's completion.
 - Remove a historical completion.
 - Prevent duplicate completions.
-- Enforce configured availability windows for new same-day completions.
+- Enforce hard configured availability windows for new same-day completions.
 - Save after successful mutations.
 
 Recommended interface:
@@ -602,9 +617,9 @@ Behavior:
 - It computes today's `RoutineDay`.
 - It checks for an existing completion with `routineDayKey`.
 - If one exists, it returns `didInsert = false` and does not write.
-- If no completion exists, it evaluates the routine's availability window against the current local minute-of-day.
-- If the routine is outside its configured window, it throws a user-safe unavailable error and does not insert a completion.
-- If the routine is all-day or currently available, it inserts `RoutineCompletion`, saves, and returns `didInsert = true`.
+- If no completion exists for today, it evaluates a hard availability window against the current local minute-of-day.
+- If a hard routine is outside its configured window, it throws a user-safe unavailable error and does not insert a completion.
+- Soft routines, all-day routines, and historical days insert normally.
 - `undoToday` removes only the completion matching today's day key.
 - `removeCompletion` removes a specific historical completion after the view has already confirmed the destructive action.
 - All mutations save explicitly.
@@ -652,6 +667,7 @@ struct RoutineDraft: Equatable, Sendable {
     var groupID: UUID
     var availabilityStartMinute: Int?
     var availabilityEndMinute: Int?
+    var availabilityBlockMode: RoutineAvailabilityBlockMode
 }
 ```
 
@@ -1336,8 +1352,8 @@ Multiple completions per day:
 
 Notifications:
 
-- Implemented as a global, non-per-routine daily check-in system (morning/afternoon/evening). Check-in enabled flags and times are global app preferences stored in `@AppStorage`/`UserDefaults`, not a new SwiftData model, and do not overload `RoutinePeriod` with notification behavior.
-- The celebration-consumed flag (whether the "all caught up" notification has already fired for the current open period) is a single App Group `UserDefaults` flag, not routine data.
+- Implemented as a global, non-per-routine behind-schedule alert. One enabled flag and one local minute-of-day preference are global `@AppStorage`/`UserDefaults` values, not a new SwiftData model, and do not overload `RoutinePeriod` with notification behavior.
+- At rescheduling time, the alert selects the first routine in dashboard order with the greatest deficit between deduplicated period completions and target-proportional expected completions. It uses a two-day local rolling horizon and cancels/rebuilds after app foregrounding; completion or history correction; routine creation, edit, or deletion; notification setting changes; and data reset.
 - Per-routine reminder notifications remain a future extension if ever added; they would need their own settings model separate from completion history.
 
 Widgets:

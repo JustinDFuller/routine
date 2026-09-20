@@ -1,4 +1,5 @@
 import Foundation
+import RoutineCore
 import SwiftData
 import XCTest
 
@@ -39,6 +40,7 @@ final class RoutineTrackingServiceAvailabilityTests: RoutineTrackingServiceTestC
                 period: .weekly,
                 availabilityStartMinute: 0,
                 availabilityEndMinute: 405,
+                availabilityBlockMode: .hard,
                 sortOrder: 0
             ),
             into: context
@@ -60,6 +62,28 @@ final class RoutineTrackingServiceAvailabilityTests: RoutineTrackingServiceTestC
         XCTAssertTrue(try fetchCompletions(in: context).isEmpty)
     }
 
+    func testCompleteTodayInsertsSoftConfiguredRoutineOutsideRange() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let routine = try insertRoutine(
+            seed: RoutineTestSeed(
+                name: "Wake up early",
+                targetCount: 4,
+                period: .weekly,
+                availabilityStartMinute: 0,
+                availabilityEndMinute: 405,
+                availabilityBlockMode: .soft,
+                sortOrder: 0
+            ),
+            into: context
+        )
+        let service = RoutineTrackingService(context: context, routineCalendar: calendar)
+        let now = makeDate(year: 2026, month: 6, day: 10, hour: 8, minute: 0, calendar: calendar.calendar)
+
+        XCTAssertTrue(try service.completeToday(routineID: routine.id, now: now).didInsert)
+        XCTAssertEqual(try fetchCompletions(in: context).count, 1)
+    }
+
     func testDuplicateCompletionRemainsIdempotentOutsideAvailabilityWindow() throws {
         let context = try makeContext()
         let calendar = makeCalendar()
@@ -70,6 +94,7 @@ final class RoutineTrackingServiceAvailabilityTests: RoutineTrackingServiceTestC
                 period: .weekly,
                 availabilityStartMinute: 0,
                 availabilityEndMinute: 405,
+                availabilityBlockMode: .hard,
                 sortOrder: 0
             ),
             into: context
@@ -87,6 +112,31 @@ final class RoutineTrackingServiceAvailabilityTests: RoutineTrackingServiceTestC
 
         XCTAssertFalse(result.didInsert)
         XCTAssertEqual(try fetchCompletions(in: context).count, 1)
+    }
+
+    func testCompleteHistoricalDayInsertsHardRoutineOutsideRange() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let routine = try insertRoutine(
+            seed: RoutineTestSeed(
+                name: "Wake up early",
+                targetCount: 4,
+                period: .weekly,
+                availabilityStartMinute: 0,
+                availabilityEndMinute: 405,
+                availabilityBlockMode: .hard,
+                sortOrder: 0
+            ),
+            into: context
+        )
+        let service = RoutineTrackingService(context: context, routineCalendar: calendar)
+        let now = makeDate(year: 2026, month: 6, day: 10, hour: 8, minute: 0, calendar: calendar.calendar)
+        let day = try XCTUnwrap(RoutineDay(year: 2026, month: 6, day: 9))
+
+        let result = try service.complete(routineID: routine.id, day: day, now: now)
+
+        XCTAssertTrue(result.didInsert)
+        XCTAssertEqual(try fetchCompletions(in: context).map(\.dayKey), ["2026-06-09"])
     }
 
     func testCrossMidnightCompletionStoresCurrentLocalDayAfterMidnight() throws {

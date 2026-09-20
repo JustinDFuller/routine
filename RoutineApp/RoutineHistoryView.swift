@@ -12,6 +12,7 @@ struct RoutineHistoryView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.routineRuntimeConfiguration) private var runtime
     @Environment(\.routineCalendar) private var routineCalendar
+    @Environment(\.behindScheduleRescheduleCoordinator) private var behindScheduleRescheduleCoordinator
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @Query private var routines: [Routine]
@@ -22,6 +23,7 @@ struct RoutineHistoryView: View {
     @State private var pendingDay: HistoryCalendarDay?
     @State private var undoBanner: HistoryUndoPresentation?
     @State private var undoDismissTask: Task<Void, Never>?
+    @State private var selectedMonth: RoutineDay?
 
     init(routineID: UUID) {
         self.routineID = routineID
@@ -43,11 +45,16 @@ struct RoutineHistoryView: View {
         )
     }
 
+    private var displayedMonth: RoutineDay {
+        selectedMonth ?? routineCalendar.today(now: runtime.now)
+    }
+
     private var projection: RoutineHistoryProjection {
         HistoryProjectionBuilder(context: modelContext, routineCalendar: routineCalendar).build(
             routineID: routineID,
             routines: routines,
             completions: completions,
+            displayedMonth: displayedMonth,
             now: runtime.now
         )
     }
@@ -148,6 +155,7 @@ struct RoutineHistoryView: View {
                     HistoryMonthGridView(
                         weeks: viewData.weeks,
                         routineCalendar: routineCalendar,
+                        onShowPreviousMonth: showPreviousMonth,
                         onTapDay: tapDay,
                         popoverIsPresented: pendingPopoverIsPresented,
                         onConfirmDay: confirmPendingDay
@@ -308,9 +316,27 @@ struct RoutineHistoryView: View {
         do {
             try RoutineTrackingService(context: modelContext, routineCalendar: routineCalendar)
                 .removeCompletion(completionID: item.id)
+            Task {
+                await rescheduleBehindScheduleAlerts(
+                    coordinator: behindScheduleRescheduleCoordinator,
+                    context: modelContext,
+                    calendar: routineCalendar,
+                    now: runtime.now,
+                    logLabel: "historyRescheduleFailed"
+                )
+            }
         } catch {
             removalAlert = HistoryRemovalAlert(message: error.localizedDescription)
         }
+    }
+
+    private func showPreviousMonth() {
+        let currentMonth = routineCalendar.currentMonthRange(containing: displayedMonth)
+        selectedMonth =
+            routineCalendar.previousPeriodRange(
+                for: .monthly,
+                before: currentMonth
+            ).lowerBound
     }
 
     private func tapDay(_ day: HistoryCalendarDay) {
@@ -337,6 +363,16 @@ struct RoutineHistoryView: View {
                     return
                 }
 
+                Task {
+                    await rescheduleBehindScheduleAlerts(
+                        coordinator: behindScheduleRescheduleCoordinator,
+                        context: modelContext,
+                        calendar: routineCalendar,
+                        now: runtime.now,
+                        logLabel: "historyRescheduleFailed"
+                    )
+                }
+
                 WidgetCenter.shared.reloadAllTimelines()
                 RoutineHaptics.signalUndo()
                 showUndoBanner(day: day.day, action: .removed, message: "Removed \(dateText)")
@@ -344,6 +380,16 @@ struct RoutineHistoryView: View {
                 let result = try service.complete(routineID: routineID, day: day.day, now: runtime.now)
                 guard result.didInsert else {
                     return
+                }
+
+                Task {
+                    await rescheduleBehindScheduleAlerts(
+                        coordinator: behindScheduleRescheduleCoordinator,
+                        context: modelContext,
+                        calendar: routineCalendar,
+                        now: runtime.now,
+                        logLabel: "historyRescheduleFailed"
+                    )
                 }
 
                 WidgetCenter.shared.reloadAllTimelines()
@@ -371,6 +417,16 @@ struct RoutineHistoryView: View {
                     return
                 }
 
+                Task {
+                    await rescheduleBehindScheduleAlerts(
+                        coordinator: behindScheduleRescheduleCoordinator,
+                        context: modelContext,
+                        calendar: routineCalendar,
+                        now: runtime.now,
+                        logLabel: "historyRescheduleFailed"
+                    )
+                }
+
                 WidgetCenter.shared.reloadAllTimelines()
                 RoutineHaptics.signalUndo()
             case .removed:
@@ -378,6 +434,16 @@ struct RoutineHistoryView: View {
                 clearUndoBanner()
                 guard result.didInsert else {
                     return
+                }
+
+                Task {
+                    await rescheduleBehindScheduleAlerts(
+                        coordinator: behindScheduleRescheduleCoordinator,
+                        context: modelContext,
+                        calendar: routineCalendar,
+                        now: runtime.now,
+                        logLabel: "historyRescheduleFailed"
+                    )
                 }
 
                 WidgetCenter.shared.reloadAllTimelines()
