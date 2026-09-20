@@ -4,6 +4,11 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# App Store Connect rejects archives built with a beta Xcode/SDK. Default to the
+# release Xcode here regardless of the system-wide `xcode-select` toolchain, which
+# stays on the beta for everyday development. Override with DEVELOPER_DIR if needed.
+export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
+
 source ./Scripts/xcode-destination-helpers.sh
 
 development_team="${DEVELOPMENT_TEAM-CX2KMQZQ7X}"
@@ -17,12 +22,7 @@ if [[ -z "$development_team" ]]; then
     exit 1
 fi
 
-if [[ -n "$auth_key_path$auth_key_id$auth_key_issuer_id" ]]; then
-    if [[ -z "$auth_key_path" || -z "$auth_key_id" || -z "$auth_key_issuer_id" ]]; then
-        echo "error: APP_STORE_CONNECT_AUTH_KEY_PATH, APP_STORE_CONNECT_AUTH_KEY_ID, and APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID must be set together." >&2
-        exit 1
-    fi
-fi
+routine_validate_app_store_connect_auth_key_trio "$auth_key_path" "$auth_key_id" "$auth_key_issuer_id" || exit 1
 
 archive_path="build/Routine.xcarchive"
 

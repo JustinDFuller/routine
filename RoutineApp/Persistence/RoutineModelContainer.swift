@@ -3,7 +3,7 @@ import OSLog
 import SwiftData
 
 enum RoutineModelContainer {
-    static let appGroupID = "group.com.justinfuller.routine"
+    static let appGroupID = "group.com.justinfuller.routines"
     static let schema = Schema([RoutineGroup.self, Routine.self, RoutineCompletion.self, AppMetadata.self])
 
     private static let migrationLogger = AppDiagnostics.logger(.appLifecycle)

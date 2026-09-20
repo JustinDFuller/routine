@@ -1,0 +1,75 @@
+name: iOS Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: "CURRENT_PROJECT_VERSION for this release (must be unique and increasing)"
+        required: true
+      xcode_version:
+        description: "Xcode version for maxim-lobanov/setup-xcode"
+        required: false
+        default: "latest-stable"
+
+# Signing is CODE_SIGN_STYLE=Automatic with cloud-managed distribution certs, driven by
+# -allowProvisioningUpdates and an App Store Connect API key (see Docs/SIGNING_AND_DEPLOY_SETUP.md).
+# No keychain/.p12 import is required. If cloud cert creation ever fails in CI, the fallback is
+# to import a .p12 secret into a temporary keychain before the release step.
+jobs:
+  release:
+    runs-on: macos-15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ inputs.xcode_version }}
+
+      - name: Verify selected Xcode
+        run: |
+          developer_dir="$(xcode-select --print-path)"
+          echo "DEVELOPER_DIR=$developer_dir" >>"$GITHUB_ENV"
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Write App Store Connect API key
+        env:
+          APP_STORE_CONNECT_AUTH_KEY: ${{ secrets.APP_STORE_CONNECT_AUTH_KEY }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/private_keys"
+          key_path="$RUNNER_TEMP/private_keys/AuthKey.p8"
+          if printf '%s' "$APP_STORE_CONNECT_AUTH_KEY" | base64 --decode >"$key_path" 2>/dev/null \
+              && grep -q "PRIVATE KEY" "$key_path"; then
+            :
+          else
+            printf '%s' "$APP_STORE_CONNECT_AUTH_KEY" >"$key_path"
+          fi
+          if [[ ! -s "$key_path" ]] || ! grep -q "PRIVATE KEY" "$key_path"; then
+            echo "App Store Connect API key secret is empty or is not a PEM private key." >&2
+            exit 1
+          fi
+          chmod 600 "$key_path"
+          echo "APP_STORE_CONNECT_AUTH_KEY_PATH=$key_path" >>"$GITHUB_ENV"
+
+      - name: Release
+        env:
+          CURRENT_PROJECT_VERSION: ${{ inputs.build_number }}
+          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
+          APP_STORE_CONNECT_AUTH_KEY_ID: ${{ secrets.APP_STORE_CONNECT_AUTH_KEY_ID }}
+          APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID }}
+        run: make release
+
+      - name: Upload archive and export artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: routine-release-${{ inputs.build_number }}
+          path: |
+            build/Routine.xcarchive
+            build/export
+          if-no-files-found: ignore
