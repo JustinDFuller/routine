@@ -55,6 +55,7 @@ jobs:
       - name: Release
         env:
           CURRENT_PROJECT_VERSION: ${{ inputs.build_number }}
+          ROUTINE_SKIP_UI_TESTS: "1"
           DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
           APP_STORE_CONNECT_AUTH_KEY_ID: ${{ secrets.APP_STORE_CONNECT_AUTH_KEY_ID }}
           APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID }}

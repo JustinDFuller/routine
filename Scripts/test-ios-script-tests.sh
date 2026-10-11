@@ -234,6 +234,7 @@ run_test_ios_and_capture() {
     env \
         -u ROUTINE_VALIDATE_VERBOSE \
         -u ROUTINE_SCRIPT_VERBOSE \
+        -u ROUTINE_SKIP_UI_TESTS \
         -u CURRENT_PROJECT_VERSION \
         -u DEVELOPMENT_TEAM \
         -u APP_STORE_CONNECT_AUTH_KEY_PATH \
@@ -295,6 +296,18 @@ assert_equals "$(<"$generate_log")" "generate"
 override_log="$(<"$log_file")"
 assert_contains "$override_log" "-quiet -project Routine.xcodeproj -scheme RoutineApp -destination platform=iOS Simulator,name=Custom Device,OS=99.0 test"
 assert_not_contains "$override_log" "-showdestinations"
+assert_not_contains "$override_log" "-skip-testing"
+assert_not_contains "$REPLY" "Skipping iOS UI tests"
+
+: >"$log_file"
+: >"$generate_log"
+run_test_ios_and_capture \
+    IOS_TEST_DESTINATION="platform=iOS Simulator,name=Custom Device,OS=99.0" \
+    ROUTINE_SKIP_UI_TESTS=1
+assert_equals "$?" "0"
+assert_contains "$REPLY" "Skipping iOS UI tests: ROUTINE_SKIP_UI_TESTS=1."
+skip_ui_log="$(<"$log_file")"
+assert_contains "$skip_ui_log" "-quiet -project Routine.xcodeproj -scheme RoutineApp -destination platform=iOS Simulator,name=Custom Device,OS=99.0 -skip-testing:RoutineAppUITests test"
 
 : >"$log_file"
 : >"$generate_log"
