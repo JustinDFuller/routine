@@ -364,8 +364,9 @@ Rules:
 - Same-day windows contain minutes between `start.minuteOfDay` and `end.minuteOfDay`.
 - Cross-midnight windows contain minutes greater than or equal to the start minute or strictly less than the end minute.
 - Completion day keys always use the actual local calendar day of the tap, even when the window crosses midnight.
-- A soft window is a preferred-time presentation signal: it compacts an out-of-window incomplete card but keeps completion actionable.
-- A hard window also rejects a new same-day completion outside the configured window.
+- A default (soft) window is a preferred-time presentation signal: it compacts an out-of-window incomplete card on Today but keeps completion actionable.
+- A strict (hard) window also rejects a new same-day completion outside the configured window. The user-facing control is an off-by-default `Strict window` toggle that maps to the stored `hard` block mode.
+- The Home Screen widget never offers a routine outside its configured window, in either mode and regardless of the Today collapse settings, and its timeline refreshes at every window start and end.
 - Historical calendar completion remains available outside both window modes.
 
 #### AppMetadata

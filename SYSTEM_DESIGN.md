@@ -721,9 +721,10 @@ Required resilience behaviors:
 
 - Completion is idempotent for a routine/day.
 - Availability windows are evaluated in the user's current local calendar and timezone at the moment of projection or completion.
-- Soft windows compact presentation only; hard windows alone block a new same-day completion.
+- Default (soft) windows compact Today presentation and hide the routine from the widget; strict (hard) windows additionally block a new same-day completion.
+- Widget selection skips every routine outside its window and its refresh boundaries include every window start and end.
 - Undo today is safe if the completion has already been removed.
-- Historical calendar completion remains available outside soft and hard windows.
+- Historical calendar completion remains available outside default and strict windows.
 - Historical removal targets a specific completion ID.
 - Dashboard state derives from the store after saves, not from untrusted cached counts.
 - Progress derives from day keys, not timestamps.

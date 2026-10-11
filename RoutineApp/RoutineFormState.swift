@@ -147,6 +147,11 @@ final class RoutineFormState {
         didSet { clearValidationError() }
     }
 
+    var isStrictWindow: Bool {
+        get { availabilityBlockMode == .hard }
+        set { availabilityBlockMode = newValue ? .hard : .soft }
+    }
+
     private(set) var validationError: RoutineFormError?
 
     init(presentation: RoutineFormPresentation) {

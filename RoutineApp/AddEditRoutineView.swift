@@ -104,19 +104,17 @@ struct AddEditRoutineView: View {
                         )
                         .accessibilityIdentifier("routine-form-availability-end-picker")
 
-                        Picker("Outside window", selection: $formState.availabilityBlockMode) {
-                            Text("Soft block").tag(RoutineAvailabilityBlockMode.soft)
-                            Text("Hard block").tag(RoutineAvailabilityBlockMode.hard)
-                        }
-                        .accessibilityIdentifier("routine-form-availability-block-mode-picker")
+                        Toggle("Strict window", isOn: $formState.isStrictWindow)
+                            .accessibilityIdentifier("routine-form-availability-strict-toggle")
                     }
                 } header: {
                     Text("Availability")
                 } footer: {
                     if formState.isAvailableAllDay == false {
                         Text(
-                            "Soft block collapses this routine outside the window but still allows completion. "
-                                + "Hard block also prevents completion."
+                            "Outside this window, the routine collapses and is hidden from the widget. "
+                                + "Strict window also prevents completing it then. "
+                                + "Past days can always be completed from History."
                         )
                     }
                 }

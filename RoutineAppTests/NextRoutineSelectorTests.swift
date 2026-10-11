@@ -135,10 +135,44 @@ final class NextRoutineSelectorTests: ProjectionBuilderTestCase {
         XCTAssertEqual(snapshot.name, "Walk")
     }
 
-    func testNextReturnsSoftRoutineOutsideAvailabilityWindow() throws {
+    func testNextSkipsSoftRoutineOutsideAvailabilityWindow() throws {
         let context = try makeContext()
         let calendar = makeCalendar()
         let now = makeDate(year: 2026, month: 6, day: 10, hour: 8, minute: 0, calendar: calendar.calendar)
+        let group = insertGroup(name: "Health", sortOrder: 0, into: context)
+        _ = insertRoutine(
+            seed: RoutineTestSeed(
+                name: "Wake up early",
+                targetCount: 4,
+                period: .weekly,
+                availabilityStartMinute: 0,
+                availabilityEndMinute: 405,
+                availabilityBlockMode: .soft,
+                sortOrder: 0
+            ),
+            group: group,
+            into: context
+        )
+        _ = insertRoutine(
+            seed: RoutineTestSeed(name: "Walk", targetCount: 5, period: .weekly, sortOrder: 1),
+            group: group,
+            into: context
+        )
+        try saveChanges(in: context)
+
+        let selection = try NextRoutineSelector.next(context: context, calendar: calendar, now: now)
+
+        guard case .ready(let snapshot) = selection else {
+            return XCTFail("Expected a ready routine, got \(selection)")
+        }
+
+        XCTAssertEqual(snapshot.name, "Walk")
+    }
+
+    func testNextReturnsSoftRoutineInsideAvailabilityWindow() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let now = makeDate(year: 2026, month: 6, day: 10, hour: 6, minute: 0, calendar: calendar.calendar)
         let group = insertGroup(name: "Health", sortOrder: 0, into: context)
         _ = insertRoutine(
             seed: RoutineTestSeed(
@@ -162,6 +196,31 @@ final class NextRoutineSelectorTests: ProjectionBuilderTestCase {
         }
 
         XCTAssertEqual(snapshot.name, "Wake up early")
+    }
+
+    func testNextReturnsAllCaughtUpWhenOnlySoftRoutinesAreOutsideTheirWindows() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let now = makeDate(year: 2026, month: 6, day: 10, hour: 12, minute: 0, calendar: calendar.calendar)
+        let group = insertGroup(name: "Health", sortOrder: 0, into: context)
+        _ = insertRoutine(
+            seed: RoutineTestSeed(
+                name: "Wind down",
+                targetCount: 4,
+                period: .weekly,
+                availabilityStartMinute: 1_320,
+                availabilityEndMinute: 180,
+                availabilityBlockMode: .soft,
+                sortOrder: 0
+            ),
+            group: group,
+            into: context
+        )
+        try saveChanges(in: context)
+
+        let selection = try NextRoutineSelector.next(context: context, calendar: calendar, now: now)
+
+        XCTAssertEqual(selection, .allCaughtUp)
     }
 
     func testNextReturnsNoRoutinesWhenStoreIsEmpty() throws {
@@ -298,6 +357,58 @@ final class NextRoutineSelectorTests: ProjectionBuilderTestCase {
 
         let boundary = try NextRoutineSelector.nextRefreshBoundary(context: context, calendar: calendar, now: now)
         let expectedEdge = makeDate(year: 2026, month: 6, day: 10, hour: 10, minute: 0, calendar: calendar.calendar)
+
+        XCTAssertEqual(boundary, expectedEdge)
+    }
+
+    func testNextRefreshBoundaryUsesSoftAvailabilityWindowStart() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let now = makeDate(year: 2026, month: 6, day: 10, hour: 6, minute: 0, calendar: calendar.calendar)
+        let group = insertGroup(name: "Health", sortOrder: 0, into: context)
+        _ = insertRoutine(
+            seed: RoutineTestSeed(
+                name: "Lunch walk",
+                targetCount: 5,
+                period: .weekly,
+                availabilityStartMinute: 420,
+                availabilityEndMinute: 600,
+                availabilityBlockMode: .soft,
+                sortOrder: 0
+            ),
+            group: group,
+            into: context
+        )
+        try saveChanges(in: context)
+
+        let boundary = try NextRoutineSelector.nextRefreshBoundary(context: context, calendar: calendar, now: now)
+        let expectedEdge = makeDate(year: 2026, month: 6, day: 10, hour: 7, minute: 0, calendar: calendar.calendar)
+
+        XCTAssertEqual(boundary, expectedEdge)
+    }
+
+    func testNextRefreshBoundaryUsesSoftCrossMidnightWindowStart() throws {
+        let context = try makeContext()
+        let calendar = makeCalendar()
+        let now = makeDate(year: 2026, month: 6, day: 10, hour: 12, minute: 0, calendar: calendar.calendar)
+        let group = insertGroup(name: "Health", sortOrder: 0, into: context)
+        _ = insertRoutine(
+            seed: RoutineTestSeed(
+                name: "Wind down",
+                targetCount: 4,
+                period: .weekly,
+                availabilityStartMinute: 1_320,
+                availabilityEndMinute: 180,
+                availabilityBlockMode: .soft,
+                sortOrder: 0
+            ),
+            group: group,
+            into: context
+        )
+        try saveChanges(in: context)
+
+        let boundary = try NextRoutineSelector.nextRefreshBoundary(context: context, calendar: calendar, now: now)
+        let expectedEdge = makeDate(year: 2026, month: 6, day: 10, hour: 22, minute: 0, calendar: calendar.calendar)
 
         XCTAssertEqual(boundary, expectedEdge)
     }

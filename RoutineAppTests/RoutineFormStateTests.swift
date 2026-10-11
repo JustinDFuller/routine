@@ -162,6 +162,57 @@ final class RoutineFormStateTests: RoutineManagementServiceTestCase {
         XCTAssertEqual(try state.makeDraft().availabilityBlockMode, .hard)
     }
 
+    func testStrictWindowIsOffByDefaultForNewRoutine() {
+        let state = RoutineFormState(presentation: .add(initialGroupID: UUID()))
+        state.isAvailableAllDay = false
+
+        XCTAssertFalse(state.isStrictWindow)
+        XCTAssertEqual(state.availabilityBlockMode, .soft)
+    }
+
+    func testStrictWindowIsOnForSnapshotWithHardBlockMode() {
+        let snapshot = RoutineFormSnapshot(
+            routineID: UUID(),
+            name: "Wake up early",
+            targetCount: 4,
+            period: .weekly,
+            groupID: UUID(),
+            availabilityStartMinute: 0,
+            availabilityEndMinute: 405,
+            availabilityBlockMode: .hard
+        )
+        let state = RoutineFormState(presentation: .edit(snapshot))
+
+        XCTAssertTrue(state.isStrictWindow)
+    }
+
+    func testStrictWindowToggleDrivesDraftBlockMode() throws {
+        let state = RoutineFormState(presentation: .add(initialGroupID: UUID()))
+        state.name = "Wake up early"
+        state.isAvailableAllDay = false
+        state.availabilityStartMinute = 0
+        state.availabilityEndMinute = 405
+
+        state.isStrictWindow = true
+        XCTAssertEqual(state.availabilityBlockMode, .hard)
+        XCTAssertEqual(try state.makeDraft().availabilityBlockMode, .hard)
+
+        state.isStrictWindow = false
+        XCTAssertEqual(state.availabilityBlockMode, .soft)
+        XCTAssertEqual(try state.makeDraft().availabilityBlockMode, .soft)
+    }
+
+    func testStrictWindowDoesNotCreateWindowWhenAvailableAllDay() throws {
+        let state = RoutineFormState(presentation: .add(initialGroupID: UUID()))
+        state.name = "Walk"
+        state.isStrictWindow = true
+
+        let draft = try state.makeDraft()
+
+        XCTAssertNil(draft.availabilityStartMinute)
+        XCTAssertNil(draft.availabilityEndMinute)
+    }
+
     func testPeriodChangesClampTargetCountToValidRange() throws {
         let state = RoutineFormState(presentation: .add(initialGroupID: UUID()))
 
