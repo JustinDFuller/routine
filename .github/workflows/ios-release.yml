@@ -9,15 +9,11 @@ on:
       xcode_version:
         description: "Xcode version for maxim-lobanov/setup-xcode"
         required: false
-        default: "latest-stable"
+        default: "27.0"
 
-# Signing is CODE_SIGN_STYLE=Automatic with cloud-managed distribution certs, driven by
-# -allowProvisioningUpdates and an App Store Connect API key (see Docs/SIGNING_AND_DEPLOY_SETUP.md).
-# No keychain/.p12 import is required. If cloud cert creation ever fails in CI, the fallback is
-# to import a .p12 secret into a temporary keychain before the release step.
 jobs:
   release:
-    runs-on: macos-15
+    runs-on: xcode-27
 
     steps:
       - name: Check out repository
