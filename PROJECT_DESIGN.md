@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**M22 - Build And Deploy Without Xcode**
+**Roadmap complete**
 
 If `Current Milestone` is `Roadmap complete`, it is a terminal roadmap state: do not start milestone implementation unless the user explicitly requests post-roadmap work. Otherwise, the implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -110,7 +110,7 @@ Core invariants that require automated coverage when touched:
 | DONE | M19 - Separate Goal-Met Collapse Preference | Today collapse settings independently control completed-today, goal-met, and unavailable compact rows while preserving unavailable precedence. |
 | DONE | M20 - Routine Streaks | Quiet derived streak counts appear on full dashboard cards and in the routine history summary. |
 | DONE | M21 - Behind-Schedule Notifications | One global local alert is scheduled at most once per day when a routine falls behind target-proportional weekly or monthly pace. |
-| CURRENT | M22 - Build And Deploy Without Xcode | The app and widget can be installed on a device and shipped to TestFlight from the command line, with an optional manual cloud release workflow. |
+| DONE | M22 - Build And Deploy Without Xcode | The app and widget can be installed on a device and shipped to TestFlight from the command line, with an optional manual cloud release workflow. |
 
 ## Milestones
 
@@ -1074,7 +1074,7 @@ Validation:
 
 ### M22 - Build And Deploy Without Xcode
 
-Status: `CURRENT`
+Status: `DONE`
 
 Goal: make building, running on a device, and shipping to TestFlight possible entirely from the command line, with the local `make release` as the official release path and a manual GitHub Actions workflow as an optional backup.
 
@@ -1104,7 +1104,11 @@ Validation:
 Completion update:
 
 - Mark this milestone `DONE`.
-- Replace the `Current Milestone` line with `MVP implementation roadmap complete through M22`.
+- Replace the `Current Milestone` line with `Roadmap complete`.
+
+Completion note:
+
+- `make deploy-device` installed and launched the app on a physical iPhone, and `make release` with build number 2 passed validate, Release build, archive, and export, then uploaded to App Store Connect (delivery `451705e8-d3da-4221-9abe-849c49fb2997`). Build 1.0.0 (2) reached `VALID` / `READY_FOR_BETA_TESTING` and installed from TestFlight over build 1. The manual `ios-release.yml` workflow has not been run because it cannot be dispatched until it exists on the default branch; it requires the `xcode-27` runner image and four repository secrets and is an optional backup path.
 
 ## MVP Completion Criteria
 
