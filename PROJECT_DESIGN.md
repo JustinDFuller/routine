@@ -30,7 +30,7 @@ If specs appear to conflict, preserve the product behavior first, then the data/
 
 ## Current Milestone
 
-**Roadmap complete**
+**M22 - Build And Deploy Without Xcode**
 
 If `Current Milestone` is `Roadmap complete`, it is a terminal roadmap state: do not start milestone implementation unless the user explicitly requests post-roadmap work. Otherwise, the implementation agent should work only on the milestone marked `CURRENT`, unless the user explicitly changes this file or requests a different milestone.
 
@@ -110,6 +110,7 @@ Core invariants that require automated coverage when touched:
 | DONE | M19 - Separate Goal-Met Collapse Preference | Today collapse settings independently control completed-today, goal-met, and unavailable compact rows while preserving unavailable precedence. |
 | DONE | M20 - Routine Streaks | Quiet derived streak counts appear on full dashboard cards and in the routine history summary. |
 | DONE | M21 - Behind-Schedule Notifications | One global local alert is scheduled at most once per day when a routine falls behind target-proportional weekly or monthly pace. |
+| CURRENT | M22 - Build And Deploy Without Xcode | The app and widget can be installed on a device and shipped to TestFlight from the command line, with an optional manual cloud release workflow. |
 
 ## Milestones
 
@@ -1070,6 +1071,40 @@ Validation:
 - Run `./Scripts/test-core.sh`.
 - Run `./Scripts/test-ios.sh`.
 - Run `./Scripts/validate.sh`.
+
+### M22 - Build And Deploy Without Xcode
+
+Status: `CURRENT`
+
+Goal: make building, running on a device, and shipping to TestFlight possible entirely from the command line, with the local `make release` as the official release path and a manual GitHub Actions workflow as an optional backup.
+
+Dependencies: M18.
+
+Primary references: [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md) Deployment and GitHub Actions Strategy, [Docs/BUILD_AND_DEPLOY.md](Docs/BUILD_AND_DEPLOY.md), [Docs/SIGNING_AND_DEPLOY_SETUP.md](Docs/SIGNING_AND_DEPLOY_SETUP.md).
+
+Deliverables:
+
+- Add `make deploy-device` to build, install, and launch on a connected iPhone through `xcrun devicectl`.
+- Add `make upload-ios` to upload an exported `.ipa` to App Store Connect through `xcrun altool` with an API key.
+- Add `make release` to chain validation, Release build, archive, export, and upload.
+- Default archive, export, and upload to the release Xcode so a beta `xcode-select` does not break releases.
+- Share App Store Connect API key validation across archive, export, and upload scripts.
+- Align the App Group identifier on `group.com.justinfuller.routines` for the app and widget.
+- Add a `workflow_dispatch`-only macOS release workflow that runs `make release` with cloud-managed signing.
+- Document one-time signing setup and the goal-to-command index, and replace Xcode Organizer steps in the TestFlight runbook and submission checklist.
+
+Validation:
+
+- Run `./Scripts/test-ios-script-tests.sh`.
+- Run `./Scripts/validate.sh`.
+- Run `make deploy-device` against a connected iPhone and confirm the app launches.
+- Run `make release` with a new build number and confirm the build appears in TestFlight and installs on the device.
+- After merge, run the manual release workflow and confirm the build appears in TestFlight. This does not block the merge.
+
+Completion update:
+
+- Mark this milestone `DONE`.
+- Replace the `Current Milestone` line with `MVP implementation roadmap complete through M22`.
 
 ## MVP Completion Criteria
 
