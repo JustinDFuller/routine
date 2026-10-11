@@ -438,13 +438,11 @@ Optimize first for local device dogfooding.
 
 Local iPhone deployment flow:
 
-- Generate the Xcode project.
-- Open the project in Xcode.
-- Select the `RoutineApp` scheme.
-- Select the personal iPhone as the run destination.
-- Use automatic signing with the developer's Apple ID or team.
-- Build and run from Xcode.
+- Generate the Xcode project with `make generate`.
+- Connect the personal iPhone and run `make deploy-device`, which builds, installs, and launches the app through `xcrun devicectl` without opening Xcode.
+- Use automatic signing with the developer's team, backed by an App Store Connect API key for cloud-managed certificates and profiles.
 - Confirm the app launches into Today Dashboard and starter data seeds only once.
+- Opening the project in Xcode remains supported but is never required.
 
 Versioning:
 
@@ -462,11 +460,15 @@ TestFlight:
 
 - Internal TestFlight is the default first-launch path once local dogfooding passes.
 - Keep the first release train internal-only until widget, notification, and persistence flows have been exercised on at least two devices.
-- Document Apple Developer Program membership, App Store Connect app record, archive validation, internal testing, privacy answers, and export compliance decisions.
+- The official release path is local: `make release` validates, builds, archives, exports, and uploads to App Store Connect headlessly with `xcrun altool` and an App Store Connect API key. No step requires Xcode's UI.
+- Release archives and uploads must use a release (non-beta) Xcode. Archive, export, and upload scripts default to the release Xcode so a beta `xcode-select` does not break releases; everyday build and run commands keep using the active developer directory.
+- The App Store Connect API key needs the Admin role so `-allowProvisioningUpdates` can create the Distribution certificate. The key and team ID stay outside the repository.
+- The App Group identifier is `group.com.justinfuller.routines` for the app and widget, matching the identifier registered on the Apple Developer portal.
+- Document Apple Developer Program membership, App Store Connect app record, API key setup, archive validation, internal testing, privacy answers, and export compliance decisions.
 
 ## GitHub Actions Strategy
 
-Use GitHub Actions without macOS jobs for MVP.
+Pull request validation uses Ubuntu jobs only.
 
 Ubuntu Actions should run:
 
@@ -481,10 +483,16 @@ Ubuntu Actions should not attempt:
 - iOS app compilation.
 - SwiftData integration tests.
 - XCUITests.
-- Code signing.
-- TestFlight upload.
 
-This split gives useful automated feedback without paid macOS runners or Apple signing complexity. Full iOS confidence remains a local responsibility.
+Release workflow:
+
+- A separate macOS workflow, `ios-release.yml`, is triggered only by `workflow_dispatch`. It never runs on push or pull request.
+- It takes a build number and optional Xcode version, uses cloud-managed signing with the App Store Connect API key from repository secrets, and runs the same `make release` as the local path.
+- It is an optional backup to the local release path. The local path stays the documented default.
+- Required secrets: `APP_STORE_CONNECT_AUTH_KEY`, `APP_STORE_CONNECT_AUTH_KEY_ID`, `APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID`, and `DEVELOPMENT_TEAM`.
+- The runner image must provide the release Xcode that App Store Connect currently accepts.
+
+This split gives useful automated feedback on every pull request without paid macOS runners, while keeping releases reproducible from either the developer's Mac or the manual workflow.
 
 ## Formatting And Linting
 

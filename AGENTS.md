@@ -33,3 +33,5 @@ When a milestone is complete:
 - [VISUAL_DESIGN.md](VISUAL_DESIGN.md)
 - [DATA_DESIGN.md](DATA_DESIGN.md)
 - [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md)
+- [Docs/BUILD_AND_DEPLOY.md](Docs/BUILD_AND_DEPLOY.md) — command index for building, running, and shipping without Xcode
+- [Docs/SIGNING_AND_DEPLOY_SETUP.md](Docs/SIGNING_AND_DEPLOY_SETUP.md) — one-time signing and deploy setup

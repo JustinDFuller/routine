@@ -38,6 +38,26 @@ routine_extract_concrete_simulator_names() {
     '
 }
 
+routine_validate_app_store_connect_auth_key_trio() {
+    local auth_key_path="$1"
+    local auth_key_id="$2"
+    local auth_key_issuer_id="$3"
+
+    if [[ -n "$auth_key_path$auth_key_id$auth_key_issuer_id" ]]; then
+        if [[ -z "$auth_key_path" || -z "$auth_key_id" || -z "$auth_key_issuer_id" ]]; then
+            echo "error: APP_STORE_CONNECT_AUTH_KEY_PATH, APP_STORE_CONNECT_AUTH_KEY_ID, and APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID must be set together." >&2
+            return 1
+        fi
+
+        if [[ ! -r "$auth_key_path" ]]; then
+            echo "error: App Store Connect auth key is not readable at $auth_key_path." >&2
+            return 1
+        fi
+    fi
+
+    return 0
+}
+
 routine_resolve_ios_test_destination() {
     local destinations="$1"
     local device_name=""
