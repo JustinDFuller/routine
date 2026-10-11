@@ -30,8 +30,8 @@ jobs:
           echo "DEVELOPER_DIR=$developer_dir" >>"$GITHUB_ENV"
           xcodebuild -version
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
+      - name: Install build tools
+        run: brew install xcodegen swift-format swiftlint
 
       - name: Write App Store Connect API key
         env:
