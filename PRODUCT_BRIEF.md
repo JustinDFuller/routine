@@ -119,8 +119,9 @@ The MVP is optimized for one person who wants a practical personal tracker on an
 ### Availability-window rules
 
 - A routine can optionally define a preferred local-time window.
-- Outside a soft window, the routine stays compact on Today but can still be completed.
-- A routine can opt into a hard window, which also blocks a new same-day completion outside the window.
+- Outside the window, the routine stays compact on Today but can still be completed by expanding it.
+- Outside the window, the routine is never offered by the Home Screen widget.
+- A routine can opt into a strict window (off by default), which also blocks a new same-day completion outside the window.
 - Calendar history can complete any past day outside either window mode.
 
 ### Streak rules

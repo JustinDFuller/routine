@@ -80,10 +80,7 @@ enum NextRoutineSelector {
         }
 
         for routine in routines {
-            guard
-                let window = routine.availabilityWindow,
-                routine.availabilityBlockMode == .hard
-            else {
+            guard let window = routine.availabilityWindow else {
                 continue
             }
 
@@ -109,10 +106,7 @@ extension NextRoutineSelector {
     }
 
     fileprivate static func isAvailableNow(routine: Routine, currentMinuteOfDay: Int) -> Bool {
-        guard
-            let availabilityWindow = routine.availabilityWindow,
-            routine.availabilityBlockMode == .hard
-        else {
+        guard let availabilityWindow = routine.availabilityWindow else {
             return true
         }
 

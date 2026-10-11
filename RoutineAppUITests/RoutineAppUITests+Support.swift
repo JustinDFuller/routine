@@ -106,4 +106,11 @@ extension RoutineAppUITests {
         let deleteString = String(repeating: XCUIKeyboardKey.delete.rawValue, count: currentValue.count)
         element.typeText(deleteString + text)
     }
+
+    func attachScreenshot(named name: String, from app: XCUIApplication) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
 }

@@ -111,6 +111,7 @@ Core invariants that require automated coverage when touched:
 | DONE | M20 - Routine Streaks | Quiet derived streak counts appear on full dashboard cards and in the routine history summary. |
 | DONE | M21 - Behind-Schedule Notifications | One global local alert is scheduled at most once per day when a routine falls behind target-proportional weekly or monthly pace. |
 | DONE | M22 - Build And Deploy Without Xcode | The app and widget can be installed on a device and shipped to TestFlight from the command line, with an optional manual cloud release workflow. |
+| DONE | M23 - Widget Hides Out-Of-Window Routines | The widget never offers a routine outside its time window, and the Soft/Hard picker becomes an off-by-default Strict window toggle. |
 
 ## Milestones
 
@@ -1109,6 +1110,37 @@ Completion update:
 Completion note:
 
 - `make deploy-device` installed and launched the app on a physical iPhone, and `make release` with build number 2 passed validate, Release build, archive, and export, then uploaded to App Store Connect (delivery `451705e8-d3da-4221-9abe-849c49fb2997`). Build 1.0.0 (2) reached `VALID` / `READY_FOR_BETA_TESTING` and installed from TestFlight over build 1. The manual `ios-release.yml` workflow has not been run because it cannot be dispatched until it exists on the default branch; it requires the `xcode-27` runner image and four repository secrets and is an optional backup path.
+
+### M23 - Widget Hides Out-Of-Window Routines
+
+Status: `DONE`
+
+Goal: make routines with a time window stay out of the way outside that window, including on the Home Screen widget, while keeping completion available unless the routine opts into a strict window.
+
+Dependencies: M16, M18, M19.
+
+Primary references: [PRODUCT_BRIEF.md](PRODUCT_BRIEF.md) Availability-window rules, [DATA_DESIGN.md](DATA_DESIGN.md) window rules, [VISUAL_DESIGN.md](VISUAL_DESIGN.md) Outside availability window, and the OpenSpec change `hide-out-of-window-routines-from-widget`.
+
+Deliverables:
+
+- Make the widget skip every routine outside its window, in either block mode and regardless of the Today collapse settings.
+- Refresh the widget timeline at every window start and end.
+- Replace the `Outside window` Soft/Hard picker with an off-by-default `Strict window` toggle backed by the existing block mode, with no data migration.
+- Reconcile the design docs to default versus strict wording.
+
+Validation:
+
+- Run targeted `xcodebuild test` for `RoutineAppTests/NextRoutineSelectorTests` and `RoutineAppTests/RoutineFormStateTests`.
+- Run `./Scripts/validate.sh`.
+
+Completion update:
+
+- Mark this milestone `DONE`.
+- Keep the `Current Milestone` line as `Roadmap complete`.
+
+Completion note:
+
+- Passed targeted `xcodebuild test` for `RoutineAppTests/NextRoutineSelectorTests` and `RoutineAppTests/RoutineFormStateTests`, and `./Scripts/validate.sh` passed every stage (generate-project, test-ios-script-tests, test-core, test-ios, check-format, lint, build-ios) with no skipped lines.
 
 ## MVP Completion Criteria
 

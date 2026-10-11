@@ -447,8 +447,9 @@ The dashboard must clearly distinguish at least these states:
 - Incomplete out-of-window routines remain visible in the same section and order as available routines.
 - By default, they may collapse into compact clock rows beneath actionable cards.
 - Expanding either policy shows the explicit availability line and keeps History access active.
-- Soft cards retain normal contrast and an active completion control; use `Preferred 11:00 PM-3:00 AM` and state that completion remains available.
-- Hard cards use muted contrast with a disabled primary control; use `Available 11:00 PM-3:00 AM`.
+- Default (non-strict) cards retain normal contrast and an active completion control; use `Preferred 11:00 PM-3:00 AM` and state that completion remains available.
+- Strict cards use muted contrast with a disabled primary control; use `Available 11:00 PM-3:00 AM`.
+- The Home Screen widget never offers an out-of-window routine in either policy.
 - Do not use strikethrough.
 
 ##### Period target met
@@ -712,7 +713,7 @@ MVP fields:
 - Target count
 - Frequency period: `Weekly` or `Monthly`
 - Group assignment
-- Availability: `Available all day` toggle plus start and end time when the toggle is off, followed by an `Outside window` soft/hard policy picker
+- Availability: `Available all day` toggle plus start and end time when the toggle is off, followed by an off-by-default `Strict window` toggle with a footer explaining that the routine collapses and is hidden from the widget outside the window, that strict also prevents completing it then, and that past days can always be completed
 
 Preferred control patterns:
 

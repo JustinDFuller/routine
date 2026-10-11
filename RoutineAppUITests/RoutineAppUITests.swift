@@ -403,11 +403,13 @@ extension RoutineAppUITests {
 
         let unavailableRow = identifiedElement("routine-unavailable-row-wake-up-early", in: app)
         XCTAssertTrue(unavailableRow.waitForExistence(timeout: 5))
+        attachScreenshot(named: "today-default-window-collapsed", from: app)
         unavailableRow.tap()
 
         let primary = identifiedElement("routine-card-primary-wake-up-early", in: app)
         XCTAssertTrue(primary.waitForExistence(timeout: 5))
         XCTAssertTrue(primary.isEnabled)
+        attachScreenshot(named: "today-default-window-expanded", from: app)
         XCTAssertTrue(app.staticTexts["Preferred 12:00 AM-6:45 AM"].waitForExistence(timeout: 5))
         primary.tap()
 
@@ -432,6 +434,7 @@ extension RoutineAppUITests {
         let primary = identifiedElement("routine-card-primary-evening-yoga", in: app)
         XCTAssertTrue(primary.waitForExistence(timeout: 5))
         XCTAssertFalse(primary.isEnabled, primary.debugDescription)
+        attachScreenshot(named: "today-strict-window-expanded-disabled", from: app)
 
         let history = identifiedElement("routine-card-history-evening-yoga", in: app)
         XCTAssertTrue(history.waitForExistence(timeout: 5))
@@ -447,6 +450,47 @@ extension RoutineAppUITests {
 
         let completedDay = identifiedElement("history-day-2026-06-09", in: app)
         XCTAssertTrue(completedDay.label.contains("completed"), completedDay.debugDescription)
+    }
+
+    func testRoutineFormShowsStrictWindowToggleOnlyForWindowedRoutines() {
+        let app = makeApp(
+            seeded: false,
+            additionalLaunchArguments: [
+                "-routine-empty-in-memory-store",
+                "-routine-screenshot-fixture",
+                "full-app"
+            ]
+        )
+        app.launch()
+
+        enterEditMode(in: app)
+
+        let softEdit = identifiedElement("routine-card-edit-wake-up-early", in: app)
+        XCTAssertTrue(softEdit.waitForExistence(timeout: 5))
+        softEdit.tap()
+
+        let softToggle = identifiedElement("routine-form-availability-strict-toggle", in: app)
+        XCTAssertTrue(softToggle.waitForExistence(timeout: 5))
+        XCTAssertEqual(softToggle.value as? String, "0")
+        attachScreenshot(named: "strict-window-toggle-off", from: app)
+        app.buttons["Cancel"].tap()
+
+        let strictEdit = identifiedElement("routine-card-edit-evening-yoga", in: app)
+        XCTAssertTrue(strictEdit.waitForExistence(timeout: 5))
+        strictEdit.tap()
+
+        let strictToggle = identifiedElement("routine-form-availability-strict-toggle", in: app)
+        XCTAssertTrue(strictToggle.waitForExistence(timeout: 5))
+        XCTAssertEqual(strictToggle.value as? String, "1")
+        attachScreenshot(named: "strict-window-toggle-on", from: app)
+        app.buttons["Cancel"].tap()
+
+        let allDayEdit = identifiedElement("routine-card-edit-walk-the-dog", in: app)
+        XCTAssertTrue(allDayEdit.waitForExistence(timeout: 5))
+        allDayEdit.tap()
+
+        XCTAssertTrue(app.textFields["routine-form-name-field"].waitForExistence(timeout: 5))
+        XCTAssertFalse(identifiedElement("routine-form-availability-strict-toggle", in: app).exists)
     }
 
     func testUnavailableRoutineStaysExpandedWhenCollapseUnavailableIsDisabledAtLaunch() {
