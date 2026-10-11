@@ -18,8 +18,15 @@ fi
 
 "${GENERATE_PROJECT_SCRIPT:-./Scripts/generate-project.sh}"
 
+skip_testing_args=()
+if [[ "${ROUTINE_SKIP_UI_TESTS:-0}" == "1" ]]; then
+    echo "Skipping iOS UI tests: ROUTINE_SKIP_UI_TESTS=1."
+    skip_testing_args=(-skip-testing:RoutineAppUITests)
+fi
+
 routine_xcodebuild_with_optional_quiet \
     -project Routine.xcodeproj \
     -scheme RoutineApp \
     -destination "${resolved_destination}" \
+    "${skip_testing_args[@]}" \
     test

@@ -489,6 +489,7 @@ Release workflow:
 - A separate macOS workflow, `ios-release.yml`, is triggered only by `workflow_dispatch`. It never runs on push or pull request.
 - It takes a build number and optional Xcode version, uses cloud-managed signing with the App Store Connect API key from repository secrets, and runs the same `make release` as the local path.
 - It is an optional backup to the local release path. The local path stays the documented default.
+- GitHub's hosted simulators were unreliable for the XCUITest suite, so the workflow sets `ROUTINE_SKIP_UI_TESTS=1`, which makes `test-ios.sh` skip the `RoutineAppUITests` target and print a `Skipping` line that `validate.sh` surfaces. Unit tests, core tests, formatting, lint, and the build still run, with XcodeGen, swift-format, and SwiftLint installed through Homebrew on the runner. The local `make release` runs the full suite and remains the full release gate.
 - Required secrets: `APP_STORE_CONNECT_AUTH_KEY`, `APP_STORE_CONNECT_AUTH_KEY_ID`, `APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID`, and `DEVELOPMENT_TEAM`.
 - The runner image must provide the release Xcode that App Store Connect currently accepts.
 
