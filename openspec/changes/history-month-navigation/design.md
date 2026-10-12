@@ -84,7 +84,7 @@ Alternative: `DatePicker` in `.compact` style. Rejected, since it selects a day 
 ### Accessibility
 
 - The title button's label is `"<Month Year>, choose month"` with a hint that it shows month and year wheels.
-- The grid container gets `.accessibilityAdjustableAction`: `.increment` shows the next month, `.decrement` shows the previous month. Both go through the same clamping setters. After a change, a `AccessibilityNotification.Announcement` posts the new month and year, because the title text alone would not be spoken.
+- The weekday header, a single focusable element whose accessibility value is the displayed month, gets `.accessibilityAdjustableAction` (the header stays outside the animated month subtree so VoiceOver focus survives a month change): `.increment` shows the next month, `.decrement` shows the previous month. Both go through the same clamping setters. After a change, a `AccessibilityNotification.Announcement` posts the new month and year, because the title text alone would not be spoken.
 - The Today button is a normal labeled button ("Show current month").
 - The wheels get labels "Month" and "Year".
 - New identifiers: `routine-history-today-button`, `routine-history-month-wheel`, `routine-history-year-wheel`. `routine-history-month-title` stays. `routine-history-previous-month-button` is removed.

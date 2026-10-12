@@ -44,8 +44,6 @@ struct HistoryMonthGridView: View {
                     wheels
                 } else {
                     monthGrid
-                        .id(String(displayedMonth.key.prefix(7)))
-                        .transition(monthTransition)
                 }
             }
             .clipped()
@@ -145,9 +143,13 @@ struct HistoryMonthGridView: View {
                 }
             }
 
-            ForEach(weeks) { week in
-                weekRow(week)
+            VStack(spacing: 10) {
+                ForEach(weeks) { week in
+                    weekRow(week)
+                }
             }
+            .id(String(displayedMonth.key.prefix(7)))
+            .transition(monthTransition)
         }
         .contentShape(Rectangle())
         .simultaneousGesture(swipeGesture)

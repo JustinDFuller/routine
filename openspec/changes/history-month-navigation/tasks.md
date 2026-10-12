@@ -21,7 +21,7 @@
 ## 4. Accessibility
 
 - [x] 4.1 Give the title the label `"<Month Year>, choose month"` and a hint, label the Today button and the two wheels, and add the identifiers `routine-history-today-button`, `routine-history-month-wheel`, and `routine-history-year-wheel`; verify with UI tests that query these identifiers and read the title label.
-- [x] 4.2 Add an accessibility adjustable action on the grid (increment for the next month, decrement for the previous month, same clamping) and post an announcement of the new month and year; verify with a UI test that adjusting the grid changes the title, and that incrementing on the current month changes nothing.
+- [x] 4.2 Add an accessibility adjustable action on the grid's weekday header (increment for the next month, decrement for the previous month, same clamping) and post an announcement of the new month and year; XCUITest cannot invoke an adjustable action, so a UI test verifies the header value follows the displayed month and unit tests cover the navigation rules (see qa.md).
 - [x] 4.3 Verify the Reduce Motion path: with the app's animations disabled (launch configuration), swipe navigation still changes the month, and the code path uses the cross-fade (covered by the UI tests above running with animations disabled).
 
 ## 5. Docs and test cleanup

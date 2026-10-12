@@ -394,9 +394,25 @@ struct RoutineHistoryView: View {
         }
 
         pendingDay = nil
+
+        let animation = isPickerOpen && closesPicker == false ? nil : monthAnimation
+
+        guard slideEdge != edge, animation != nil else {
+            slideEdge = edge
+            applyMonth(target, closesPicker: closesPicker, animation: animation)
+            return
+        }
+
         slideEdge = edge
 
-        withAnimation(isPickerOpen && closesPicker == false ? nil : monthAnimation) {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(30))
+            applyMonth(target, closesPicker: closesPicker, animation: animation)
+        }
+    }
+
+    private func applyMonth(_ target: RoutineDay?, closesPicker: Bool, animation: Animation?) {
+        withAnimation(animation) {
             selectedMonth = target
             if closesPicker {
                 isPickerOpen = false
