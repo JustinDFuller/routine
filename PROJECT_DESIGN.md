@@ -112,6 +112,7 @@ Core invariants that require automated coverage when touched:
 | DONE | M21 - Behind-Schedule Notifications | One global local alert is scheduled at most once per day when a routine falls behind target-proportional weekly or monthly pace. |
 | DONE | M22 - Build And Deploy Without Xcode | The app and widget can be installed on a device and shipped to TestFlight from the command line, with an optional manual cloud release workflow. |
 | DONE | M23 - Widget Hides Out-Of-Window Routines | The widget never offers a routine outside its time window, and the Soft/Hard picker becomes an off-by-default Strict window toggle. |
+| DONE | M24 - Verified Release Processing | `make release` and the CI release wait for App Store Connect processing and report the result, and local credentials live in the macOS Keychain with a prompt on every use. |
 
 ## Milestones
 
@@ -1141,6 +1142,35 @@ Completion update:
 Completion note:
 
 - Passed targeted `xcodebuild test` for `RoutineAppTests/NextRoutineSelectorTests` and `RoutineAppTests/RoutineFormStateTests`, and `./Scripts/validate.sh` passed every stage (generate-project, test-ios-script-tests, test-core, test-ios, check-format, lint, build-ios) with no skipped lines.
+
+### M24 - Verified Release Processing
+
+Status: `DONE`
+
+Goal: make a release prove itself by waiting for App Store Connect processing and reporting the outcome, and keep local App Store Connect credentials out of loose files and shell profiles.
+
+Dependencies: M22.
+
+Primary references: [Docs/BUILD_AND_DEPLOY.md](Docs/BUILD_AND_DEPLOY.md), [Docs/SIGNING_AND_DEPLOY_SETUP.md](Docs/SIGNING_AND_DEPLOY_SETUP.md), and the OpenSpec change `verify-release-processing`.
+
+Deliverables:
+
+- Store the Key ID, Issuer ID, and `.p8` in one macOS Keychain item with no trusted applications, so every read prompts, and load it only when the credential environment variables are unset.
+- Capture the delivery ID from the upload into `build/export/delivery-id.txt`.
+- Add `make build-status DELIVERY_ID=<id>` and have `make release` wait for processing, ending with `Build <version> (delivery <id>) processing state: <state>` and a run summary table in CI.
+- Document the Keychain setup, the agent credential boundary, and how to confirm a CI release from its output.
+
+Validation:
+
+- Run `./Scripts/test-ios-script-tests.sh`.
+- Run `./Scripts/validate.sh`.
+- With the maintainer present, run `make build-status DELIVERY_ID=<id>` and confirm Allow reports `VALID` and Deny fails with a clear message.
+- After merge, run the "iOS Release" workflow and confirm the final log line and run summary. This does not block the merge.
+
+Completion update:
+
+- Mark this milestone `DONE`.
+- Keep the `Current Milestone` line as `Roadmap complete`.
 
 ## MVP Completion Criteria
 

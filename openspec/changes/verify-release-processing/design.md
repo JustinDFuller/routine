@@ -28,7 +28,7 @@ See proposal.md for why this change exists.
 
 ### One Keychain item holds all three credentials
 
-A generic-password item with service `routine.app-store-connect` and account `release` stores a single value: three lines holding the Key ID, the Issuer ID, and the base64-encoded `.p8`. The setup script writes it with `security add-generic-password -U -T ""`, which trusts no application, so every read prompts.
+A generic-password item with service `routine.app-store-connect` and account `release` stores a single value on one line, `<key-id>:<issuer-id>:<base64 p8>`. The setup script writes it with `security add-generic-password -U -T ""`, which trusts no application, so every read prompts. The command is passed to `security -i` on standard input, so the secret never appears in a process argument list.
 
 Why one item: a Keychain prompt is per item read. Splitting the credentials into three items would mean three prompts per release.
 
@@ -40,7 +40,7 @@ Alternatives:
 
 ### The loader only reads the Keychain when the variables are unset
 
-`Scripts/app-store-connect-credentials.sh` is sourced by the scripts that need credentials. If all three variables are set, it does nothing, which is the CI path and keeps today's behavior. If none is set, it reads the Keychain item, writes the key to a `mktemp` file with mode `0600`, exports the three variables, and registers an `EXIT` trap that deletes the file. If only some are set, it leaves them alone so the existing validation reports that they must be set together.
+`Scripts/app-store-connect-credentials.sh` is sourced by the scripts that need credentials. If all three variables are set, it does nothing, which is the CI path and keeps today's behavior. If none is set, it reads the Keychain item, writes the key to a `mktemp` file with mode `0600`, exports the three variables, and leaves removal of the file to a cleanup function. Each calling script installs `trap routine_cleanup_app_store_connect_credentials EXIT` (plus `INT`, `TERM`, and `HUP` mapped to exit) right after loading, because zsh runs an `EXIT` trap set inside a function when that function returns, and its exit hooks do not run when `set -e` aborts the script. If only some are set, it leaves them alone so the existing validation reports that they must be set together.
 
 The Keychain read uses `security find-generic-password -w`, and `SECURITY_BIN` can be overridden so tests use a fake. The loader then calls the existing `routine_validate_app_store_connect_auth_key_trio`.
 
@@ -52,6 +52,8 @@ Alternatives:
 ### A new release script loads credentials once
 
 `Scripts/release.sh` loads credentials, then runs `release-preflight.sh`, `upload-ios.sh`, and `build-status.sh` in order, and the `Makefile` `release` target calls it. Because the exported variables are inherited by the child scripts, which then skip the Keychain, a local release prompts once. Each script still sources the loader so that running it on its own works.
+
+The preflight stages are run without the three credential variables when they came from the Keychain, so `release-preflight.sh` behaves as it does today without credentials and the key is not handed to the Xcode build and export stages. When the variables came from the environment, they are passed through unchanged.
 
 The preflight stages do not need credentials, but loading first means a denied prompt fails the release before the slow archive, not after it.
 

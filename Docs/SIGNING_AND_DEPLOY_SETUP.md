@@ -36,18 +36,32 @@ This release changes the App Group identifier from `group.com.justinfuller.routi
 
 If a beta Xcode is installed and set as the active `xcode-select` toolchain (common if you're running beta seeds day-to-day), builds made with it are rejected by App Store Connect: `altool` fails with `Unsupported SDK or Xcode version` (error 90534), even after a successful archive/export. `archive-ios.sh`, `export-ios.sh`, and `upload-ios.sh` default `DEVELOPER_DIR` to `/Applications/Xcode.app/Contents/Developer` (the release Xcode) regardless of the system default, so this is handled automatically — no need to switch `xcode-select` or set `DEVELOPER_DIR` yourself unless the release Xcode lives somewhere else on this machine.
 
-## Local Environment for Release Scripts
+## Local Credentials in the Keychain
 
-Export these in your shell before running `archive-ios.sh`, `export-ios.sh`, `upload-ios.sh`, `deploy-device.sh`, or `release-preflight.sh`/`release`:
+The release scripts (`archive-ios.sh`, `export-ios.sh`, `upload-ios.sh`, `build-status.sh`, `release.sh`, `deploy-device.sh`, and `release-preflight.sh`) read the App Store Connect credentials from one macOS Keychain item, so nothing secret sits in your shell profile or in a loose file that any process running as you can read.
+
+Store them once, after you have the `.p8`, Key ID, and Issuer ID from the section above:
 
 ```sh
-export DEVELOPMENT_TEAM=CX2KMQZQ7X
-export APP_STORE_CONNECT_AUTH_KEY_PATH=~/.appstoreconnect/private_keys/AuthKey_XXXX.p8
-export APP_STORE_CONNECT_AUTH_KEY_ID=XXXXXXXXXX
-export APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+./Scripts/store-app-store-connect-credentials.sh XXXXXXXXXX xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx ~/.appstoreconnect/private_keys/AuthKey_XXXX.p8
 ```
 
-`DEVELOPMENT_TEAM` already defaults to `CX2KMQZQ7X` inside `archive-ios.sh`, `export-ios.sh`, and `deploy-device.sh`; only export it if you need to override the default. The App Store Connect variables are required together for `upload-ios.sh` and optional (but recommended for headless use) for `archive-ios.sh`/`export-ios.sh`. When all three are supplied, the scripts fail before invoking Xcode if the key path is unreadable.
+The item is created in your login Keychain as service `routine.app-store-connect`, account `release`, with no trusted applications. macOS therefore shows a prompt every time the item is read, which is once per `make release`, `make build-status`, or `make upload-ios` run. The key is written to a private temporary file (mode `0600`) for the length of the command and removed when the command ends, whether it succeeds or fails.
+
+Click **Allow** on the prompt. Never click **Always Allow**: that would trust `security` to read the item silently, for every caller including agents.
+
+After storing the item:
+
+1. Keep a backup of the `.p8` in your password manager. Apple only lets you download it once, and the Keychain item is not a backup.
+2. Delete the loose `.p8` from `~/.appstoreconnect/private_keys` yourself once the backup is safe. The scripts never delete it for you.
+
+If `APP_STORE_CONNECT_AUTH_KEY_PATH`, `APP_STORE_CONNECT_AUTH_KEY_ID`, and `APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID` are already set in the environment, the scripts use them and never touch the Keychain. This is how CI works, with the values coming from repository secrets. Set only some of them and the scripts fail with a "must be set together" error.
+
+`DEVELOPMENT_TEAM` already defaults to `CX2KMQZQ7X` inside `archive-ios.sh`, `export-ios.sh`, and `deploy-device.sh`; only export it if you need to override the default. The App Store Connect credentials are required together for `upload-ios.sh` and `build-status.sh`, and optional (but recommended for headless use) for `archive-ios.sh`/`export-ios.sh`. When all three are supplied, the scripts fail before invoking Xcode if the key path is unreadable.
+
+### Agents and credentials
+
+Agents run as your macOS user, so a `.p8` on disk is readable by them. The Keychain item prompts you on every read, which means an agent cannot use the key unless you approve it, and you can deny it. Agents hold no App Store Connect credentials. To confirm a release, they read the final line of the "iOS Release" run log, the run summary, or the `delivery-id.txt` file in the `build/export` artifact (see [BUILD_AND_DEPLOY.md](BUILD_AND_DEPLOY.md#confirming-a-release)). If an agent runs a local status check, you will see the Keychain prompt and can click Deny.
 
 ## Device Registration for On-Phone Installs
 
