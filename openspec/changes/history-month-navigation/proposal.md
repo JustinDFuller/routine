@@ -16,7 +16,7 @@ The iOS calendar already has the interaction people expect: swipe sideways to ch
 - The wheel's years run from the earliest of the year the routine was created, the year of its earliest completion, and five years before the current year, through the current year. Months later than the current month are not selectable in the current year.
 - A **Today** button appears next to the title whenever the displayed month is not the current month. Tapping it shows the current month and closes the wheel.
 - Month changes slide in the direction of the swipe. With Reduce Motion on, or when the app disables animations for testing, they cross-fade instead.
-- VoiceOver users change month with the adjustable action on the grid (swipe up for next, swipe down for previous). The title is announced as a button that chooses the month.
+- VoiceOver users change month with the adjustable action on the grid's weekday header (swipe up for next, swipe down for previous). The title is announced as a button that chooses the month.
 - The summary at the top of History (progress ring, count, streak) keeps describing the current week or month, whichever month the grid shows.
 - History still opens on the current month every time. The chosen month is not remembered.
 - `VISUAL_DESIGN.md` and `DATA_DESIGN.md` are updated, because they currently describe the grid as the current month only.
