@@ -1,6 +1,6 @@
 # Manual verification: history-month-navigation
 
-Run on commit a6dd93d in the iOS 26.5 simulator ("Routine iPhone 17"), using the real app with animations enabled, the baseline screenshot fixture, the in-memory store, and the fixed date 2026-06-10. A temporary XCUITest drove the gestures while `simctl io recordVideo` recorded the screen. The temporary test is not part of the change.
+Run on commit c9b5d30 (video and screenshots re-captured after the final code changes) in the iOS 26.5 simulator ("Routine iPhone 17"), using the real app with animations enabled, the baseline screenshot fixture, the in-memory store, and the fixed date 2026-06-10. A temporary XCUITest drove the gestures while `simctl io recordVideo` recorded the screen. The temporary test is not part of the change.
 
 ## Screen recording
 
