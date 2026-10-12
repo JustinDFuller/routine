@@ -110,7 +110,7 @@ struct HistoryMonthGridView: View {
                 .tint(Color.routineAccentActive)
                 .frame(minHeight: 44)
                 .accessibilityIdentifier("routine-history-today-button")
-                .accessibilityLabel("Show current month")
+                .accessibilityLabel("Today, show current month")
         }
     }
 
@@ -174,7 +174,7 @@ struct HistoryMonthGridView: View {
             .accessibilityIdentifier("routine-history-month-wheel")
 
             Picker("Year", selection: yearSelection) {
-                ForEach(Array(pickerYears), id: \.self) { year in
+                ForEach(Array(wheelYears), id: \.self) { year in
                     Text(verbatim: String(year)).tag(year)
                 }
             }
@@ -183,6 +183,10 @@ struct HistoryMonthGridView: View {
             .accessibilityIdentifier("routine-history-year-wheel")
         }
         .frame(height: 180)
+    }
+
+    private var wheelYears: ClosedRange<Int> {
+        min(pickerYears.lowerBound, displayedMonth.year)...pickerYears.upperBound
     }
 
     private var monthSelection: Binding<Int> {

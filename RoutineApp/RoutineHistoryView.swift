@@ -377,8 +377,11 @@ struct RoutineHistoryView: View {
 
     private func adjustMonth(offset: Int) {
         let target = monthNavigation.selection(from: displayedMonth, offset: offset)
-        moveToMonth(target, edge: offset < 0 ? .leading : .trailing)
+        guard monthNavigation.isSameMonth(target ?? today, displayedMonth) == false else {
+            return
+        }
 
+        moveToMonth(target, edge: offset < 0 ? .leading : .trailing)
         AccessibilityNotification.Announcement(routineCalendar.historyMonthTitle(for: target ?? today)).post()
     }
 

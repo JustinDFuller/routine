@@ -113,7 +113,7 @@ extension RoutineAppUITests {
 
         let todayButton = app.buttons["routine-history-today-button"]
         XCTAssertTrue(todayButton.waitForExistence(timeout: 5))
-        XCTAssertEqual(todayButton.label, "Show current month")
+        XCTAssertEqual(todayButton.label, "Today, show current month")
         todayButton.tap()
 
         waitForTitle("June 2026, choose month", in: title)
@@ -143,6 +143,53 @@ extension RoutineAppUITests {
         let completedDay = identifiedElement("history-day-2026-05-20", in: app)
         XCTAssertTrue(completedDay.label.contains(", completed"), completedDay.label)
         XCTAssertEqual(title.label, "May 2026, choose month")
+    }
+
+    func testHistoryRemovingCompletionInEarlierMonthAfterSwipeUndoesIt() {
+        let app = openMorningYogaHistory()
+        let title = app.buttons["routine-history-month-title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+
+        monthGrid(in: app).swipeRight()
+        waitForTitle("May 2026, choose month", in: title)
+
+        let day = identifiedElement("history-day-2026-05-20", in: app)
+        XCTAssertTrue(day.waitForExistence(timeout: 5))
+        day.tap()
+        let confirm = app.buttons["history-day-confirm-2026-05-20"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        confirm.tap()
+        XCTAssertTrue(day.label.contains(", completed"), day.label)
+
+        day.tap()
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        confirm.tap()
+
+        let predicate = NSPredicate(format: "label CONTAINS %@", ", not completed")
+        expectation(for: predicate, evaluatedWith: day)
+        waitForExpectations(timeout: 5)
+    }
+
+    func testHistoryYearWheelIncludesYearReachedBySwipingBeforeItsRange() {
+        let app = openMorningYogaHistory()
+        let title = app.buttons["routine-history-month-title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+
+        title.tap()
+        let yearWheel = app.pickerWheels.element(boundBy: 1)
+        XCTAssertTrue(yearWheel.waitForExistence(timeout: 5))
+        yearWheel.adjust(toPickerWheelValue: "2021")
+        waitForTitle("June 2021, choose month", in: title)
+        title.tap()
+
+        for _ in 0..<6 {
+            monthGrid(in: app).swipeRight()
+        }
+        waitForTitle("December 2020, choose month", in: title)
+
+        title.tap()
+        XCTAssertTrue(yearWheel.waitForExistence(timeout: 5))
+        XCTAssertEqual(yearWheel.value as? String, "2020")
     }
 
     private func openMorningYogaHistory() -> XCUIApplication {
