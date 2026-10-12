@@ -32,8 +32,8 @@
 
 ## 6. Validation and proof
 
-- [ ] 6.1 Run `./Scripts/validate.sh` and verify every stage passes; report any skipped lines it emits.
-- [ ] 6.2 Run the app in the simulator and record a screen recording that shows swiping back across a year boundary, trying to swipe past the current month, opening the wheels, jumping to a prior year, tapping Today, and completing a day in an earlier month; add it to the PR description with light and dark mode screenshots and one at a large Dynamic Type size.
+- [x] 6.1 Run `./Scripts/validate.sh` and verify every stage passes; report any skipped lines it emits.
+- [x] 6.2 Run the app in the simulator and record a screen recording that shows swiping back across a year boundary, trying to swipe past the current month, opening the wheels, jumping to a prior year, tapping Today, and completing a day in an earlier month; add it to the PR description with light and dark mode screenshots and one at a large Dynamic Type size.
 
 ## Workflow follow-up
 
