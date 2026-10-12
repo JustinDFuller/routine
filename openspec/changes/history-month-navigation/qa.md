@@ -1,6 +1,6 @@
 # Manual verification: history-month-navigation
 
-Run on commit c9b5d30 (video and screenshots re-captured after the final code changes) in the iOS 26.5 simulator ("Routine iPhone 17"), using the real app with animations enabled, the baseline screenshot fixture, the in-memory store, and the fixed date 2026-06-10. A temporary XCUITest drove the gestures while `simctl io recordVideo` recorded the screen. The temporary test is not part of the change.
+Video and screenshots were captured on commit c9b5d30. Later commits only extracted the swipe and transition-deferral rules into unit-tested helpers, made a day tap flush a pending month move, and cancelled it on disappear, with no change to the flows recorded. Captured in the iOS 26.5 simulator ("Routine iPhone 17"), using the real app with animations enabled, the baseline screenshot fixture, the in-memory store, and the fixed date 2026-06-10. A temporary XCUITest drove the gestures while `simctl io recordVideo` recorded the screen. The temporary test is not part of the change.
 
 ## Screen recording
 

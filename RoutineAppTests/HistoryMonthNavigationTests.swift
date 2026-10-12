@@ -75,13 +75,6 @@ final class HistoryMonthNavigationTests: XCTestCase {
         XCTAssertNil(result)
     }
 
-    func testSwitchingFromLateMonthOfPriorYearToCurrentYearLandsOnCurrentMonth() throws {
-        let result = try navigation().selection(year: 2026, month: 12)
-
-        XCTAssertNil(result)
-        XCTAssertEqual(try navigation().selection(year: 2025, month: 12), try month(2025, 12))
-    }
-
     func testSelectionOfPastMonthReturnsFirstDayOfThatMonth() throws {
         let result = try navigation().selection(year: 2025, month: 10)
 

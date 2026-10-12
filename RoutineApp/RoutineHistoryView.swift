@@ -154,6 +154,7 @@ struct RoutineHistoryView: View {
         .onDisappear {
             undoDismissTask?.cancel()
             pendingMove?.task.cancel()
+            pendingMove = nil
         }
     }
 

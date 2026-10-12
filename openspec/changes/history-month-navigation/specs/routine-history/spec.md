@@ -115,7 +115,7 @@ A Today button SHALL be shown next to the title whenever the displayed month is 
 - **THEN** the wheels close, the grid shows the current month, and the Today button is hidden
 
 ### Requirement: Month changes are animated with respect to motion settings
-When the displayed month changes by swiping, the new month SHALL slide in from the side matching the swipe direction. When Reduce Motion is on, or the app has animations disabled, the change SHALL cross-fade instead of sliding. A change made by the wheels or by Today MAY use the same transition.
+When the displayed month changes by swiping, the new month SHALL slide in from the side matching the swipe direction. When Reduce Motion is on, the change SHALL cross-fade instead of sliding. When the app has animations disabled, the change SHALL happen immediately with no sliding. A change made by the wheels or by Today MAY use the same transition.
 
 #### Scenario: Slide
 - **WHEN** Reduce Motion is off and the user swipes right
