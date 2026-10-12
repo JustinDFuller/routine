@@ -1781,7 +1781,12 @@ run_make_target_and_capture() {
     set +e
     (
         cd "$release_repo"
-        env -u CURRENT_PROJECT_VERSION -u DELIVERY_ID \
+        env \
+            -u APP_STORE_CONNECT_AUTH_KEY_PATH \
+            -u APP_STORE_CONNECT_AUTH_KEY_ID \
+            -u APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID \
+            -u CURRENT_PROJECT_VERSION \
+            -u DELIVERY_ID \
             FAKE_RELEASE_LOG="$release_log" \
             SECURITY_BIN="$fake_security" \
             FAKE_SECURITY_LOG="$credentials_security_log" \
