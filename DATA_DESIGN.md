@@ -888,7 +888,7 @@ Rules:
 - `HistoryProjectionBuilder` computes both fields from `StreakCalculator` on every projection build, after any completion, undo, or historical correction.
 - `weeks` describes the displayed month, not always the current month. Only the displayed month is built, so the cost does not grow with the distance from today. The summary progress, streak text, and recent completions do not depend on the displayed month.
 - `isDisplayingCurrentMonth` is true only when the displayed month shares a year and month with today.
-- `pickerYears` runs from the earliest of the routine's creation year, the earliest completion's year, and today's year minus five, through today's year.
+- `pickerYears` runs from the earliest of the routine's creation year, the earliest completion's year, and today's year minus five, through today's year. The year wheel in the view extends this down to the displayed year when swiping has gone further back.
 
 The recent completions list should sort by `dayKey` descending, then `completedAt` descending.
 

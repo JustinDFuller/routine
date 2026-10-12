@@ -9,6 +9,25 @@ extension RoutineAppUITests {
         XCTAssertEqual(title.label, "June 2026, choose month")
         XCTAssertFalse(identifiedElement("routine-history-today-button", in: app).exists)
         XCTAssertFalse(app.buttons["Show previous month"].exists)
+        XCTAssertFalse(app.buttons["Show next month"].exists)
+    }
+
+    func testHistoryReopeningAfterBrowsingShowsCurrentMonth() {
+        let app = openMorningYogaHistory()
+        let title = app.buttons["routine-history-month-title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+
+        monthGrid(in: app).swipeRight()
+        waitForTitle("May 2026, choose month", in: title)
+        app.navigationBars["History"].buttons.firstMatch.tap()
+
+        let historyButton = app.buttons["routine-card-history-morning-yoga"]
+        XCTAssertTrue(historyButton.waitForExistence(timeout: 5))
+        historyButton.tap()
+        XCTAssertTrue(app.navigationBars["History"].waitForExistence(timeout: 5))
+        let reopenedTitle = app.buttons["routine-history-month-title"]
+        XCTAssertTrue(reopenedTitle.waitForExistence(timeout: 5))
+        XCTAssertEqual(reopenedTitle.label, "June 2026, choose month")
     }
 
     func testHistorySwipeRightShowsPreviousMonthAndSwipeLeftReturns() {

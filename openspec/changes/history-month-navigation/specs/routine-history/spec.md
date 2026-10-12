@@ -92,6 +92,13 @@ The year wheel SHALL list every year from the earliest of the year the routine w
 - **WHEN** the wheels show December 2025 and the user sets the year wheel to 2026 while today is in October 2026
 - **THEN** the displayed month becomes October 2026
 
+### Requirement: The year wheel always includes the displayed year
+When the displayed month is in an earlier year than the first listed year, the year wheel SHALL also list every year from the displayed year up to the first listed year. The list SHALL stay the same while the wheels remain open.
+
+#### Scenario: Wheel opened on a year before the listed range
+- **WHEN** the user has swiped back to December 2018 on a routine whose year wheel would otherwise start at 2021, and opens the wheels
+- **THEN** the year wheel lists 2018 through 2026, and it still lists 2018 after the user spins the year wheel to 2020
+
 ### Requirement: Today returns to the current month
 A Today button SHALL be shown next to the title whenever the displayed month is not the current month, and SHALL NOT be shown when it is. Tapping it SHALL show the current month and close the wheels if they are open.
 

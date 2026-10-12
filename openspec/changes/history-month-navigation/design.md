@@ -73,7 +73,7 @@ Alternative: no animation at all. Rejected, since an unanimated content swap hid
 
 ### The wheel replaces the grid in place, built from two `Picker`s
 
-When `isPickerOpen` is true, the grid body is replaced by an `HStack` of two `Picker(.wheel)` views: months (localized month symbols from the calendar) and years (`pickerYears`). Both bind to the displayed year and month through `showMonth(year:month:)`. Because the displayed month updates live, the title and the summary above stay consistent while spinning.
+When `isPickerOpen` is true, the grid body is replaced by an `HStack` of two `Picker(.wheel)` views: months (localized month symbols from the calendar) and years (`pickerYears`, extended down to the displayed year when swiping has gone further back, and fixed when the wheels open so the list does not change while spinning). Both bind to the displayed year and month through `showMonth(year:month:)`. Because the displayed month updates live, the title and the summary above stay consistent while spinning.
 
 The title is a `Button` with a trailing chevron that rotates from right to down when open. The Today button sits beside it, visible only when `isDisplayingCurrentMonth` is false.
 
