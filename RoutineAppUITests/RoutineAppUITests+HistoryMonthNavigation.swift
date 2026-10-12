@@ -47,14 +47,21 @@ extension RoutineAppUITests {
         }
     }
 
-    func testHistoryVerticalDragDoesNotChangeMonth() {
-        let app = openMorningYogaHistory()
+    func testHistoryVerticalDragScrollsPageWithoutChangingMonth() {
+        let app = makeApp(additionalLaunchArguments: [])
+        app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch()
+        app.buttons["routine-card-history-morning-yoga"].tap()
+        XCTAssertTrue(app.navigationBars["History"].waitForExistence(timeout: 5))
         let title = app.buttons["routine-history-month-title"]
         XCTAssertTrue(title.waitForExistence(timeout: 5))
+        let recent = app.staticTexts["Recent completions"]
+        XCTAssertTrue(recent.waitForExistence(timeout: 5))
+        let before = recent.frame.minY
 
-        monthGrid(in: app).swipeUp()
-        monthGrid(in: app).swipeDown()
+        app.swipeUp()
 
+        XCTAssertLessThan(recent.frame.minY, before)
         XCTAssertEqual(title.label, "June 2026, choose month")
     }
 
@@ -81,7 +88,7 @@ extension RoutineAppUITests {
         XCTAssertEqual(title.label, "June 2025, choose month")
     }
 
-    func testHistoryMonthWheelOffersOnlyMonthsThroughCurrentMonthInCurrentYear() {
+    func testHistoryMonthWheelChangesMonthTitle() {
         let app = openMorningYogaHistory()
         let title = app.buttons["routine-history-month-title"]
         XCTAssertTrue(title.waitForExistence(timeout: 5))
@@ -93,11 +100,25 @@ extension RoutineAppUITests {
         monthWheel.adjust(toPickerWheelValue: "January")
         waitForTitle("January 2026, choose month", in: title)
         XCTAssertEqual(monthWheel.value as? String, "January")
+    }
 
-        monthWheel.adjust(toPickerWheelValue: "June")
+    func testHistoryChoosingLaterMonthThenCurrentYearLandsOnCurrentMonth() {
+        let app = openMorningYogaHistory()
+        let title = app.buttons["routine-history-month-title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+
+        title.tap()
+        let monthWheel = app.pickerWheels.element(boundBy: 0)
+        let yearWheel = app.pickerWheels.element(boundBy: 1)
+        XCTAssertTrue(yearWheel.waitForExistence(timeout: 5))
+        yearWheel.adjust(toPickerWheelValue: "2025")
+        waitForTitle("June 2025, choose month", in: title)
+        monthWheel.adjust(toPickerWheelValue: "December")
+        waitForTitle("December 2025, choose month", in: title)
+
+        yearWheel.adjust(toPickerWheelValue: "2026")
+
         waitForTitle("June 2026, choose month", in: title)
-        monthWheel.swipeUp()
-        XCTAssertEqual(title.label, "June 2026, choose month")
     }
 
     func testHistoryTodayButtonClosesWheelsAndReturnsToCurrentMonth() {
@@ -190,6 +211,31 @@ extension RoutineAppUITests {
         title.tap()
         XCTAssertTrue(yearWheel.waitForExistence(timeout: 5))
         XCTAssertEqual(yearWheel.value as? String, "2020")
+    }
+
+    func testHistoryYearWheelKeepsOpeningRangeWhileSpinning() {
+        let app = openMorningYogaHistory()
+        let title = app.buttons["routine-history-month-title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+
+        title.tap()
+        let yearWheel = app.pickerWheels.element(boundBy: 1)
+        XCTAssertTrue(yearWheel.waitForExistence(timeout: 5))
+        yearWheel.adjust(toPickerWheelValue: "2021")
+        waitForTitle("June 2021, choose month", in: title)
+        title.tap()
+
+        for _ in 0..<18 {
+            monthGrid(in: app).swipeRight()
+        }
+        waitForTitle("December 2019, choose month", in: title)
+
+        title.tap()
+        XCTAssertTrue(yearWheel.waitForExistence(timeout: 5))
+        yearWheel.adjust(toPickerWheelValue: "2021")
+        waitForTitle("December 2021, choose month", in: title)
+        yearWheel.adjust(toPickerWheelValue: "2019")
+        waitForTitle("December 2019, choose month", in: title)
     }
 
     private func openMorningYogaHistory() -> XCUIApplication {

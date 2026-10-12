@@ -21,6 +21,7 @@ struct HistoryMonthGridView: View {
     let onConfirmDay: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var frozenWheelYears: ClosedRange<Int>?
 
     private var monthTitle: String {
         routineCalendar.historyMonthTitle(for: displayedMonth)
@@ -60,6 +61,9 @@ struct HistoryMonthGridView: View {
         )
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("routine-history-month-grid")
+        .onChange(of: isPickerOpen) { _, isOpen in
+            frozenWheelYears = isOpen ? openingWheelYears : nil
+        }
     }
 
     private var header: some View {
@@ -186,6 +190,10 @@ struct HistoryMonthGridView: View {
     }
 
     private var wheelYears: ClosedRange<Int> {
+        frozenWheelYears ?? openingWheelYears
+    }
+
+    private var openingWheelYears: ClosedRange<Int> {
         min(pickerYears.lowerBound, displayedMonth.year)...pickerYears.upperBound
     }
 
