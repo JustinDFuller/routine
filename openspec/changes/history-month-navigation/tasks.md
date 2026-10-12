@@ -2,9 +2,9 @@
 
 ## 1. Calendar and projection
 
-- [ ] 1.1 Add `nextPeriodRange(for:after:)` to `RoutineCalendar` and verify with new `RoutineCalendarTests` cases for a mid-year month, December to January, and February in a leap year and a non-leap year (`./Scripts/test-core.sh` passes).
-- [ ] 1.2 Add `isDisplayingCurrentMonth` and `pickerYears` to `RoutineHistoryViewData` and compute them in `HistoryProjectionBuilder` (earliest of the routine's `createdAt` year, the earliest completion's year, and today's year minus five, through today's year); verify with new `HistoryProjectionBuilderTests` cases for a new routine (2021 through 2026), a routine with a 2017 completion (2017 through 2026), a displayed month in a prior year, and the current month flag being true only for the current month.
-- [ ] 1.3 Verify with a `HistoryProjectionBuilderTests` case that a past displayed month marks exactly its recorded completions, marks no day as today, computes weekly and monthly goal-met highlighting for that month, and leaves the summary progress and recent completions unchanged.
+- [x] 1.1 Add `nextPeriodRange(for:after:)` to `RoutineCalendar` and verify with new `RoutineCalendarTests` cases for a mid-year month, December to January, and February in a leap year and a non-leap year (`./Scripts/test-core.sh` passes).
+- [x] 1.2 Add `isDisplayingCurrentMonth` and `pickerYears` to `RoutineHistoryViewData` and compute them in `HistoryProjectionBuilder` (earliest of the routine's `createdAt` year, the earliest completion's year, and today's year minus five, through today's year); verify with new `HistoryProjectionBuilderTests` cases for a new routine (2021 through 2026), a routine with a 2017 completion (2017 through 2026), a displayed month in a prior year, and the current month flag being true only for the current month.
+- [x] 1.3 Verify with a `HistoryProjectionBuilderTests` case that a past displayed month marks exactly its recorded completions, marks no day as today, computes weekly and monthly goal-met highlighting for that month, and leaves the summary progress and recent completions unchanged.
 
 ## 2. Navigation state in the History screen
 

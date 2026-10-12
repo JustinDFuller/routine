@@ -139,6 +139,53 @@ final class RoutineCalendarTests: XCTestCase {
         XCTAssertEqual(previousMonth, expectedStart...expectedEnd)
     }
 
+    func testNextPeriodRangeReturnsFollowingMonthWithinYear() throws {
+        let calendar = testRoutineCalendar()
+        let currentMonth = calendar.currentMonthRange(
+            containing: try XCTUnwrap(RoutineDay(year: 2025, month: 4, day: 10))
+        )
+        let expectedStart = try XCTUnwrap(RoutineDay(year: 2025, month: 5, day: 1))
+        let expectedEnd = try XCTUnwrap(RoutineDay(year: 2025, month: 5, day: 31))
+
+        XCTAssertEqual(calendar.nextPeriodRange(for: .monthly, after: currentMonth), expectedStart...expectedEnd)
+    }
+
+    func testNextPeriodRangeReturnsJanuaryAcrossYearBoundary() throws {
+        let calendar = testRoutineCalendar()
+        let currentMonth = calendar.currentMonthRange(
+            containing: try XCTUnwrap(RoutineDay(year: 2025, month: 12, day: 15))
+        )
+        let expectedStart = try XCTUnwrap(RoutineDay(year: 2026, month: 1, day: 1))
+        let expectedEnd = try XCTUnwrap(RoutineDay(year: 2026, month: 1, day: 31))
+
+        XCTAssertEqual(calendar.nextPeriodRange(for: .monthly, after: currentMonth), expectedStart...expectedEnd)
+    }
+
+    func testNextPeriodRangeReturnsFebruaryWithLeapYearLength() throws {
+        let calendar = testRoutineCalendar()
+        let leapJanuary = calendar.currentMonthRange(
+            containing: try XCTUnwrap(RoutineDay(year: 2024, month: 1, day: 10))
+        )
+        let plainJanuary = calendar.currentMonthRange(
+            containing: try XCTUnwrap(RoutineDay(year: 2025, month: 1, day: 10))
+        )
+        let leapStart = try XCTUnwrap(RoutineDay(year: 2024, month: 2, day: 1))
+        let leapEnd = try XCTUnwrap(RoutineDay(year: 2024, month: 2, day: 29))
+        let plainStart = try XCTUnwrap(RoutineDay(year: 2025, month: 2, day: 1))
+        let plainEnd = try XCTUnwrap(RoutineDay(year: 2025, month: 2, day: 28))
+
+        XCTAssertEqual(calendar.nextPeriodRange(for: .monthly, after: leapJanuary), leapStart...leapEnd)
+        XCTAssertEqual(calendar.nextPeriodRange(for: .monthly, after: plainJanuary), plainStart...plainEnd)
+    }
+
+    func testNextPeriodRangeIsInverseOfPreviousPeriodRange() throws {
+        let calendar = testRoutineCalendar()
+        let march = calendar.currentMonthRange(containing: try XCTUnwrap(RoutineDay(year: 2025, month: 3, day: 9)))
+        let april = calendar.nextPeriodRange(for: .monthly, after: march)
+
+        XCTAssertEqual(calendar.previousPeriodRange(for: .monthly, before: april), march)
+    }
+
     func testCurrentMonthRangeCoversExpectedMonthLengths() throws {
         let calendar = testRoutineCalendar()
         let januaryStart = try XCTUnwrap(RoutineDay(year: 2025, month: 1, day: 1))

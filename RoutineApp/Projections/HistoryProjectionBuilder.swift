@@ -176,8 +176,21 @@ extension HistoryProjectionBuilder {
                 period: routine.period,
                 targetCount: routine.targetCount
             ),
-            recentCompletions: buildRecentCompletionItems(completions: completions, today: today)
+            recentCompletions: buildRecentCompletionItems(completions: completions, today: today),
+            isDisplayingCurrentMonth: displayedMonth.year == today.year && displayedMonth.month == today.month,
+            pickerYears: pickerYears(routine: routine, completionDays: completionDays, today: today)
         )
+    }
+
+    fileprivate func pickerYears(
+        routine: Routine,
+        completionDays: [RoutineDay],
+        today: RoutineDay
+    ) -> ClosedRange<Int> {
+        let createdYear = routineCalendar.calendar.component(.year, from: routine.createdAt)
+        let earliestCompletionYear = completionDays.map(\.year).min() ?? today.year
+        let firstYear = min(createdYear, earliestCompletionYear, today.year - 5)
+        return firstYear...today.year
     }
 
     fileprivate func buildWeeks(
