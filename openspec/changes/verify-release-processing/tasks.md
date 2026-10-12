@@ -21,7 +21,7 @@
 ## 4. Validation and proof
 
 - [x] 4.1 Run `./Scripts/validate.sh` and verify every stage passes; report any skipped lines it emits.
-- [ ] 4.2 With the maintainer present, run `make build-status DELIVERY_ID=2a0163e0-90f5-4a55-b0cd-44e1200b1b78` after storing the Keychain item, and verify a macOS prompt appears, Allow prints `processing state: VALID` for build 4, and Deny fails with the "credentials were not provided" message; record both in the PR.
+- [x] 4.2 With the maintainer present, run `make build-status DELIVERY_ID=2a0163e0-90f5-4a55-b0cd-44e1200b1b78` after storing the Keychain item, and verify a macOS prompt appears, Allow prints `processing state: VALID` for build 4, and Deny fails with the "credentials were not provided" message; record both in the PR.
 - [ ] 4.3 After the change merges, run the "iOS Release" workflow for the next build number with the maintainer's go-ahead, and verify the run log's last release line and the run summary show the build number, delivery ID, and `VALID`; add them to the PR or a follow-up note.
 
 ## Workflow follow-up
