@@ -1167,7 +1167,7 @@ Validation:
 - With the maintainer present, run `make build-status DELIVERY_ID=<id>` and confirm Allow reports `VALID` and Deny fails with a clear message.
 - After merge, run the "iOS Release" workflow and confirm the final log line and run summary. This does not block the merge.
 
-Manual validation status: the Allow and Deny runs passed with the maintainer on 2026-10-12 (task 4.2). The CI release run is pending the maintainer and is tracked in task 4.3 of the OpenSpec change.
+Manual validation status: the Allow and Deny runs passed with the maintainer on 2026-10-12 (task 4.2). The CI release run for build 5 also passed (task 4.3): the Release step ended with `Build 5 (delivery bfd68293-d40b-4eac-b34a-1f68c9392a6a) processing state: VALID`.
 
 Completion update:
 
