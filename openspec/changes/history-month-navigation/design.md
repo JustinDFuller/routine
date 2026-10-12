@@ -65,7 +65,7 @@ Day buttons keep their taps. A simultaneous gesture with a 20pt minimum distance
 
 ### Slide transition keyed to the month
 
-The grid body is wrapped in a container with `.id(displayedMonthKey)` and `.transition(.push(from: edge))`, where the edge is `.leading` when moving back and `.trailing` when moving forward. State changes happen inside `withAnimation(animation)`, with `animation` nil and the transition `.opacity` when `animationsAreDisabled` is true. The direction is stored in a small `@State` set at the moment of the change, before the month changes.
+The grid body is wrapped in a container with `.id(displayedMonthKey)` and `.transition(.push(from: edge))`, where the edge is `.leading` when moving back and `.trailing` when moving forward. State changes happen inside `withAnimation(animation)`, with `animation` nil and the transition `.opacity` when `animationsAreDisabled` is true. The direction is stored in a small `@State`. SwiftUI plays a removal transition using the value from the previous render, so when the direction flips and the slide animation is active, the edge is set first and the month change is applied about 30ms later, after that render. A newer navigation action applies any pending change immediately before computing its own target, so moves never read a stale month. When the direction is unchanged, the picker is open, or animations are disabled or reduced, the month changes immediately.
 
 Moving back slides the previous month in from the leading edge (pushing the current month out to the right), like Apple Calendar.
 
@@ -85,7 +85,7 @@ Alternative: `DatePicker` in `.compact` style. Rejected, since it selects a day 
 
 - The title button's label is `"<Month Year>, choose month"` with a hint that it shows month and year wheels.
 - The weekday header, a single focusable element whose accessibility value is the displayed month, gets `.accessibilityAdjustableAction` (the header stays outside the animated month subtree so VoiceOver focus survives a month change): `.increment` shows the next month, `.decrement` shows the previous month. Both go through the same clamping setters. After a change, a `AccessibilityNotification.Announcement` posts the new month and year, because the title text alone would not be spoken.
-- The Today button is a normal labeled button ("Show current month").
+- The Today button is a normal labeled button ("Today, show current month").
 - The wheels get labels "Month" and "Year".
 - New identifiers: `routine-history-today-button`, `routine-history-month-wheel`, `routine-history-year-wheel`. `routine-history-month-title` stays. `routine-history-previous-month-button` is removed.
 

@@ -26,6 +26,7 @@ struct RoutineHistoryView: View {
     @State private var selectedMonth: RoutineDay?
     @State private var isPickerOpen = false
     @State private var slideEdge: Edge = .trailing
+    @State private var pendingMove: PendingMonthMove?
 
     init(routineID: UUID) {
         self.routineID = routineID
@@ -356,26 +357,31 @@ struct RoutineHistoryView: View {
     }
 
     private func togglePicker() {
+        flushPendingMove()
         pendingDay = nil
         isPickerOpen.toggle()
     }
 
     private func showMonth(offset: Int) {
+        flushPendingMove()
         let target = monthNavigation.selection(from: displayedMonth, offset: offset)
         moveToMonth(target, edge: offset < 0 ? .leading : .trailing)
     }
 
     private func showMonth(year: Int, month: Int) {
+        flushPendingMove()
         let target = monthNavigation.selection(year: year, month: month)
         let edge: Edge = (target ?? today) < displayedMonth ? .leading : .trailing
         moveToMonth(target, edge: edge)
     }
 
     private func showToday() {
+        flushPendingMove()
         moveToMonth(nil, edge: .trailing, closesPicker: true)
     }
 
     private func adjustMonth(offset: Int) {
+        flushPendingMove()
         let target = monthNavigation.selection(from: displayedMonth, offset: offset)
         guard monthNavigation.isSameMonth(target ?? today, displayedMonth) == false else {
             return
@@ -396,8 +402,9 @@ struct RoutineHistoryView: View {
         pendingDay = nil
 
         let animation = isPickerOpen && closesPicker == false ? nil : monthAnimation
+        let needsEdgeRender = slideEdge != edge && isPickerOpen == false && animationsAreDisabled == false
 
-        guard slideEdge != edge, animation != nil else {
+        guard needsEdgeRender, animation != nil else {
             slideEdge = edge
             applyMonth(target, closesPicker: closesPicker, animation: animation)
             return
@@ -405,10 +412,28 @@ struct RoutineHistoryView: View {
 
         slideEdge = edge
 
-        Task { @MainActor in
+        let task = Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(30))
+            guard Task.isCancelled == false else {
+                return
+            }
+
+            pendingMove = nil
             applyMonth(target, closesPicker: closesPicker, animation: animation)
         }
+        pendingMove = PendingMonthMove(task: task) {
+            applyMonth(target, closesPicker: closesPicker, animation: animation)
+        }
+    }
+
+    private func flushPendingMove() {
+        guard let move = pendingMove else {
+            return
+        }
+
+        move.task.cancel()
+        pendingMove = nil
+        move.apply()
     }
 
     private func applyMonth(_ target: RoutineDay?, closesPicker: Bool, animation: Animation?) {
@@ -699,4 +724,9 @@ private struct HistoryRemovalAlert: Equatable {
         self.title = title
         self.message = message
     }
+}
+
+private struct PendingMonthMove {
+    let task: Task<Void, Never>
+    let apply: () -> Void
 }

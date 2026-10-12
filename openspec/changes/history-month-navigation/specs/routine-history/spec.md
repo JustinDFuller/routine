@@ -126,18 +126,18 @@ When the displayed month changes by swiping, the new month SHALL slide in from t
 - **THEN** the previous month appears with a cross-fade and no sliding movement
 
 ### Requirement: Month navigation is accessible with VoiceOver
-The title SHALL be announced as a button that chooses the month, including the displayed month and year. The month grid SHALL be adjustable so that VoiceOver users can move to the next month by swiping up and to the previous month by swiping down, with the same limits as swiping. The Today button SHALL have a clear label.
+The title SHALL be announced as a button that chooses the month, including the displayed month and year. The weekday header of the month grid SHALL be a single focusable element whose value is the displayed month and which is adjustable, so that VoiceOver users can move to the next month by swiping up and to the previous month by swiping down, with the same limits as swiping. The Today button SHALL have a clear label.
 
 #### Scenario: Title label
 - **WHEN** VoiceOver focuses the title while the grid shows June 2026
 - **THEN** it announces "June 2026, choose month" as a button
 
 #### Scenario: Adjust to the previous month
-- **WHEN** VoiceOver is focused on the grid and the user swipes down
+- **WHEN** VoiceOver is focused on the weekday header and the user swipes down
 - **THEN** the grid shows the previous month and VoiceOver announces the new month and year
 
 #### Scenario: Adjust forward on the current month
-- **WHEN** VoiceOver is focused on the grid showing the current month and the user swipes up
+- **WHEN** VoiceOver is focused on the weekday header with the current month shown and the user swipes up
 - **THEN** the displayed month does not change
 
 ### Requirement: The summary describes the current period for every displayed month
