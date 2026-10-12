@@ -1432,10 +1432,6 @@ assert_equals "$CAPTURED_EXIT_CODE" "1"
 assert_contains "$REPLY" "is malformed"
 assert_no_leftover_keys
 
-reset_credentials_logs
-run_credentials_probe_and_capture ROUTINE_ASC_KEYCHAIN_SERVICE=routine.custom FAKE_SECURITY_EXIT=0 FAKE_SECURITY_ITEM="$credentials_item"
-assert_equals "$(<"$credentials_security_log")" "find-generic-password -s routine.custom -a release -w"
-
 store_credentials_output="$credentials_dir/store-output.txt"
 
 run_store_credentials_and_capture() {
@@ -1456,7 +1452,7 @@ run_store_credentials_and_capture ./Scripts/store-app-store-connect-credentials.
 assert_equals "$CAPTURED_EXIT_CODE" "0"
 assert_contains "$REPLY" "Stored App Store Connect credentials in the login Keychain item 'routine.app-store-connect'."
 assert_contains "$REPLY" "Click Allow, never Always Allow"
-assert_equals "$(<"$credentials_security_log")" "-i"
+assert_equals "$(<"$credentials_security_log")" $'delete-generic-password -s routine.app-store-connect -a release\n-i'
 assert_equals "$(<"$credentials_security_stdin_log")" "add-generic-password -U -s routine.app-store-connect -a release -T \"\" -w $credentials_item"
 assert_not_contains "$REPLY" "ZmFrZQ"
 
@@ -1495,6 +1491,10 @@ call_count="$(wc -l <"${FAKE_BUILD_STATUS_XCRUN_LOG}" | tr -d ' ')"
 states=(${=FAKE_BUILD_STATUS_STATES})
 index=$(( call_count > ${#states} ? ${#states} : call_count ))
 state="${states[$index]}"
+
+if [[ -n "${FAKE_BUILD_STATUS_STDERR_NOISE:-}" ]]; then
+    echo "${FAKE_BUILD_STATUS_STDERR_NOISE}" >&2
+fi
 
 if [[ "$state" == "ERROR" ]]; then
     echo "transient network failure" >&2
@@ -1543,6 +1543,11 @@ assert_equals "$(last_line "$REPLY")" "Build 7 (delivery DELIV-1) processing sta
 assert_equals "$(<"$build_status_xcrun_log")" "altool --build-status --delivery-id DELIV-1 --api-key ABC1234567 --api-issuer 11111111-2222-3333-4444-555555555555 --p8-file-path $auth_key_file --output-format json"
 
 : >"$build_status_xcrun_log"
+run_build_status_and_capture FAKE_BUILD_STATUS_STATES="VALID" FAKE_BUILD_STATUS_STDERR_NOISE="altool: some warning banner" ./Scripts/build-status.sh DELIV-1
+assert_equals "$CAPTURED_EXIT_CODE" "0"
+assert_equals "$(last_line "$REPLY")" "Build 7 (delivery DELIV-1) processing state: VALID"
+
+: >"$build_status_xcrun_log"
 run_build_status_and_capture FAKE_BUILD_STATUS_STATES="PROCESSING PROCESSING VALID" ./Scripts/build-status.sh DELIV-1
 assert_equals "$CAPTURED_EXIT_CODE" "0"
 assert_contains "$REPLY" "Processing state is PROCESSING; checking again in 0s."
@@ -1577,7 +1582,7 @@ run_build_status_and_capture FAKE_BUILD_STATUS_STATES="VALID" GITHUB_STEP_SUMMAR
 assert_equals "$CAPTURED_EXIT_CODE" "0"
 summary_contents="$(<"$build_status_summary")"
 assert_contains "$summary_contents" "### App Store Connect processing"
-assert_contains "$summary_contents" "| 7 | \`DELIV-1\` | VALID |"
+assert_contains "$summary_contents" "| 9 | \`DELIV-1\` | VALID |"
 
 : >"$build_status_xcrun_log"
 : >"$build_status_summary"
@@ -1636,6 +1641,7 @@ release_repo="$workdir/release-repo"
 mkdir -p "$release_repo/Scripts"
 cp ./Scripts/release.sh "$release_repo/Scripts/release.sh"
 cp ./Scripts/app-store-connect-credentials.sh "$release_repo/Scripts/app-store-connect-credentials.sh"
+cp ./Scripts/xcode-destination-helpers.sh "$release_repo/Scripts/xcode-destination-helpers.sh"
 cp ./Makefile "$release_repo/Makefile"
 chmod +x "$release_repo/Scripts/release.sh"
 
@@ -1643,7 +1649,7 @@ cat >"$release_repo/Scripts/release-preflight.sh" <<'EOF'
 #!/bin/zsh
 set -euo pipefail
 
-print -r -- "release-preflight key_path=${APP_STORE_CONNECT_AUTH_KEY_PATH:-unset}" >>"${FAKE_RELEASE_LOG}"
+print -r -- "release-preflight key_id=${APP_STORE_CONNECT_AUTH_KEY_ID:-unset}" >>"${FAKE_RELEASE_LOG}"
 echo "preflight output"
 EOF
 
@@ -1655,8 +1661,9 @@ print -r -- "upload-ios key_id=${APP_STORE_CONNECT_AUTH_KEY_ID:-unset}" >>"${FAK
 echo "upload output"
 
 if [[ "${FAKE_RELEASE_NO_DELIVERY:-0}" != "1" ]]; then
-    mkdir -p build/export
-    print -r -- "DELIV-9" >build/export/delivery-id.txt
+    fake_ipa_path="${ROUTINE_UPLOAD_IPA_PATH:-build/export/Routine.ipa}"
+    mkdir -p "${fake_ipa_path:h}"
+    print -r -- "DELIV-9" >"${fake_ipa_path:h}/delivery-id.txt"
 fi
 EOF
 
@@ -1706,7 +1713,7 @@ reset_credentials_logs
 : >"$release_log"
 run_release_and_capture CURRENT_PROJECT_VERSION=4 FAKE_SECURITY_EXIT=0 FAKE_SECURITY_ITEM="$credentials_item" "$release_repo/Scripts/release.sh"
 assert_equals "$CAPTURED_EXIT_CODE" "0"
-assert_equals "$(<"$release_log")" $'release-preflight key_path=unset\nupload-ios key_id=ABC1234567\nbuild-status DELIV-9 key_id=ABC1234567'
+assert_equals "$(<"$release_log")" $'release-preflight key_id=ABC1234567\nupload-ios key_id=ABC1234567\nbuild-status DELIV-9 key_id=ABC1234567'
 assert_equals "$(<"$credentials_security_log")" "find-generic-password -s routine.app-store-connect -a release -w"
 assert_equals "$(last_line "$REPLY")" "Build 4 (delivery DELIV-9) processing state: VALID"
 assert_no_leftover_keys
@@ -1722,7 +1729,7 @@ run_release_and_capture \
     FAKE_SECURITY_ITEM="$credentials_item" \
     "$release_repo/Scripts/release.sh"
 assert_equals "$CAPTURED_EXIT_CODE" "0"
-assert_equals "$(<"$release_log")" $'release-preflight key_path='"$auth_key_file"$'\nupload-ios key_id=ENVKEYID123\nbuild-status DELIV-9 key_id=ENVKEYID123'
+assert_equals "$(<"$release_log")" $'release-preflight key_id=ENVKEYID123\nupload-ios key_id=ENVKEYID123\nbuild-status DELIV-9 key_id=ENVKEYID123'
 assert_equals "$(<"$credentials_security_log")" ""
 
 reset_credentials_logs
@@ -1745,6 +1752,28 @@ run_release_and_capture CURRENT_PROJECT_VERSION=4 FAKE_SECURITY_EXIT=128 "$relea
 assert_equals "$CAPTURED_EXIT_CODE" "1"
 assert_contains "$REPLY" "error: App Store Connect credentials were not provided"
 assert_equals "$(<"$release_log")" ""
+
+reset_credentials_logs
+: >"$release_log"
+run_release_and_capture CURRENT_PROJECT_VERSION=4 FAKE_SECURITY_EXIT=44 "$release_repo/Scripts/release.sh"
+assert_equals "$CAPTURED_EXIT_CODE" "1"
+assert_contains "$REPLY" "error: App Store Connect credentials are required for a release."
+assert_equals "$(<"$release_log")" ""
+
+reset_credentials_logs
+: >"$release_log"
+run_release_and_capture CURRENT_PROJECT_VERSION=4 APP_STORE_CONNECT_AUTH_KEY_ID=ENVKEYID123 "$release_repo/Scripts/release.sh"
+assert_equals "$CAPTURED_EXIT_CODE" "1"
+assert_contains "$REPLY" "must be set together"
+assert_equals "$(<"$release_log")" ""
+assert_equals "$(<"$credentials_security_log")" ""
+
+reset_credentials_logs
+: >"$release_log"
+run_release_and_capture CURRENT_PROJECT_VERSION=4 ROUTINE_UPLOAD_IPA_PATH=build/custom/Routine.ipa FAKE_SECURITY_EXIT=0 FAKE_SECURITY_ITEM="$credentials_item" "$release_repo/Scripts/release.sh"
+assert_equals "$CAPTURED_EXIT_CODE" "0"
+assert_equals "$(last_line "$REPLY")" "Build 4 (delivery DELIV-9) processing state: VALID"
+assert_no_leftover_keys
 
 make_release_output="$workdir/make-release-output.txt"
 

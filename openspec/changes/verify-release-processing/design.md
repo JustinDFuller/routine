@@ -40,7 +40,7 @@ Alternatives:
 
 ### The loader only reads the Keychain when the variables are unset
 
-`Scripts/app-store-connect-credentials.sh` is sourced by the scripts that need credentials. If all three variables are set, it does nothing, which is the CI path and keeps today's behavior. If none is set, it reads the Keychain item, writes the key to a `mktemp` file with mode `0600`, exports the three variables, and leaves removal of the file to a cleanup function. Each calling script installs `trap routine_cleanup_app_store_connect_credentials EXIT` (plus `INT`, `TERM`, and `HUP` mapped to exit) right after loading, because zsh runs an `EXIT` trap set inside a function when that function returns, and its exit hooks do not run when `set -e` aborts the script. If only some are set, it leaves them alone so the existing validation reports that they must be set together.
+`Scripts/app-store-connect-credentials.sh` is sourced by the scripts that need credentials. If all three variables are set, it does nothing, which is the CI path and keeps today's behavior. If none is set, it reads the Keychain item, writes the key to a `mktemp` file with mode `0600`, exports the three variables, and leaves removal of the file to a cleanup function. Each calling script installs `trap routine_cleanup_app_store_connect_credentials EXIT` (plus `INT`, `TERM`, and `HUP` mapped to exit) right after loading, because zsh runs an `EXIT` trap set inside a function when that function returns, so the loader cannot own the trap. If only some are set, it leaves them alone so the existing validation reports that they must be set together.
 
 The Keychain read uses `security find-generic-password -w`, and `SECURITY_BIN` can be overridden so tests use a fake. The loader then calls the existing `routine_validate_app_store_connect_auth_key_trio`.
 
@@ -53,9 +53,7 @@ Alternatives:
 
 `Scripts/release.sh` loads credentials, then runs `release-preflight.sh`, `upload-ios.sh`, and `build-status.sh` in order, and the `Makefile` `release` target calls it. Because the exported variables are inherited by the child scripts, which then skip the Keychain, a local release prompts once. Each script still sources the loader so that running it on its own works.
 
-The preflight stages are run without the three credential variables when they came from the Keychain, so `release-preflight.sh` behaves as it does today without credentials and the key is not handed to the Xcode build and export stages. When the variables came from the environment, they are passed through unchanged.
-
-The preflight stages do not need credentials, but loading first means a denied prompt fails the release before the slow archive, not after it.
+The preflight stages inherit the same credentials as any environment-supplied release. Loading first, and checking that credentials exist, means a denied prompt or a missing Keychain item fails the release before the slow archive, not after it.
 
 Alternative: keep the two-line `make` recipe and let each script load credentials. Rejected: two prompts, and the denial would surface only after the archive.
 

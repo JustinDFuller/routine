@@ -27,8 +27,10 @@ for setting in "$interval" "$timeout"; do
     fi
 done
 
+status_error_file="$(mktemp)"
+
 routine_load_app_store_connect_credentials || exit 1
-trap routine_cleanup_app_store_connect_credentials EXIT
+trap 'rm -f "$status_error_file"; routine_cleanup_app_store_connect_credentials' EXIT
 trap 'exit 130' INT TERM HUP
 routine_validate_app_store_connect_auth_key_trio \
     "${APP_STORE_CONNECT_AUTH_KEY_PATH:-}" \
@@ -66,7 +68,7 @@ while true; do
         --api-key "$APP_STORE_CONNECT_AUTH_KEY_ID" \
         --api-issuer "$APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID" \
         --p8-file-path "$APP_STORE_CONNECT_AUTH_KEY_PATH" \
-        --output-format json 2>&1)"; then
+        --output-format json 2>"$status_error_file")"; then
         queried_state="$(print -r -- "$response" | plutil -extract app-store-attributes.processingState raw -o - - 2>/dev/null || true)"
         queried_version="$(print -r -- "$response" | plutil -extract app-store-attributes.version raw -o - - 2>/dev/null || true)"
 
@@ -74,11 +76,15 @@ while true; do
             state="$queried_state"
         fi
 
-        if [[ -n "$queried_version" ]]; then
+        if [[ -n "$queried_version" && -z "${CURRENT_PROJECT_VERSION:-}" ]]; then
             build_label="$queried_version"
         fi
     else
-        echo "Status query failed, will retry: $response" >&2
+        failure_detail="$response"
+        if [[ -s "$status_error_file" ]]; then
+            failure_detail="$(<"$status_error_file")${response:+ $response}"
+        fi
+        echo "Status query failed, will retry: $failure_detail" >&2
     fi
 
     case "$state" in

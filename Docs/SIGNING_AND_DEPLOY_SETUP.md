@@ -38,7 +38,7 @@ If a beta Xcode is installed and set as the active `xcode-select` toolchain (com
 
 ## Local Credentials in the Keychain
 
-The release scripts (`archive-ios.sh`, `export-ios.sh`, `upload-ios.sh`, `build-status.sh`, `release.sh`, `deploy-device.sh`, and `release-preflight.sh`) read the App Store Connect credentials from one macOS Keychain item, so nothing secret sits in your shell profile or in a loose file that any process running as you can read.
+The release scripts that talk to App Store Connect (`release.sh`, `upload-ios.sh`, and `build-status.sh`) read the App Store Connect credentials from one macOS Keychain item, so nothing secret sits in your shell profile or in a loose file that any process running as you can read.
 
 Store them once, after you have the `.p8`, Key ID, and Issuer ID from the section above:
 
@@ -46,7 +46,7 @@ Store them once, after you have the `.p8`, Key ID, and Issuer ID from the sectio
 ./Scripts/store-app-store-connect-credentials.sh XXXXXXXXXX xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx ~/.appstoreconnect/private_keys/AuthKey_XXXX.p8
 ```
 
-The item is created in your login Keychain as service `routine.app-store-connect`, account `release`, with no trusted applications. macOS therefore shows a prompt every time the item is read, which is once per `make release`, `make build-status`, or `make upload-ios` run. The key is written to a private temporary file (mode `0600`) for the length of the command and removed when the command ends, whether it succeeds or fails.
+The item is created in your login Keychain as service `routine.app-store-connect`, account `release`, with no trusted applications. macOS therefore shows a prompt every time the item is read, which is once per `make release`, `make build-status`, or `make upload-ios` run. Running the setup command again replaces the item, so any earlier "Always Allow" is cleared. The key is written to a private temporary file (mode `0600`) for the length of the command and removed when the command ends, whether it succeeds or fails.
 
 Click **Allow** on the prompt. Never click **Always Allow**: that would trust `security` to read the item silently, for every caller including agents.
 
@@ -55,7 +55,7 @@ After storing the item:
 1. Keep a backup of the `.p8` in your password manager. Apple only lets you download it once, and the Keychain item is not a backup.
 2. Delete the loose `.p8` from `~/.appstoreconnect/private_keys` yourself once the backup is safe. The scripts never delete it for you.
 
-If `APP_STORE_CONNECT_AUTH_KEY_PATH`, `APP_STORE_CONNECT_AUTH_KEY_ID`, and `APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID` are already set in the environment, the scripts use them and never touch the Keychain. This is how CI works, with the values coming from repository secrets. Set only some of them and the scripts fail with a "must be set together" error.
+If `APP_STORE_CONNECT_AUTH_KEY_PATH`, `APP_STORE_CONNECT_AUTH_KEY_ID`, and `APP_STORE_CONNECT_AUTH_KEY_ISSUER_ID` are already set in the environment, the scripts use them and never touch the Keychain. This is how CI works, with the values coming from repository secrets. Set only some of them and the scripts fail with a "must be set together" error. If you set up credentials with the older `export APP_STORE_CONNECT_AUTH_KEY_*` lines in your shell profile, remove them: they take precedence over the Keychain, so the loose `.p8` would keep being used without a prompt.
 
 `DEVELOPMENT_TEAM` already defaults to `CX2KMQZQ7X` inside `archive-ios.sh`, `export-ios.sh`, and `deploy-device.sh`; only export it if you need to override the default. The App Store Connect credentials are required together for `upload-ios.sh` and `build-status.sh`, and optional (but recommended for headless use) for `archive-ios.sh`/`export-ios.sh`. When all three are supplied, the scripts fail before invoking Xcode if the key path is unreadable.
 

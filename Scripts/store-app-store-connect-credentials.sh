@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 security_bin="${SECURITY_BIN:-security}"
-service="${ROUTINE_ASC_KEYCHAIN_SERVICE:-routine.app-store-connect}"
+service="routine.app-store-connect"
 
 if (( $# != 3 )); then
     echo "usage: ./Scripts/store-app-store-connect-credentials.sh <key-id> <issuer-id> <path-to-AuthKey.p8>" >&2
@@ -27,6 +27,8 @@ if ! grep -q "PRIVATE KEY" "$key_path"; then
 fi
 
 encoded_key="$(base64 <"$key_path" | tr -d '\n')"
+
+"$security_bin" delete-generic-password -s "$service" -a release >/dev/null 2>&1 || true
 
 print -r -- "add-generic-password -U -s $service -a release -T \"\" -w ${key_id}:${issuer_id}:${encoded_key}" | "$security_bin" -i >/dev/null
 
