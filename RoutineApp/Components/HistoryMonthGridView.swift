@@ -159,14 +159,11 @@ struct HistoryMonthGridView: View {
     private var swipeGesture: some Gesture {
         DragGesture(minimumDistance: 20)
             .onEnded { value in
-                let horizontal = value.translation.width
-                let vertical = value.translation.height
-
-                guard abs(horizontal) > 50, abs(horizontal) > 2 * abs(vertical) else {
+                guard let offset = HistoryMonthNavigation.swipeOffset(forTranslation: value.translation) else {
                     return
                 }
 
-                onShowMonth(horizontal > 0 ? -1 : 1)
+                onShowMonth(offset)
             }
     }
 

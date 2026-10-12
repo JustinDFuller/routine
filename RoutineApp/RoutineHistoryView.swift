@@ -153,6 +153,7 @@ struct RoutineHistoryView: View {
         .accessibilityIdentifier("routine-history-root")
         .onDisappear {
             undoDismissTask?.cancel()
+            pendingMove?.task.cancel()
         }
     }
 
@@ -402,7 +403,12 @@ struct RoutineHistoryView: View {
         pendingDay = nil
 
         let animation = isPickerOpen && closesPicker == false ? nil : monthAnimation
-        let needsEdgeRender = slideEdge != edge && isPickerOpen == false && animationsAreDisabled == false
+        let needsEdgeRender = HistoryMonthNavigation.defersMonthChange(
+            currentEdgeIsLeading: slideEdge == .leading,
+            newEdgeIsLeading: edge == .leading,
+            isPickerOpen: isPickerOpen,
+            animationsAreDisabled: animationsAreDisabled
+        )
 
         guard needsEdgeRender, animation != nil else {
             slideEdge = edge
@@ -446,6 +452,8 @@ struct RoutineHistoryView: View {
     }
 
     private func tapDay(_ day: HistoryCalendarDay) {
+        flushPendingMove()
+
         guard day.isFuture == false else {
             return
         }

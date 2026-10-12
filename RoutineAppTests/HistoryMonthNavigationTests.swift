@@ -111,4 +111,41 @@ final class HistoryMonthNavigationTests: XCTestCase {
         XCTAssertEqual(routineCalendar.historyMonthTitle(for: try month(2026, 6, 15)), "June 2026")
         XCTAssertEqual(routineCalendar.historyMonthTitle(for: try month(2025, 12)), "December 2025")
     }
+
+    func testSwipeRightIsPreviousMonth() {
+        XCTAssertEqual(HistoryMonthNavigation.swipeOffset(forTranslation: CGSize(width: 120, height: 10)), -1)
+    }
+
+    func testSwipeLeftIsNextMonth() {
+        XCTAssertEqual(HistoryMonthNavigation.swipeOffset(forTranslation: CGSize(width: -120, height: -10)), 1)
+    }
+
+    func testShortHorizontalDragIsNotASwipe() {
+        XCTAssertNil(HistoryMonthNavigation.swipeOffset(forTranslation: CGSize(width: 50, height: 0)))
+        XCTAssertNil(HistoryMonthNavigation.swipeOffset(forTranslation: CGSize(width: -40, height: 5)))
+    }
+
+    func testDiagonalDragIsNotASwipe() {
+        XCTAssertNil(HistoryMonthNavigation.swipeOffset(forTranslation: CGSize(width: 60, height: 200)))
+        XCTAssertNil(HistoryMonthNavigation.swipeOffset(forTranslation: CGSize(width: 100, height: 60)))
+    }
+
+    func testVerticalDragIsNotASwipe() {
+        XCTAssertNil(HistoryMonthNavigation.swipeOffset(forTranslation: CGSize(width: 2, height: 300)))
+    }
+
+    func testMonthChangeIsDeferredOnlyWhenDirectionFlipsWithAnimationAndGridShowing() {
+        XCTAssertTrue(
+            HistoryMonthNavigation.defersMonthChange(
+                currentEdgeIsLeading: false, newEdgeIsLeading: true, isPickerOpen: false, animationsAreDisabled: false))
+        XCTAssertFalse(
+            HistoryMonthNavigation.defersMonthChange(
+                currentEdgeIsLeading: true, newEdgeIsLeading: true, isPickerOpen: false, animationsAreDisabled: false))
+        XCTAssertFalse(
+            HistoryMonthNavigation.defersMonthChange(
+                currentEdgeIsLeading: false, newEdgeIsLeading: true, isPickerOpen: true, animationsAreDisabled: false))
+        XCTAssertFalse(
+            HistoryMonthNavigation.defersMonthChange(
+                currentEdgeIsLeading: false, newEdgeIsLeading: true, isPickerOpen: false, animationsAreDisabled: true))
+    }
 }

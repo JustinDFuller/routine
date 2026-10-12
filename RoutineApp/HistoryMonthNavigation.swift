@@ -31,6 +31,26 @@ struct HistoryMonthNavigation {
         year >= today.year ? 1...today.month : 1...12
     }
 
+    static func swipeOffset(forTranslation translation: CGSize) -> Int? {
+        let horizontal = translation.width
+        let vertical = translation.height
+
+        guard abs(horizontal) > 50, abs(horizontal) > 2 * abs(vertical) else {
+            return nil
+        }
+
+        return horizontal > 0 ? -1 : 1
+    }
+
+    static func defersMonthChange(
+        currentEdgeIsLeading: Bool,
+        newEdgeIsLeading: Bool,
+        isPickerOpen: Bool,
+        animationsAreDisabled: Bool
+    ) -> Bool {
+        currentEdgeIsLeading != newEdgeIsLeading && isPickerOpen == false && animationsAreDisabled == false
+    }
+
     func isSameMonth(_ lhs: RoutineDay, _ rhs: RoutineDay) -> Bool {
         lhs.year == rhs.year && lhs.month == rhs.month
     }
