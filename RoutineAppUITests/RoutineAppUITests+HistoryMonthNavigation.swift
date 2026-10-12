@@ -44,6 +44,20 @@ extension RoutineAppUITests {
         XCTAssertFalse(app.buttons["routine-history-today-button"].exists)
     }
 
+    func testHistoryWeekdayHeaderExposesDisplayedMonthAsValue() {
+        let app = openMorningYogaHistory()
+        let title = app.buttons["routine-history-month-title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        let header = identifiedElement("routine-history-weekday-header", in: app)
+        XCTAssertTrue(header.waitForExistence(timeout: 5))
+        XCTAssertEqual(header.value as? String, "June 2026")
+
+        monthGrid(in: app).swipeRight()
+        waitForTitle("May 2026, choose month", in: title)
+
+        XCTAssertEqual(identifiedElement("routine-history-weekday-header", in: app).value as? String, "May 2026")
+    }
+
     func testHistorySwipeLeftOnCurrentMonthDoesNothing() {
         let app = openMorningYogaHistory()
         let title = app.buttons["routine-history-month-title"]

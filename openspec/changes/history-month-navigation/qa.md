@@ -29,5 +29,5 @@ Run on commit a6dd93d in the iOS 26.5 simulator ("Routine iPhone 17"), using the
 
 ## Not verified manually
 
-- The VoiceOver adjustable action on the grid (task 4.2). XCUITest cannot invoke it, and VoiceOver was not run. The navigation rules it uses are covered by unit tests.
+- VoiceOver itself (task 4.2). The adjustable action sits on the weekday header, a single focusable element whose value is the displayed month, so VoiceOver can reach it. XCUITest cannot invoke an adjustable action, and VoiceOver was not run, so a swipe up or down on that element has not been exercised. The navigation rules it uses are covered by unit tests, and a UI test checks the header value follows the displayed month.
 - The Reduce Motion cross-fade. It is driven by the same flag the app's animation-disabling launch argument uses, which the UI tests exercise, but the system Reduce Motion setting was not toggled.

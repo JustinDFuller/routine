@@ -132,6 +132,18 @@ struct HistoryMonthGridView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityIdentifier("routine-history-weekday-header")
             .accessibilityLabel(weekdaySymbols.joined(separator: " "))
+            .accessibilityValue(monthTitle)
+            .accessibilityHint("Swipe up for the next month, swipe down for the previous month")
+            .accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment:
+                    onAdjustMonth(1)
+                case .decrement:
+                    onAdjustMonth(-1)
+                @unknown default:
+                    break
+                }
+            }
 
             ForEach(weeks) { week in
                 weekRow(week)
@@ -140,16 +152,6 @@ struct HistoryMonthGridView: View {
         .contentShape(Rectangle())
         .simultaneousGesture(swipeGesture)
         .accessibilityElement(children: .contain)
-        .accessibilityAdjustableAction { direction in
-            switch direction {
-            case .increment:
-                onAdjustMonth(1)
-            case .decrement:
-                onAdjustMonth(-1)
-            @unknown default:
-                break
-            }
-        }
     }
 
     private var swipeGesture: some Gesture {
