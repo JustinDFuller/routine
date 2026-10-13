@@ -1140,7 +1140,7 @@ Purpose:
 Structure:
 
 1. Summary header
-2. Current-month calendar grid
+2. Month calendar grid (current month by default, with swipe and picker month navigation)
 3. Recent completions list
 
 Summary header:
@@ -1392,7 +1392,7 @@ The data design is satisfied when an implementation can meet these scenarios:
 - Current week progress counts Monday-start calendar weeks.
 - Current month progress counts calendar months.
 - Last-done labels derive from completion history.
-- History shows routine summary, current-month completion marks, and recent completions.
+- History shows routine summary, completion marks for the displayed month, and recent completions.
 - Historical completion removal requires confirmation and updates progress.
 - The Today Dashboard owns add, edit, delete, and reorder routine flows through menus, sheets, and rearrange modes.
 - Group management supports add, rename, reorder, and delete empty groups from dashboard-owned flows.

@@ -10,6 +10,8 @@ extension RoutineAppUITests {
         XCTAssertFalse(identifiedElement("routine-history-today-button", in: app).exists)
         XCTAssertFalse(app.buttons["Show previous month"].exists)
         XCTAssertFalse(app.buttons["Show next month"].exists)
+        XCTAssertFalse(identifiedElement("routine-history-previous-month-button", in: app).exists)
+        XCTAssertFalse(identifiedElement("routine-history-next-month-button", in: app).exists)
     }
 
     func testHistoryReopeningAfterBrowsingShowsCurrentMonth() {
@@ -114,7 +116,9 @@ extension RoutineAppUITests {
         let app = makeApp(additionalLaunchArguments: [])
         app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
         app.launch()
-        app.buttons["routine-card-history-morning-yoga"].tap()
+        let historyButton = app.buttons["routine-card-history-morning-yoga"]
+        XCTAssertTrue(historyButton.waitForExistence(timeout: 5))
+        historyButton.tap()
         XCTAssertTrue(app.navigationBars["History"].waitForExistence(timeout: 5))
         let title = app.buttons["routine-history-month-title"]
         XCTAssertTrue(title.waitForExistence(timeout: 5))
@@ -122,7 +126,7 @@ extension RoutineAppUITests {
         XCTAssertTrue(recent.waitForExistence(timeout: 5))
         let before = recent.frame.minY
 
-        app.swipeUp()
+        monthGrid(in: app).swipeUp()
 
         XCTAssertLessThan(recent.frame.minY, before)
         XCTAssertEqual(title.label, "June 2026, choose month")
