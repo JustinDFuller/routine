@@ -42,6 +42,6 @@ VoiceOver itself cannot run in the simulator, and XCUITest cannot invoke an adju
 
 The test passed with the setting enabled. With it disabled, as on a stock simulator and in CI, the test reports itself skipped instead of failing. The setting was turned back off afterwards.
 
-## Not verified manually
+## Won't do
 
-- A real VoiceOver session on a device (task 4.2). The adjustable action, its label, its value and its focusability are checked as above, but spoken output and the swipe gesture itself were not.
+- A real VoiceOver session on a device (task 4.2). The owner decided on 2026-10-13 not to run it and to finalize without it. The adjustable action, its label, its value and its focusability are checked as above, but spoken output and the swipe gesture itself were not, and will not be verified as part of this change.
