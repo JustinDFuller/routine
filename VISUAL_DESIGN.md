@@ -618,13 +618,17 @@ Recommended last-done phrasing:
 
 #### Calendar-like month view
 
-Use a compact month grid for the current month as the primary visual history surface.
+Use a compact month grid as the primary visual history surface. It opens on the current month and can be browsed to any earlier month.
 
 Behavior:
 
 - Completed dates are visibly marked
 - Today's date is visibly distinguishable whether completed or not
-- The current month context is obvious
+- The displayed month context is obvious
+- Swiping right shows the previous month and swiping left shows the next month, with a slide that follows the swipe direction and a cross-fade when motion is reduced
+- Forward navigation stops at the current month
+- The month title is a button with a chevron that opens a month and year wheel in place of the grid, and tapping it again returns to the grid
+- A Today button appears beside the title only when a month other than the current one is displayed, and returns to the current month
 - The calendar should stay calm and readable, not become a dense analytics heatmap
 
 Recommended marking style:

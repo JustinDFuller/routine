@@ -113,6 +113,7 @@ Core invariants that require automated coverage when touched:
 | DONE | M22 - Build And Deploy Without Xcode | The app and widget can be installed on a device and shipped to TestFlight from the command line, with an optional manual cloud release workflow. |
 | DONE | M23 - Widget Hides Out-Of-Window Routines | The widget never offers a routine outside its time window, and the Soft/Hard picker becomes an off-by-default Strict window toggle. |
 | DONE | M24 - Verified Release Processing | `make release` and the CI release wait for App Store Connect processing and report the result, and local credentials live in the macOS Keychain with a prompt on every use. |
+| DONE | M25 - Browsable History Months | The History month grid can be browsed to earlier months by swipe or a month and year picker, with a Today shortcut and forward navigation capped at the current month. |
 
 ## Milestones
 
@@ -1168,6 +1169,36 @@ Validation:
 - After merge, run the "iOS Release" workflow and confirm the final log line and run summary. This does not block the merge.
 
 Manual validation status: the Allow and Deny runs passed with the maintainer on 2026-10-12 (task 4.2). The CI release run for build 5 also passed (task 4.3): the Release step ended with `Build 5 (delivery bfd68293-d40b-4eac-b34a-1f68c9392a6a) processing state: VALID`.
+
+Completion update:
+
+- Mark this milestone `DONE`.
+- Keep the `Current Milestone` line as `Roadmap complete`.
+
+### M25 - Browsable History Months
+
+Status: `DONE`
+
+Goal: let the History month grid show any earlier month instead of only the current one, using swipe and a month and year picker.
+
+Dependencies: M07, M20.
+
+Primary references: [VISUAL_DESIGN.md](VISUAL_DESIGN.md) Calendar-like month view, [DATA_DESIGN.md](DATA_DESIGN.md) History Query, and the OpenSpec change `history-month-navigation`.
+
+Deliverables:
+
+- Add `nextPeriodRange(for:after:)` to `RoutineCalendar`.
+- Add `isDisplayingCurrentMonth` and `pickerYears` to the history view data.
+- Replace the back arrow with horizontal swipe navigation, a slide transition, and a cross-fade when animations are disabled.
+- Make the month title a button that opens month and year wheels in place of the grid, and show a Today button off the current month.
+- Add an accessibility adjustable action and announcement for month changes.
+- Reconcile the design docs.
+
+Validation:
+
+- Run `./Scripts/test-core.sh` and `./Scripts/test-ios.sh`.
+- Run `./Scripts/validate.sh`.
+- Record the app in the simulator swiping across a year boundary, using the wheels, tapping Today, and completing a day in an earlier month.
 
 Completion update:
 

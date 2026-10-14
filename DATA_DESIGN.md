@@ -861,7 +861,7 @@ History needs:
 
 - The routine by ID
 - Current-period completions for the summary
-- Current-month completions for the month grid
+- Completions for the displayed month in the month grid, which defaults to the current month and can be any month up to the current one
 - Recent completions in descending date order
 
 Recommended projection:
@@ -874,7 +874,9 @@ struct RoutineHistoryViewData: Equatable, Sendable {
     let progress: RoutineProgress
     let streakSummaryText: String?
     let streakAccessibilityText: String?
-    let monthDays: [HistoryCalendarDay]
+    let weeks: [HistoryCalendarWeek]
+    let isDisplayingCurrentMonth: Bool
+    let pickerYears: ClosedRange<Int>
     let recentCompletions: [CompletionListItem]
 }
 ```
@@ -884,6 +886,9 @@ Rules:
 - `streakSummaryText` is `nil` when the streak count is zero; otherwise it is a plain human-readable phrase such as `3 weeks in a row` or `2 months in a row`.
 - `streakAccessibilityText` mirrors `streakSummaryText` and is included in the history summary's combined VoiceOver label when non-nil.
 - `HistoryProjectionBuilder` computes both fields from `StreakCalculator` on every projection build, after any completion, undo, or historical correction.
+- `weeks` describes the displayed month, not always the current month. Only the displayed month is built, so the cost does not grow with the distance from today. The summary progress, streak text, and recent completions do not depend on the displayed month.
+- `isDisplayingCurrentMonth` is true only when the displayed month shares a year and month with today.
+- `pickerYears` runs from the earliest of the routine's creation year, the earliest completion's year, and today's year minus five, through today's year. The year wheel in the view extends this down to the displayed year when swiping has gone further back.
 
 The recent completions list should sort by `dayKey` descending, then `completedAt` descending.
 
@@ -1129,13 +1134,13 @@ Purpose:
 
 - Answer "When did I last do this?"
 - Show current period progress.
-- Show current month completion marks.
+- Show completion marks for the displayed month, which defaults to the current month.
 - Allow removal of incorrect completions.
 
 Structure:
 
 1. Summary header
-2. Current-month calendar grid
+2. Month calendar grid (current month by default, with swipe and picker month navigation)
 3. Recent completions list
 
 Summary header:
@@ -1387,7 +1392,7 @@ The data design is satisfied when an implementation can meet these scenarios:
 - Current week progress counts Monday-start calendar weeks.
 - Current month progress counts calendar months.
 - Last-done labels derive from completion history.
-- History shows routine summary, current-month completion marks, and recent completions.
+- History shows routine summary, completion marks for the displayed month, and recent completions.
 - Historical completion removal requires confirmation and updates progress.
 - The Today Dashboard owns add, edit, delete, and reorder routine flows through menus, sheets, and rearrange modes.
 - Group management supports add, rename, reorder, and delete empty groups from dashboard-owned flows.

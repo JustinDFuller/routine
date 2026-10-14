@@ -3,68 +3,50 @@ import SwiftUI
 
 struct HistoryMonthGridView: View {
     let weeks: [HistoryCalendarWeek]
+    let displayedMonth: RoutineDay
     let routineCalendar: RoutineCalendar
-    let onShowPreviousMonth: () -> Void
+    let isDisplayingCurrentMonth: Bool
+    let pickerYears: ClosedRange<Int>
+    let monthsInYear: (Int) -> ClosedRange<Int>
+    let isPickerOpen: Bool
+    let slideEdge: Edge
+    let usesCrossFade: Bool
+    let onTogglePicker: () -> Void
+    let onShowMonth: (Int) -> Void
+    let onAdjustMonth: (Int) -> Void
+    let onSelectMonth: (Int, Int) -> Void
+    let onShowToday: () -> Void
     let onTapDay: (HistoryCalendarDay) -> Void
     let popoverIsPresented: (String) -> Binding<Bool>
     let onConfirmDay: () -> Void
-    private var monthTitle: String {
-        guard let firstDay = weeks.first(where: { $0.days.isEmpty == false })?.days.first else {
-            return "This month"
-        }
 
-        let formatter = DateFormatter()
-        formatter.calendar = routineCalendar.calendar
-        formatter.timeZone = routineCalendar.calendar.timeZone
-        formatter.locale = routineCalendar.calendar.locale ?? Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: date(for: firstDay.day))
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var frozenWheelYears: ClosedRange<Int>?
+
+    private var monthTitle: String {
+        routineCalendar.historyMonthTitle(for: displayedMonth)
     }
 
     private var weekdaySymbols: [String] {
         routineCalendar.orderedWeekdaySymbols
     }
 
+    private var monthTransition: AnyTransition {
+        usesCrossFade ? .opacity : .push(from: slideEdge)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 8) {
-                Text(monthTitle)
-                    .font(.headline.weight(.semibold))
-                    .foregroundStyle(Color.routineLabelPrimary)
-                    .accessibilityIdentifier("routine-history-month-title")
+            header
 
-                Spacer()
-
-                Button(action: onShowPreviousMonth) {
-                    Image(systemName: "chevron.left")
-                        .font(.subheadline.weight(.semibold))
-                }
-                .buttonStyle(.bordered)
-                .tint(Color.routineLabelSecondary)
-                .frame(minWidth: 44, minHeight: 44)
-                .accessibilityIdentifier("routine-history-previous-month-button")
-                .accessibilityLabel("Show previous month")
-                .accessibilityHint("Shows the previous calendar month")
-            }
-
-            VStack(spacing: 10) {
-                HStack(spacing: 8) {
-                    ForEach(weekdaySymbols, id: \.self) { symbol in
-                        Text(symbol)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Color.routineLabelSecondary)
-                            .frame(maxWidth: .infinity)
-                    }
-                }
-                .padding(.horizontal, 6)
-                .accessibilityElement(children: .ignore)
-                .accessibilityIdentifier("routine-history-weekday-header")
-                .accessibilityLabel(weekdaySymbols.joined(separator: " "))
-
-                ForEach(weeks) { week in
-                    weekRow(week)
+            ZStack {
+                if isPickerOpen {
+                    wheels
+                } else {
+                    monthGrid
                 }
             }
+            .clipped()
         }
         .padding(16)
         .background(
@@ -77,6 +59,161 @@ struct HistoryMonthGridView: View {
         )
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("routine-history-month-grid")
+        .onChange(of: isPickerOpen) { _, isOpen in
+            frozenWheelYears = isOpen ? openingWheelYears : nil
+        }
+    }
+
+    private var header: some View {
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 8) {
+                    titleButton
+                    todayButton
+                }
+            } else {
+                HStack(spacing: 8) {
+                    titleButton
+                    Spacer(minLength: 8)
+                    todayButton
+                }
+            }
+        }
+    }
+
+    private var titleButton: some View {
+        Button(action: onTogglePicker) {
+            HStack(spacing: 6) {
+                Text(monthTitle)
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(Color.routineLabelPrimary)
+
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Color.routineLabelSecondary)
+                    .rotationEffect(.degrees(isPickerOpen ? 90 : 0))
+                    .accessibilityHidden(true)
+            }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("routine-history-month-title")
+        .accessibilityLabel("\(monthTitle), choose month")
+        .accessibilityHint(isPickerOpen ? "Shows the month grid" : "Shows month and year wheels")
+    }
+
+    @ViewBuilder
+    private var todayButton: some View {
+        if isDisplayingCurrentMonth == false {
+            Button("Today", action: onShowToday)
+                .font(.subheadline.weight(.semibold))
+                .buttonStyle(.bordered)
+                .tint(Color.routineAccentActive)
+                .frame(minHeight: 44)
+                .accessibilityIdentifier("routine-history-today-button")
+                .accessibilityLabel("Today, show current month")
+        }
+    }
+
+    private var monthGrid: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 8) {
+                ForEach(weekdaySymbols, id: \.self) { symbol in
+                    Text(symbol)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.routineLabelSecondary)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.horizontal, 6)
+            .accessibilityElement(children: .ignore)
+            .accessibilityIdentifier("routine-history-weekday-header")
+            .accessibilityLabel(weekdaySymbols.joined(separator: " "))
+            .accessibilityValue(monthTitle)
+            .accessibilityHint("Swipe up for the next month, swipe down for the previous month")
+            .accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment:
+                    onAdjustMonth(1)
+                case .decrement:
+                    onAdjustMonth(-1)
+                @unknown default:
+                    break
+                }
+            }
+
+            VStack(spacing: 10) {
+                ForEach(weeks) { week in
+                    weekRow(week)
+                }
+            }
+            .id(String(displayedMonth.key.prefix(7)))
+            .transition(monthTransition)
+        }
+        .contentShape(Rectangle())
+        .simultaneousGesture(swipeGesture)
+        .accessibilityElement(children: .contain)
+    }
+
+    private var swipeGesture: some Gesture {
+        DragGesture(minimumDistance: 20)
+            .onEnded { value in
+                guard let offset = HistoryMonthNavigation.swipeOffset(forTranslation: value.translation) else {
+                    return
+                }
+
+                onShowMonth(offset)
+            }
+    }
+
+    private var wheels: some View {
+        HStack(spacing: 0) {
+            Picker("Month", selection: monthSelection) {
+                ForEach(Array(monthsInYear(displayedMonth.year)), id: \.self) { month in
+                    Text(monthName(month)).tag(month)
+                }
+            }
+            .pickerStyle(.wheel)
+            .accessibilityLabel("Month")
+            .accessibilityIdentifier("routine-history-month-wheel")
+
+            Picker("Year", selection: yearSelection) {
+                ForEach(Array(wheelYears), id: \.self) { year in
+                    Text(verbatim: String(year)).tag(year)
+                }
+            }
+            .pickerStyle(.wheel)
+            .accessibilityLabel("Year")
+            .accessibilityIdentifier("routine-history-year-wheel")
+        }
+        .frame(height: 180)
+    }
+
+    private var wheelYears: ClosedRange<Int> {
+        frozenWheelYears ?? openingWheelYears
+    }
+
+    private var openingWheelYears: ClosedRange<Int> {
+        min(pickerYears.lowerBound, displayedMonth.year)...pickerYears.upperBound
+    }
+
+    private var monthSelection: Binding<Int> {
+        Binding(
+            get: { displayedMonth.month },
+            set: { onSelectMonth(displayedMonth.year, $0) }
+        )
+    }
+
+    private var yearSelection: Binding<Int> {
+        Binding(
+            get: { displayedMonth.year },
+            set: { onSelectMonth($0, displayedMonth.month) }
+        )
+    }
+
+    private func monthName(_ month: Int) -> String {
+        routineCalendar.calendar.monthSymbols[month - 1]
     }
 
     private func weekRow(_ week: HistoryCalendarWeek) -> some View {

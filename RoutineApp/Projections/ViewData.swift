@@ -134,6 +134,8 @@ struct RoutineHistoryViewData: Equatable, Sendable {
     let lastDoneText: String
     let weeks: [HistoryCalendarWeek]
     let recentCompletions: [CompletionListItem]
+    let isDisplayingCurrentMonth: Bool
+    let pickerYears: ClosedRange<Int>
 }
 
 struct HistoryCalendarWeek: Identifiable, Equatable, Sendable {

@@ -24,6 +24,9 @@ struct RoutineHistoryView: View {
     @State private var undoBanner: HistoryUndoPresentation?
     @State private var undoDismissTask: Task<Void, Never>?
     @State private var selectedMonth: RoutineDay?
+    @State private var isPickerOpen = false
+    @State private var slideEdge: Edge = .trailing
+    @State private var pendingMove: PendingMonthMove?
 
     init(routineID: UUID) {
         self.routineID = routineID
@@ -45,8 +48,16 @@ struct RoutineHistoryView: View {
         )
     }
 
+    private var today: RoutineDay {
+        routineCalendar.today(now: runtime.now)
+    }
+
     private var displayedMonth: RoutineDay {
-        selectedMonth ?? routineCalendar.today(now: runtime.now)
+        selectedMonth ?? today
+    }
+
+    private var monthNavigation: HistoryMonthNavigation {
+        HistoryMonthNavigation(routineCalendar: routineCalendar, today: today)
     }
 
     private var projection: RoutineHistoryProjection {
@@ -142,6 +153,8 @@ struct RoutineHistoryView: View {
         .accessibilityIdentifier("routine-history-root")
         .onDisappear {
             undoDismissTask?.cancel()
+            pendingMove?.task.cancel()
+            pendingMove = nil
         }
     }
 
@@ -154,8 +167,19 @@ struct RoutineHistoryView: View {
                     summaryHeader(viewData)
                     HistoryMonthGridView(
                         weeks: viewData.weeks,
+                        displayedMonth: displayedMonth,
                         routineCalendar: routineCalendar,
-                        onShowPreviousMonth: showPreviousMonth,
+                        isDisplayingCurrentMonth: viewData.isDisplayingCurrentMonth,
+                        pickerYears: viewData.pickerYears,
+                        monthsInYear: monthNavigation.availableMonths(inYear:),
+                        isPickerOpen: isPickerOpen,
+                        slideEdge: slideEdge,
+                        usesCrossFade: animationsAreDisabled,
+                        onTogglePicker: togglePicker,
+                        onShowMonth: { showMonth(offset: $0) },
+                        onAdjustMonth: adjustMonth,
+                        onSelectMonth: { showMonth(year: $0, month: $1) },
+                        onShowToday: showToday,
                         onTapDay: tapDay,
                         popoverIsPresented: pendingPopoverIsPresented,
                         onConfirmDay: confirmPendingDay
@@ -330,16 +354,107 @@ struct RoutineHistoryView: View {
         }
     }
 
-    private func showPreviousMonth() {
-        let currentMonth = routineCalendar.currentMonthRange(containing: displayedMonth)
-        selectedMonth =
-            routineCalendar.previousPeriodRange(
-                for: .monthly,
-                before: currentMonth
-            ).lowerBound
+    private var monthAnimation: Animation? {
+        runtime.disablesAnimations ? nil : .easeInOut(duration: 0.25)
+    }
+
+    private func togglePicker() {
+        flushPendingMove()
+        pendingDay = nil
+        isPickerOpen.toggle()
+    }
+
+    private func showMonth(offset: Int) {
+        flushPendingMove()
+        let target = monthNavigation.selection(from: displayedMonth, offset: offset)
+        moveToMonth(target, edge: offset < 0 ? .leading : .trailing)
+    }
+
+    private func showMonth(year: Int, month: Int) {
+        flushPendingMove()
+        let target = monthNavigation.selection(year: year, month: month)
+        let edge: Edge = (target ?? today) < displayedMonth ? .leading : .trailing
+        moveToMonth(target, edge: edge)
+    }
+
+    private func showToday() {
+        flushPendingMove()
+        moveToMonth(nil, edge: .trailing, closesPicker: true)
+    }
+
+    private func adjustMonth(offset: Int) {
+        flushPendingMove()
+        let target = monthNavigation.selection(from: displayedMonth, offset: offset)
+        guard monthNavigation.isSameMonth(target ?? today, displayedMonth) == false else {
+            return
+        }
+
+        moveToMonth(target, edge: offset < 0 ? .leading : .trailing)
+        AccessibilityNotification.Announcement(routineCalendar.historyMonthTitle(for: target ?? today)).post()
+    }
+
+    private func moveToMonth(_ target: RoutineDay?, edge: Edge, closesPicker: Bool = false) {
+        let resolvedTarget = target ?? today
+        let changesMonth = monthNavigation.isSameMonth(resolvedTarget, displayedMonth) == false
+
+        guard changesMonth || (closesPicker && isPickerOpen) else {
+            return
+        }
+
+        pendingDay = nil
+
+        let animation = isPickerOpen && closesPicker == false ? nil : monthAnimation
+        let needsEdgeRender = HistoryMonthNavigation.defersMonthChange(
+            currentEdgeIsLeading: slideEdge == .leading,
+            newEdgeIsLeading: edge == .leading,
+            isPickerOpen: isPickerOpen,
+            animationsAreDisabled: animationsAreDisabled
+        )
+
+        guard needsEdgeRender, animation != nil else {
+            slideEdge = edge
+            applyMonth(target, closesPicker: closesPicker, animation: animation)
+            return
+        }
+
+        slideEdge = edge
+
+        let task = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(30))
+            guard Task.isCancelled == false else {
+                return
+            }
+
+            pendingMove = nil
+            applyMonth(target, closesPicker: closesPicker, animation: animation)
+        }
+        pendingMove = PendingMonthMove(task: task) {
+            applyMonth(target, closesPicker: closesPicker, animation: animation)
+        }
+    }
+
+    private func flushPendingMove() {
+        guard let move = pendingMove else {
+            return
+        }
+
+        move.task.cancel()
+        pendingMove = nil
+        move.apply()
+    }
+
+    private func applyMonth(_ target: RoutineDay?, closesPicker: Bool, animation: Animation?) {
+        withAnimation(animation) {
+            selectedMonth = target
+            if closesPicker {
+                isPickerOpen = false
+            }
+        }
     }
 
     private func tapDay(_ day: HistoryCalendarDay) {
+        flushPendingMove()
+
         guard day.isFuture == false else {
             return
         }
@@ -618,4 +733,9 @@ private struct HistoryRemovalAlert: Equatable {
         self.title = title
         self.message = message
     }
+}
+
+private struct PendingMonthMove {
+    let task: Task<Void, Never>
+    let apply: () -> Void
 }
