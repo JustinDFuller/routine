@@ -627,6 +627,7 @@ Behavior:
 - The displayed month context is obvious
 - Swiping right shows the previous month and swiping left shows the next month, with a slide that follows the swipe direction and a cross-fade when motion is reduced
 - Forward navigation stops at the current month
+- Sideways swipes that start inside the calendar card are owned by the calendar and never take the user back to the previous screen, even when the month cannot change; swipes that start outside the card, including from the left screen edge, still go back
 - The month title is a button with a chevron that opens a month and year wheel in place of the grid, and tapping it again returns to the grid
 - A Today button appears beside the title only when a month other than the current one is displayed, and returns to the current month
 - The calendar should stay calm and readable, not become a dense analytics heatmap
