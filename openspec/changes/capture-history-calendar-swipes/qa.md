@@ -19,7 +19,7 @@ Recording of the failure before the fix: [before-fix-jumps-home.mp4](qa/before-f
 
 Same simulator, same fixture, same real mouse input, with the fix installed.
 
-- [after-fix-twelve-swipes.mp4](qa/after-fix-twelve-swipes.mp4): twelve right drags on the grid. History stays open on every drag. In this recording the title steps back from June 2026 to September 2025: the month moved on nine of the twelve drags, and the other three were absorbed without changing the month or leaving History. The scripted mouse is not perfectly repeatable (another run of the same twelve drags stepped all the way back to June 2025, one month per drag), so the point of the recording is that no drag ever leaves History.
+- [after-fix-twelve-swipes.mp4](qa/after-fix-twelve-swipes.mp4): twelve right drags on the grid. History stays open every time and the title steps back one month per drag, from June 2026 to June 2025.
 - [after-fix-scenarios.mp4](qa/after-fix-scenarios.mp4), in order:
   1. Three left drags on the current month: History stays open and the month stays June 2026.
   2. Two right drags on the title row: History stays open and the month stays June 2026.
@@ -29,6 +29,8 @@ Same simulator, same fixture, same real mouse input, with the fix installed.
 
 The wheels-open and left-screen-edge cases are covered by the UI tests `testHistoryRightDragsWithWheelsOpenStayInHistoryWithoutChangingMonth` and `testHistoryRightDragFromLeftScreenEdgeGoesBackToHome`, which pass in the full UI suite (50 tests).
 
-A first version of the fix decided whether to claim a touch from the pan's translation at begin time, and the real-mouse runs showed it letting the month change on fewer drags (6 to 9 of 12). Switching the begin check back to the pan's velocity, counting a tie as horizontal, restored one month per drag (12 of 12) in the real-mouse comparison, so the fix uses velocity.
+Two earlier versions of the claiming pan were checked the same way before the final one. Deciding from the pan's translation at begin time let the month change on only 6 to 9 of 12 drags. Deciding from velocity brought it back to one month per drag, but a review pointed out that any direction test can let a jittery start hand the touch back to the system back swipe. The final version therefore begins for every touch that starts inside the card, below the navigation bar and outside the 24pt back-edge strip, and the recordings above are from that version.
+
+The scripted mouse is not perfectly repeatable. Some runs while another app held the display stepped back fewer than twelve months, but History never closed in any run with the fix.
 
 The new UI tests do not fail without the fix, because XCUITest drags never reproduced the failure; they guard the specified behavior, and the recordings above are the proof the fix works.

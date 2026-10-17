@@ -315,7 +315,7 @@ extension RoutineAppUITests {
             "January 2026", "December 2025", "November 2025", "October 2025"
         ]
 
-        let starts: [CGFloat] = [0.02, 0.05, 0.1, 0.02, 0.05, 0.1, 0.02, 0.05]
+        let starts: [CGFloat] = [0.05, 0.1, 0.15, 0.05, 0.1, 0.15, 0.05, 0.1]
         for (index, expected) in months.enumerated() {
             dragSlowly(
                 from: CGVector(dx: starts[index], dy: 0.7),

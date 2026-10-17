@@ -29,25 +29,16 @@ final class CalendarSwipeOwnerView: UIView {
         super.didMoveToWindow()
         registeredGuard?.unregister(self)
         registeredGuard = nil
-
-        guard window != nil else {
-            return
-        }
-
         register()
     }
 
-    private func register(retryOnce: Bool = true) {
-        guard window != nil, registeredGuard == nil else {
-            return
-        }
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        register()
+    }
 
-        guard let navigationController = enclosingNavigationController else {
-            if retryOnce {
-                DispatchQueue.main.async { [weak self] in
-                    self?.register(retryOnce: false)
-                }
-            }
+    private func register() {
+        guard window != nil, registeredGuard == nil, let navigationController = enclosingNavigationController else {
             return
         }
 
@@ -68,9 +59,10 @@ final class CalendarSwipeOwnerView: UIView {
     }
 }
 
+@MainActor
 private final class NavigationSwipeGuard: NSObject, UIGestureRecognizerDelegate {
     private static var associationKey: UInt8 = 0
-    private static let leftEdgeExclusion: CGFloat = 24
+    private static let backEdgeExclusion: CGFloat = 24
 
     private let pan = UIPanGestureRecognizer()
     private let cards = NSHashTable<UIView>.weakObjects()
@@ -112,16 +104,15 @@ private final class NavigationSwipeGuard: NSObject, UIGestureRecognizerDelegate 
             return
         }
 
-        var popRecognizers = [navigationController.interactivePopGestureRecognizer]
-
-        if #available(iOS 26, *) {
-            popRecognizers.append(navigationController.interactiveContentPopGestureRecognizer)
+        guard #available(iOS 26, *),
+            let recognizer = navigationController.interactiveContentPopGestureRecognizer,
+            wiredRecognizers.contains(recognizer) == false
+        else {
+            return
         }
 
-        for case let recognizer? in popRecognizers where wiredRecognizers.contains(recognizer) == false {
-            recognizer.require(toFail: pan)
-            wiredRecognizers.add(recognizer)
-        }
+        recognizer.require(toFail: pan)
+        wiredRecognizers.add(recognizer)
     }
 
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
@@ -134,12 +125,7 @@ private final class NavigationSwipeGuard: NSObject, UIGestureRecognizerDelegate 
             return false
         }
 
-        let velocity = pan.velocity(in: view)
-        guard abs(velocity.x) >= abs(velocity.y) else {
-            return false
-        }
-
-        guard start.x > Self.leftEdgeExclusion, isBelowNavigationBar(start, in: view) else {
+        guard isOutsideBackEdge(start, in: view), isBelowNavigationBar(start, in: view) else {
             return false
         }
 
@@ -152,7 +138,31 @@ private final class NavigationSwipeGuard: NSObject, UIGestureRecognizerDelegate 
         _ gestureRecognizer: UIGestureRecognizer,
         shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
     ) -> Bool {
-        true
+        isPopRecognizer(otherGestureRecognizer) == false
+    }
+
+    private func isPopRecognizer(_ recognizer: UIGestureRecognizer) -> Bool {
+        guard let navigationController else {
+            return false
+        }
+
+        if recognizer === navigationController.interactivePopGestureRecognizer {
+            return true
+        }
+
+        if #available(iOS 26, *) {
+            return recognizer === navigationController.interactiveContentPopGestureRecognizer
+        }
+
+        return false
+    }
+
+    private func isOutsideBackEdge(_ point: CGPoint, in view: UIView) -> Bool {
+        if view.effectiveUserInterfaceLayoutDirection == .rightToLeft {
+            return point.x < view.bounds.width - Self.backEdgeExclusion
+        }
+
+        return point.x > Self.backEdgeExclusion
     }
 
     private func isBelowNavigationBar(_ point: CGPoint, in view: UIView) -> Bool {
