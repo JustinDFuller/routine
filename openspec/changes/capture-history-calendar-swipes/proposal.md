@@ -30,7 +30,7 @@ None.
 ## Impact
 
 - UI: `RoutineApp/Components/HistoryMonthGridView.swift` (claim sideways swipes over the calendar card) and a new small UIKit bridge file in `RoutineApp/Components/` that makes the navigation controller's swipe-to-go-back wait for the calendar's swipe.
-- Leaves the month-changing thresholds in `RoutineApp/HistoryMonthNavigation.swift` untouched; the claiming pan begins for any touch that started inside the card.
+- Leaves the month-changing thresholds in `RoutineApp/HistoryMonthNavigation.swift` untouched; the claiming pan begins for any touch that started inside the card, below the navigation bar and outside the 24pt back-edge strip.
 - Tests: `RoutineAppUITests/RoutineAppUITests+HistoryMonthNavigation.swift` gains slower, finger-like drags, plus tests for the title row, the wheels, and a swipe outside the card.
 - Docs: `VISUAL_DESIGN.md` (calendar month view) gains a line on swipe ownership.
 - No data model, storage, notification, or widget changes.
