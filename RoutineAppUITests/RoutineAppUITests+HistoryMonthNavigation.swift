@@ -305,6 +305,133 @@ extension RoutineAppUITests {
         waitForTitle("December 2019, choose month", in: title)
     }
 
+    func testHistoryManySlowRightDragsOnGridStayInHistory() {
+        let app = openAnimatedMorningYogaHistory()
+        let title = app.buttons["routine-history-month-title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+
+        let months = [
+            "May 2026", "April 2026", "March 2026", "February 2026",
+            "January 2026", "December 2025", "November 2025", "October 2025"
+        ]
+
+        let starts: [CGFloat] = [0.05, 0.1, 0.15, 0.05, 0.1, 0.15, 0.05, 0.1]
+        for (index, expected) in months.enumerated() {
+            dragSlowly(
+                from: CGVector(dx: starts[index], dy: 0.7),
+                to: CGVector(dx: 0.9, dy: 0.7),
+                on: monthGrid(in: app)
+            )
+            XCTAssertTrue(app.navigationBars["History"].exists, "Left History before showing \(expected)")
+            waitForTitle("\(expected), choose month", in: title)
+        }
+    }
+
+    func testHistoryRightDragsOnTitleRowStayInHistoryWithoutChangingMonth() {
+        let app = openAnimatedMorningYogaHistory()
+        let title = app.buttons["routine-history-month-title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        let grid = monthGrid(in: app)
+
+        for _ in 0..<3 {
+            dragSlowly(
+                from: grid.coordinate(withNormalizedOffset: CGVector(dx: 0.55, dy: 0.06)),
+                to: grid.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.06))
+            )
+            XCTAssertTrue(app.navigationBars["History"].exists)
+            XCTAssertEqual(title.label, "June 2026, choose month")
+        }
+    }
+
+    func testHistoryRightDragsWithWheelsOpenStayInHistoryWithoutChangingMonth() {
+        let app = openAnimatedMorningYogaHistory()
+        let title = app.buttons["routine-history-month-title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        title.tap()
+        XCTAssertTrue(app.pickerWheels.firstMatch.waitForExistence(timeout: 5))
+        let grid = monthGrid(in: app)
+
+        for _ in 0..<3 {
+            dragSlowly(
+                from: grid.coordinate(withNormalizedOffset: CGVector(dx: 0.55, dy: 0.06)),
+                to: grid.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.06))
+            )
+            XCTAssertTrue(app.navigationBars["History"].exists)
+            XCTAssertTrue(app.pickerWheels.firstMatch.exists)
+            XCTAssertEqual(title.label, "June 2026, choose month")
+        }
+    }
+
+    func testHistoryLeftDragsOnCurrentMonthStayInHistory() {
+        let app = openAnimatedMorningYogaHistory()
+        let title = app.buttons["routine-history-month-title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        let grid = monthGrid(in: app)
+
+        for _ in 0..<3 {
+            dragSlowly(
+                from: grid.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.7)),
+                to: grid.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.7))
+            )
+            XCTAssertTrue(app.navigationBars["History"].exists)
+            XCTAssertEqual(title.label, "June 2026, choose month")
+        }
+    }
+
+    func testHistoryRightDragOnRecentCompletionsGoesBackToHome() {
+        let app = openAnimatedMorningYogaHistory()
+        let recent = app.staticTexts["Recent completions"]
+        XCTAssertTrue(recent.waitForExistence(timeout: 5))
+        XCTAssertTrue(recent.isHittable)
+
+        dragSlowly(
+            from: recent.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.5)),
+            to: recent.coordinate(withNormalizedOffset: CGVector(dx: 2.0, dy: 0.5))
+        )
+
+        XCTAssertTrue(app.buttons["routine-card-history-morning-yoga"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.navigationBars["History"].exists)
+    }
+
+    func testHistoryRightDragFromLeftScreenEdgeGoesBackToHome() {
+        let app = openAnimatedMorningYogaHistory()
+
+        dragSlowly(
+            from: app.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5)),
+            to: app.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.5))
+        )
+
+        XCTAssertTrue(app.buttons["routine-card-history-morning-yoga"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.navigationBars["History"].exists)
+    }
+
+    private func openAnimatedMorningYogaHistory() -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-routine-fixed-date", "2026-06-10",
+            "-routine-use-in-memory-store",
+            "-routine-screenshot-fixture", "full-app"
+        ]
+        app.launch()
+
+        let historyButton = app.buttons["routine-card-history-morning-yoga"]
+        XCTAssertTrue(historyButton.waitForExistence(timeout: 5))
+        historyButton.tap()
+        XCTAssertTrue(app.navigationBars["History"].waitForExistence(timeout: 5))
+        return app
+    }
+
+    private func dragSlowly(from start: CGVector, to end: CGVector, on element: XCUIElement) {
+        dragSlowly(
+            from: element.coordinate(withNormalizedOffset: start),
+            to: element.coordinate(withNormalizedOffset: end)
+        )
+    }
+
+    private func dragSlowly(from start: XCUICoordinate, to end: XCUICoordinate) {
+        start.press(forDuration: 0.3, thenDragTo: end, withVelocity: .default, thenHoldForDuration: 0)
+    }
+
     private func openMorningYogaHistory() -> XCUIApplication {
         let app = makeApp()
         app.launch()

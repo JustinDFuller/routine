@@ -57,6 +57,7 @@ struct HistoryMonthGridView: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(Color.routineDivider.opacity(0.5), lineWidth: 1)
         )
+        .background(CalendarSwipeOwner().accessibilityHidden(true))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("routine-history-month-grid")
         .onChange(of: isPickerOpen) { _, isOpen in
