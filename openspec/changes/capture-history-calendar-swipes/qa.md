@@ -27,10 +27,10 @@ Same simulator, same fixture, same real mouse input, with the fix installed.
   4. A click on Jun 9: the confirmation popover opens ([day-tap-popover.png](qa/day-tap-popover.png)), and a click outside dismisses it.
   5. A right drag on the recent completions section: the app goes back to the home screen ([swipe-below-calendar-goes-home.png](qa/swipe-below-calendar-goes-home.png)).
 
-The wheels-open and left-screen-edge cases are covered by the UI tests `testHistoryRightDragsWithWheelsOpenStayInHistoryWithoutChangingMonth` and `testHistoryRightDragFromLeftScreenEdgeGoesBackToHome`, which pass in the full UI suite (50 tests).
+The wheels-open case (a drag starting on the title row with the wheels open, not on the wheels themselves) and the left-screen-edge case are covered by the UI tests `testHistoryRightDragsWithWheelsOpenStayInHistoryWithoutChangingMonth` and `testHistoryRightDragFromLeftScreenEdgeGoesBackToHome`, which pass in the full UI suite (50 tests).
 
 Two earlier versions of the claiming pan were checked the same way before the final one. Deciding from the pan's translation at begin time let the month change on only 6 to 9 of 12 drags. Deciding from velocity brought it back to one month per drag, but a review pointed out that any direction test can let a jittery start hand the touch back to the system back swipe. The final version therefore begins for every touch that starts inside the card, below the navigation bar and outside the 24pt back-edge strip, and the recordings above are from that version.
 
-The scripted mouse is not perfectly repeatable. Some runs while another app held the display stepped back fewer than twelve months, but History never closed in any run with the fix.
+The scripted mouse is not perfectly repeatable, and the cause of the runs that stepped back fewer than twelve months was not isolated; History never closed in any run with the final fix, and the recorded run stepped back all twelve months. The earlier translation-based version shows that a claiming pan can drop month changes, so this is the behavior to watch on a real device.
 
 The new UI tests do not fail without the fix, because XCUITest drags never reproduced the failure; they guard the specified behavior, and the recordings above are the proof the fix works.

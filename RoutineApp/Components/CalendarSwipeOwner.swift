@@ -35,6 +35,7 @@ final class CalendarSwipeOwnerView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         register()
+        registeredGuard?.wirePopRecognizers()
     }
 
     private func register() {
@@ -99,7 +100,7 @@ private final class NavigationSwipeGuard: NSObject, UIGestureRecognizerDelegate 
         cards.remove(card)
     }
 
-    private func wirePopRecognizers() {
+    func wirePopRecognizers() {
         guard let navigationController else {
             return
         }
