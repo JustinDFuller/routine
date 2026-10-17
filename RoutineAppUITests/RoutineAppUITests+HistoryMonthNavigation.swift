@@ -382,6 +382,7 @@ extension RoutineAppUITests {
         let app = openAnimatedMorningYogaHistory()
         let recent = app.staticTexts["Recent completions"]
         XCTAssertTrue(recent.waitForExistence(timeout: 5))
+        XCTAssertTrue(recent.isHittable)
 
         dragSlowly(
             from: recent.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.5)),
@@ -396,7 +397,7 @@ extension RoutineAppUITests {
         let app = openAnimatedMorningYogaHistory()
 
         dragSlowly(
-            from: app.coordinate(withNormalizedOffset: CGVector(dx: 0.005, dy: 0.5)),
+            from: app.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5)),
             to: app.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.5))
         )
 

@@ -6,7 +6,7 @@
 
 ## 2. Gesture bridge
 
-- [x] 2.1 Add a `UIViewRepresentable` in `RoutineApp/Components/` that, while in the window, adds a horizontal-only `UIPanGestureRecognizer` over the calendar card and makes the enclosing navigation controller's content-pop and edge-pop recognizers require it to fail (content-pop behind `#available(iOS 26, *)`), removing both when it leaves the window; verify the app target builds (`./Scripts/build-ios.sh`).
+- [x] 2.1 Add a `UIViewRepresentable` in `RoutineApp/Components/` that, while in the window, registers the calendar card with a horizontal-only `UIPanGestureRecognizer` owned by the enclosing navigation controller, which begins only for touches that start inside the card, and makes the navigation controller's content-pop and edge-pop recognizers require it to fail (content-pop behind `#available(iOS 26, *)`), unregistering the card when it leaves the window; verify the app target builds (`./Scripts/build-ios.sh`).
 - [x] 2.2 Attach the bridge to the whole calendar card in `HistoryMonthGridView`; verify the existing `RoutineAppUITests+HistoryMonthNavigation` tests still pass.
 
 ## 3. Tests

@@ -70,9 +70,13 @@ final class CalendarSwipeOwnerView: UIView {
 
 private final class NavigationSwipeGuard: NSObject, UIGestureRecognizerDelegate {
     private static var associationKey: UInt8 = 0
+    private static let leftEdgeExclusion: CGFloat = 24
 
     private let pan = UIPanGestureRecognizer()
     private let cards = NSHashTable<UIView>.weakObjects()
+    private let wiredRecognizers = NSHashTable<UIGestureRecognizer>.weakObjects()
+    private weak var navigationController: UINavigationController?
+    private var touchStart: CGPoint?
 
     static func shared(for navigationController: UINavigationController) -> NavigationSwipeGuard {
         if let existing = objc_getAssociatedObject(navigationController, &associationKey) as? NavigationSwipeGuard {
@@ -85,43 +89,62 @@ private final class NavigationSwipeGuard: NSObject, UIGestureRecognizerDelegate 
     }
 
     private init(navigationController: UINavigationController) {
+        self.navigationController = navigationController
         super.init()
         pan.delegate = self
         pan.cancelsTouchesInView = false
         pan.delaysTouchesBegan = false
         pan.delaysTouchesEnded = false
         navigationController.view.addGestureRecognizer(pan)
-        navigationController.interactivePopGestureRecognizer?.require(toFail: pan)
-
-        if #available(iOS 26, *) {
-            navigationController.interactiveContentPopGestureRecognizer?.require(toFail: pan)
-        }
     }
 
     func register(_ card: UIView) {
         cards.add(card)
+        wirePopRecognizers()
     }
 
     func unregister(_ card: UIView) {
         cards.remove(card)
     }
 
+    private func wirePopRecognizers() {
+        guard let navigationController else {
+            return
+        }
+
+        var popRecognizers = [navigationController.interactivePopGestureRecognizer]
+
+        if #available(iOS 26, *) {
+            popRecognizers.append(navigationController.interactiveContentPopGestureRecognizer)
+        }
+
+        for case let recognizer? in popRecognizers where wiredRecognizers.contains(recognizer) == false {
+            recognizer.require(toFail: pan)
+            wiredRecognizers.add(recognizer)
+        }
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        touchStart = touch.location(in: pan.view)
+        return true
+    }
+
     func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        guard let view = pan.view else {
+        guard let view = pan.view, let start = touchStart else {
             return false
         }
 
         let velocity = pan.velocity(in: view)
-        guard abs(velocity.x) > abs(velocity.y) else {
+        guard abs(velocity.x) >= abs(velocity.y) else {
             return false
         }
 
-        let translation = pan.translation(in: view)
-        let location = pan.location(in: view)
-        let start = CGPoint(x: location.x - translation.x, y: location.y - translation.y)
+        guard start.x > Self.leftEdgeExclusion, isBelowNavigationBar(start, in: view) else {
+            return false
+        }
 
         return cards.allObjects.contains { card in
-            card.window != nil && card.convert(card.bounds, to: view).contains(start)
+            card.window != nil && visibleFrame(of: card, in: view).contains(start)
         }
     }
 
@@ -130,5 +153,34 @@ private final class NavigationSwipeGuard: NSObject, UIGestureRecognizerDelegate 
         shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
     ) -> Bool {
         true
+    }
+
+    private func isBelowNavigationBar(_ point: CGPoint, in view: UIView) -> Bool {
+        guard let navigationBar = navigationController?.navigationBar else {
+            return true
+        }
+
+        return point.y >= navigationBar.convert(navigationBar.bounds, to: view).maxY
+    }
+
+    private func visibleFrame(of card: UIView, in view: UIView) -> CGRect {
+        var rect = card.bounds
+        var current: UIView = card
+
+        while let parent = current.superview {
+            rect = current.convert(rect, to: parent)
+
+            if parent.clipsToBounds || parent is UIScrollView {
+                rect = rect.intersection(parent.bounds)
+            }
+
+            current = parent
+
+            if parent === view {
+                break
+            }
+        }
+
+        return rect
     }
 }
