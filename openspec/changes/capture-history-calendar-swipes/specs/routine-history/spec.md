@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Sideways swipes on the calendar never leave History
-A sideways swipe that starts anywhere inside the calendar card (the title row, the day grid, and the month and year wheels when they are open) SHALL NOT take the user back to the previous screen, however many times the user swipes and whether or not the displayed month can change.
+A sideways swipe that starts anywhere inside the calendar card (the title row, the day grid, and the month and year wheels when they are open) SHALL NOT take the user back to the previous screen (except from the 24pt strip at the screen's back edge, which keeps the system edge swipe), however many times the user swipes and whether or not the displayed month can change.
 
 #### Scenario: Swipe right many times on the grid
 - **WHEN** the user swipes right on the day grid eight times in a row
